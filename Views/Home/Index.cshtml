@@ -4,166 +4,660 @@
 *@
 
 @{
-    ViewData["Title"] = "Trang Chủ";
+    ViewData["Title"] = "Tổng quan";
 }
-
 <!-- Dashboard Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+
     <!-- Card 1 -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-500 text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                </svg>
+    <div class="bg-gray-900 border-t-4 border-indigo-500 rounded-xl shadow-md p-4 hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[100ms]">
+        <div class="flex items-center justify-between">
+            <div class="p-2.5 rounded-full bg-indigo-600/20 text-indigo-400">
+                <i data-lucide="folder-open-dot" class="w-6 h-6"></i>
             </div>
-            <div class="ml-4">
-                <p class="text-gray-500 text-sm">Tổng Đơn Hàng</p>
-                <p class="text-2xl font-semibold text-gray-700">1,234</p>
-            </div>
+            <p class="text-3xl font-bold text-white">6</p>
         </div>
+        <h3 class="mt-2 text-gray-200 font-semibold text-base">TỔNG DỰ ÁN</h3>
+        <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
+            <li>• Hoàn thành: <span class="text-gray-300 font-medium">1</span></li>
+            <li>• Tỷ lệ: <span class="text-indigo-400 font-medium">17%</span></li>
+        </ul>
     </div>
 
     <!-- Card 2 -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-500 text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+    <div class="bg-gray-900 border-t-4 border-green-500 rounded-xl shadow-md p-4 hover:shadow-green-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[200ms]">
+        <div class="flex items-center justify-between">
+            <div class="p-2.5 rounded-full bg-green-600/20 text-green-400">
+                <i data-lucide="list-checks" class="w-6 h-6"></i>
             </div>
-            <div class="ml-4">
-                <p class="text-gray-500 text-sm">Doanh Thu</p>
-                <p class="text-2xl font-semibold text-gray-700">45.6M</p>
-            </div>
+            <p class="text-3xl font-bold text-white">11</p>
         </div>
+        <h3 class="mt-2 text-gray-200 font-semibold text-base">TỔNG NHIỆM VỤ</h3>
+        <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
+            <li>• Hoàn thành: <span class="text-gray-300 font-medium">3</span></li>
+            <li>• Tỷ lệ: <span class="text-green-400 font-medium">27%</span></li>
+        </ul>
     </div>
 
     <!-- Card 3 -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-yellow-500 text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
+    <div class="bg-gray-900 border-t-4 border-yellow-400 rounded-xl shadow-md p-4 hover:shadow-yellow-400/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[300ms]">
+        <div class="flex items-center justify-between">
+            <div class="p-2.5 rounded-full bg-yellow-500/20 text-yellow-400">
+                <i data-lucide="settings" class="w-6 h-6"></i>
             </div>
-            <div class="ml-4">
-                <p class="text-gray-500 text-sm">Khách Hàng</p>
-                <p class="text-2xl font-semibold text-gray-700">567</p>
-            </div>
+            <p class="text-3xl font-bold text-white">4</p>
         </div>
+        <h3 class="mt-2 text-gray-200 font-semibold text-base">NHIỆM VỤ ĐANG LÀM</h3>
+        <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
+            <li>• Chưa bắt đầu: <span class="text-gray-300 font-medium">1</span></li>
+            <li>• Tạm dừng: <span class="text-gray-300 font-medium">1</span></li>
+        </ul>
     </div>
 
     <!-- Card 4 -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-            <div class="p-3 rounded-full bg-purple-500 text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                </svg>
+    <div class="bg-gray-900 border-t-4 border-red-500 rounded-xl shadow-md p-4 hover:shadow-red-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[400ms]">
+        <div class="flex items-center justify-between">
+            <div class="p-2.5 rounded-full bg-red-600/20 text-red-400">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
             </div>
-            <div class="ml-4">
-                <p class="text-gray-500 text-sm">Sản Phẩm</p>
-                <p class="text-2xl font-semibold text-gray-700">89</p>
+            <p class="text-3xl font-bold text-white">3</p>
+        </div>
+        <h3 class="mt-2 text-gray-200 font-semibold text-base">NHIỆM VỤ QUÁ HẠN</h3>
+        <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
+            <li>• Tổng nhiệm vụ: <span class="text-gray-300 font-medium">11</span></li>
+            <li>• Tỷ lệ: <span class="text-red-400 font-medium">27%</span></li>
+        </ul>
+    </div>
+</div>
+
+<!-- |||| -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-screen text-gray-200">
+    <!-- CỘT TRÁI -->
+    <div class="lg:col-span-2 bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-white">Dự án & Nhiệm vụ</h2>
+            <div class="flex gap-2">
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                    <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
+                </button>
+                <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                    <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
+                </button>
             </div>
+        </div>
+
+        <!-- Thanh tiến trình -->
+        <div class="w-full bg-gray-700 rounded-full h-3 mb-4">
+            <div class="bg-indigo-500 h-3 rounded-full" style="width: 50%"></div>
+        </div>
+        <p class="text-gray-400 text-sm mb-4">1/2 nhiệm vụ - Hoàn thành 50%</p>
+
+        <!-- Danh sách Dự án -->
+        <div class="space-y-4">
+
+            <!-- Nút điều khiển -->
+            <div class="flex justify-end mb-2">
+                <button id="toggleAllBtn"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                    <i data-lucide="chevron-up" class="w-4 h-4"></i> Thu gọn tất cả
+                </button>
+            </div>
+
+            <!-- Dự án 1 -->
+            <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 transition"
+                     data-toggle="project-1">
+                    <h3 class="font-semibold text-white">Hệ thống báo cáo nội bộ (P002)</h3>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300"></i>
+                </div>
+
+                <div id="project-1" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
+                    <div class="p-4 border-t border-gray-700 bg-gray-900/60">
+                        <div class="mb-4 p-4 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
+                            <div class="flex items-center justify-between mb-1">
+                                <h4 class="text-white font-semibold flex items-center gap-2">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+                                    Mô tả dự án
+                                </h4>
+                                <div class="flex items-center gap-2 relative">
+                                    <!-- thêm relative để modal có reference -->
+                                    <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                            onclick="downloadFile()">
+                                        <i data-lucide='download' class='w-4 h-4'></i>
+                                        Tải xuống
+                                    </button>
+
+                                    <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                            onclick="viewFile()" href="/resources/Báo cáo tuần 9.pdf">
+                                        <i data-lucide='eye' class='w-4 h-4'></i>
+                                        Xem
+                                    </button>
+
+                                    <button id="addFileBtn" class="flex items-center gap-2 text-sm text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
+                                        <i data-lucide='plus' class='w-4 h-4'></i>
+                                        Thêm file
+                                    </button>
+
+                                    <!-- Modal Upload ngay dưới nút -->
+                                    <div id="uploadModal" class="absolute top-full right-0 mt-2 w-96 bg-gray-900 rounded-xl shadow-2xl p-6 hidden z-50">
+                                        <button onclick="closeUploadModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white">
+                                            <i data-lucide="x" class="w-5 h-5"></i>
+                                        </button>
+
+                                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                                            <i data-lucide="file-plus" class="w-5 h-5 text-indigo-400"></i>
+                                            Import File Dự Án
+                                        </h3>
+
+                                        <form id="uploadForm" class="flex flex-col gap-4">
+                                            <label for="fileInput" class="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all shadow-md">
+                                                <i data-lucide="upload" class="w-4 h-4"></i>
+                                                Chọn tệp
+                                            </label>
+                                            <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
+
+                                            <p id="fileName" class="text-sm text-indigo-300"></p>
+                                            <div id="previewContainer" class="mt-2"></div>
+
+                                            <button type="submit" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-medium shadow-md transition-all">
+                                                Upload
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="text-gray-300 text-sm leading-relaxed">
+                                Xây dựng hệ thống báo cáo tự động hóa nội bộ.
+                            </p>
+                        </div>
+
+
+                        @* Task 1 *@
+                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-1 duration-300">
+                            <h4 class="font-semibold text-white">Viết báo cáo</h4>
+                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
+                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
+                                <p class="text-indigo-300 text-sm leading-relaxed">
+                                    <span class="font-semibold text-white">Mô tả: </span>
+                                    Viết nội dung giới thiệu và dịch vụ cho website 33
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="px-2 py-1 bg-blue-900/40 text-blue-400 text-xs rounded-full">ĐANG THỰC HIỆN</span>
+                                <span class="px-2 py-1 bg-purple-900/40 text-purple-400 text-xs rounded-full">THẤP</span>
+                            </div>
+
+                            <div class="flex flex-row justify-between items-center w-full">
+                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
+                                        <span>Thu Thảo</span>
+                                    </div>
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
+                                        <span>20/10/2025</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative w-10 h-10">
+                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                                            <!-- Background Circle -->
+                                            <path class="text-gray-700"
+                                                    stroke="currentColor"
+                                                    stroke-width="3"
+                                                    fill="none"
+                                                    d="M18 2.0845
+                                                a 15.9155 15.9155 0 0 1 0 31.831
+                                                a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                            <!-- Progress Circle -->
+                                            <path class="text-blue-500"
+                                                    stroke="currentColor"
+                                                    stroke-width="3"
+                                                    stroke-linecap="round"
+                                                    fill="none"
+                                                    stroke-dasharray="45, 100"
+                                                    d="M18 2.0845
+                                                a 15.9155 15.9155 0 0 1 0 31.831
+                                                a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        </svg>
+                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @* Task 2 *@
+                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-1 duration-300">
+                            <h4 class="font-semibold text-white">Viết nội dung</h4>
+                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
+                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
+                                <p class="text-indigo-300 text-sm leading-relaxed">
+                                    <span class="font-semibold text-white">Mô tả: </span>
+                                    Viết nội dung giới thiệu và dịch vụ cho website 33
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-blue-900/40 text-blue-400 text-xs rounded-full">ĐANG THỰC HIỆN</span>
+                                <span class="px-2 py-1 bg-yellow-900/40 text-yellow-400 text-xs rounded-full">TRUNG BÌNH</span>
+                            </div>
+                            <div class="flex flex-row justify-between items-center w-full">
+                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
+                                        <span>Như Hoa</span>
+                                    </div>
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
+                                        <span>10/06/2025</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative w-10 h-10">
+                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                                            <!-- Background Circle -->
+                                            <path class="text-gray-700"
+                                                  stroke="currentColor"
+                                                  stroke-width="3"
+                                                  fill="none"
+                                                  d="M18 2.0845
+                                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                            <!-- Progress Circle -->
+                                            <path class="text-blue-500"
+                                                  stroke="currentColor"
+                                                  stroke-width="3"
+                                                  stroke-linecap="round"
+                                                  fill="none"
+                                                  stroke-dasharray="45, 100"
+                                                  d="M18 2.0845
+                                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        </svg>
+                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dự án 2 -->
+            <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 transition"
+                     data-toggle="project-2">
+                    <h3 class="font-semibold text-white">Website bán hàng nhạc cụ (P003)</h3>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300"></i>
+                </div>
+
+                <div id="project-2" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
+                    <div class="p-4 border-t border-gray-700 bg-gray-900/60">
+                        <div class="mb-4 p-4 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
+                            <h4 class="text-white font-semibold mb-1 flex items-center gap-2">
+                                <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+                                Mô tả dự án
+                            </h4>
+                            <p class="text-gray-300 text-sm leading-relaxed">
+                                Phát triển website thương mại điện tử bán nhạc cụ online
+                            </p>
+                        </div>
+
+                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-purple-500/30 transition transform hover:-translate-y-1 duration-300">
+                            <h4 class="font-semibold text-white">Thiết kế giao diện</h4>
+                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
+                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
+                                <p class="text-indigo-300 text-sm leading-relaxed">
+                                    <span class="font-semibold text-white">Mô tả: </span>
+                                    Xây dựng giao diện chính với ReactJS và Tailwind
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <span class="px-2 py-1 bg-green-900/40 text-green-400 text-xs rounded-full">HOÀN THÀNH</span>
+                                <span class="px-2 py-1 bg-orange-900/40 text-orange-400 text-xs rounded-full">CAO</span>
+                            </div>
+                            <div class="flex flex-row justify-between items-center w-full">
+                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
+                                        <span>Minh Quân</span>
+                                    </div>
+                                    <div class="flex gap-1 items-center">
+                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
+                                        <span>12/06/2025</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <div class="relative w-10 h-10">
+                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                                            <!-- Background Circle -->
+                                            <path class="text-gray-700"
+                                                  stroke="currentColor"
+                                                  stroke-width="3"
+                                                  fill="none"
+                                                  d="M18 2.0845
+                                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                            <!-- Progress Circle -->
+                                            <path class="text-blue-500"
+                                                  stroke="currentColor"
+                                                  stroke-width="3"
+                                                  stroke-linecap="round"
+                                                  fill="none"
+                                                  stroke-dasharray="45, 100"
+                                                  d="M18 2.0845
+                                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        </svg>
+                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CỘT PHẢI -->
+    <div class="space-y-6">
+        <!-- Chart 1 -->
+        <div class="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Trạng thái nhiệm vụ</h3>
+            <canvas id="statusChart" height="200"></canvas>
+        </div>
+
+        <!-- Chart 2 -->
+        <div class="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Phân bố tiến độ dự án</h3>
+            <canvas id="progressChart" height="200"></canvas>
         </div>
     </div>
 </div>
 
-<!-- Recent Orders Table -->
-<div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-800">Đơn Hàng Gần Đây</h3>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã ĐH</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khách Hàng</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng Tiền</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng Thái</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành Động</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-001</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nguyễn Văn A</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">31/10/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.500.000đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Hoàn thành
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Sửa</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-002</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Trần Thị B</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">30/10/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.800.000đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            Đang xử lý
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Sửa</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-003</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Lê Văn C</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">29/10/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3.200.000đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            Đã giao
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Sửa</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-004</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Phạm Thị D</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">28/10/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">950.000đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            Đã hủy
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Sửa</a>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-005</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Hoàng Văn E</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">27/10/2025</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4.100.000đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Hoàn thành
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <a href="#" class="text-blue-600 hover:text-blue-900 mr-3">Xem</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Sửa</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<script>
+    lucide.createIcons();
+
+    // Biểu đồ donut (trạng thái nhiệm vụ)
+    const ctx1 = document.getElementById("statusChart").getContext("2d");
+    new Chart(ctx1, {
+      type: "doughnut",
+      data: {
+        labels: ["Đang thực hiện", "Hoàn thành", "Quá hạn"],
+        datasets: [
+          {
+            data: [5, 8, 2],
+            backgroundColor: ["#3b82f6", "#22c55e", "#ef4444"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        cutout: "50%",
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#d1d5db",
+              boxWidth: 12,
+              padding: 15,
+            },
+          },
+          datalabels: {
+            color: "#fff",
+            font: {
+              size: 14,
+              weight: "bold",
+            },
+            formatter: (value, ctx) => {
+              const dataArr = ctx.chart.data.datasets[0].data;
+              const sum = dataArr.reduce((a, b) => a + b, 0);
+              const percentage = ((value / sum) * 100).toFixed(1) + "%";
+              return percentage;
+            },
+          },
+        },
+      },
+      plugins: [
+          ChartDataLabels,
+          {
+              id: "centerText",
+              beforeDraw: (chart) => {
+                const { width, height, ctx } = chart;
+                ctx.restore();
+                const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+
+                ctx.font = "bold 16px sans-serif";
+                ctx.fillStyle = "#e5e7eb"; // text-gray-200
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";
+                ctx.fillText(`Tổng số: ${total}`, width / 2, height / 2.2);
+                ctx.save();
+              }
+          }
+      ], // 🔹 kích hoạt plugin hiển thị %
+    });
+
+    // Biểu đồ cột (phân bố tiến độ)
+    // Biểu đồ cột (phân bố tiến độ theo số lượng dự án)
+    const ctx2 = document.getElementById("progressChart").getContext("2d");
+    new Chart(ctx2, {
+      type: "bar",
+      data: {
+        labels: ["0%-25%", "25%-50%", "50%-75%", "75%-99%", "100%"],
+        datasets: [{
+          label: "Số lượng dự án",
+          data: [2, 3, 5, 4, 6], // 👉 thay bằng dữ liệu thật
+          backgroundColor: [
+            "#ef4444", // 0%-25% → đỏ
+            "#f97316", // 25%-50% → cam
+            "#eab308", // 50%-75% → vàng
+            "#3b82f6", // 75%-99% → xanh lá
+            "#22c55e"  // 100% → xanh dương
+          ],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: "x",
+        scales: {
+          x: {
+            title: { display: true, text: "Khoảng tiến độ (%)", color: "#d1d5db" },
+            ticks: { color: "#9ca3af" },
+            grid: { color: "#1f2937" },
+          },
+          y: {
+            title: { display: true, text: "Số lượng dự án", color: "#d1d5db" },
+            ticks: { color: "#9ca3af", stepSize: 1 },
+            grid: { color: "#1f2937" },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: { labels: { color: "#d1d5db" } },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ` ${context.dataset.label}: ${context.formattedValue}`;
+              }
+            }
+          }
+        },
+      },
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // 🔹 Toggle từng dự án
+      document.querySelectorAll("[data-toggle]").forEach(btn => {
+        const targetId = btn.getAttribute("data-toggle");
+        const content = document.getElementById(targetId);
+
+        // Mặc định mở tất cả
+        content.classList.remove("max-h-0");
+        content.classList.add("max-h-[1000px]");
+        btn.classList.add("open"); // đánh dấu mở
+
+        // Xử lý click
+        btn.addEventListener("click", () => {
+          const isOpen = btn.classList.contains("open");
+
+          if (isOpen) {
+            content.classList.remove("max-h-[1000px]");
+            content.classList.add("max-h-0");
+            btn.classList.remove("open");
+          } else {
+            content.classList.remove("max-h-0");
+            content.classList.add("max-h-[1000px]");
+            btn.classList.add("open");
+          }
+
+          // Xoay icon SVG
+          const icon = btn.querySelector("svg");
+          if (icon) {
+            icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+            icon.style.transition = "transform 0.3s ease";
+          }
+        });
+      });
+
+      // 🔹 Nút "Thu gọn / Mở tất cả"
+      const toggleAllBtn = document.getElementById("toggleAllBtn");
+      let allOpen = true;
+
+      toggleAllBtn.addEventListener("click", () => {
+        document.querySelectorAll("[data-toggle]").forEach(btn => {
+          const targetId = btn.getAttribute("data-toggle");
+          const content = document.getElementById(targetId);
+          const icon = btn.querySelector("svg");
+
+          if (allOpen) {
+            content.classList.remove("max-h-[1000px]");
+            content.classList.add("max-h-0");
+            btn.classList.remove("open");
+            if (icon) icon.style.transform = "rotate(0deg)";
+          } else {
+            content.classList.remove("max-h-0");
+            content.classList.add("max-h-[1000px]");
+            btn.classList.add("open");
+            if (icon) icon.style.transform = "rotate(180deg)";
+          }
+        });
+
+        allOpen = !allOpen;
+        toggleAllBtn.innerHTML = allOpen
+          ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> Thu gọn tất cả`
+          : `<i data-lucide="chevron-down" class="w-4 h-4"></i> Mở tất cả`;
+
+        lucide.createIcons();
+      });
+
+      lucide.createIcons();
+    });
+</script>
+<script>
+    lucide.createIcons();
+
+    // File mẫu để demo (có thể thay bằng đường dẫn thật từ server)
+    const fileUrl = "/resources/Báo cáo tuần 9.pdf";
+    const fileName = "Báo cáo tuần 9.pdf";
+
+    // Nút mở modal import
+    function openUploadModal() {
+        const modal = document.getElementById("uploadModal");
+        modal.classList.remove("opacity-0", "pointer-events-none");
+    }
+
+    function closeUploadModal() {
+        const modal = document.getElementById("uploadModal");
+        modal.classList.add("opacity-0", "pointer-events-none");
+        document.getElementById("uploadForm").reset();
+        document.getElementById("fileName").textContent = "";
+        document.getElementById("previewContainer").innerHTML = "";
+    }
+
+    // Nút Tải xuống
+    function downloadFile() {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Nút Xem file
+    function viewFile() {
+        window.open(fileUrl, "_blank");
+    }
+
+    // Xử lý preview khi chọn file mới trong modal
+    const fileInput = document.getElementById("fileInput");
+    fileInput.addEventListener("change", function() {
+        const file = this.files[0];
+        const fileNameEl = document.getElementById("fileName");
+        const previewEl = document.getElementById("previewContainer");
+        previewEl.innerHTML = "";
+
+        if(file) {
+            fileNameEl.textContent = `File được chọn: ${file.name}`;
+            const fileType = file.type;
+
+            if(fileType.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = URL.createObjectURL(file);
+                img.className = "max-h-40 mt-2 rounded-md border border-gray-700";
+                previewEl.appendChild(img);
+            } else if(fileType === "application/pdf") {
+                const iframe = document.createElement("iframe");
+                iframe.src = URL.createObjectURL(file);
+                iframe.className = "w-full h-48 mt-2 rounded-md border border-gray-700";
+                previewEl.appendChild(iframe);
+            } else if(fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || fileType === "application/msword") {
+                const div = document.createElement("div");
+                div.className = "flex items-center gap-2 text-gray-200";
+                div.innerHTML = `<i data-lucide="file-text" class="w-5 h-5 text-green-400"></i> <span>${file.name}</span>`;
+                previewEl.appendChild(div);
+                lucide.createIcons();
+            } else {
+                previewEl.textContent = "Không thể xem trước loại file này.";
+            }
+        } else {
+            fileNameEl.textContent = "";
+        }
+    });
+
+    // Upload file
+    const uploadForm = document.getElementById("uploadForm");
+    uploadForm.addEventListener("submit", function(e) {
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if(file) {
+            alert(`File "${file.name}" đã được import!`);
+            closeUploadModal();
+            // 👉 Gửi file lên server tại đây
+        }
+    });
+
+        const addFileBtn = document.getElementById("addFileBtn");
+        const uploadModal = document.getElementById("uploadModal");
+
+        addFileBtn.addEventListener("click", () => {
+            uploadModal.classList.toggle("hidden");
+        });
+
+        function closeUploadModal() {
+            uploadModal.classList.add("hidden");
+            document.getElementById("uploadForm").reset();
+            document.getElementById("fileName").textContent = "";
+            document.getElementById("previewContainer").innerHTML = "";
+        }
+
+</script>

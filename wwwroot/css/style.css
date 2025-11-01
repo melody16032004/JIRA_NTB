@@ -1,0 +1,87 @@
+﻿/* Scrollbar cho main */
+/*.main-content::-webkit-scrollbar {
+    width: 6px;
+    mảnh hơn
+}
+
+.main-content::-webkit-scrollbar-track {
+    background: #1f2937;*/ /*màu track */
+    /*border-radius: 3px;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+    background-color: #4f46e5;*/ /*màu thumb*/
+    /*border-radius: 3px;
+    border: 1px solid #1f2937;*/ /*khoảng cách xung quanh thumb*/
+/*}*/
+
+/* Firefox */
+/*.main-content {
+    scrollbar-width: thin;
+    scrollbar-color: #4f46e5 #1f2937;
+}*/
+
+#notifyDropdown{
+    user-select: none;
+}
+    /* Làm đẹp thanh cuộn trong dropdown */
+    #notifyDropdown ul::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #notifyDropdown ul::-webkit-scrollbar-thumb {
+        background-color: #4b5563; /* xám đậm */
+        border-radius: 10px;
+    }
+
+        #notifyDropdown ul::-webkit-scrollbar-thumb:hover {
+            background-color: #6366f1; /* tím indigo khi hover */
+        }
+
+.unread {
+    background-color: rgba(79, 70, 229, 0.15); /* Indigo-600 mờ */
+}
+
+
+/*==================================================*/
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-cardFadeIn {
+    animation: cardFadeIn 0.6s ease-out forwards;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(-15deg);
+    }
+
+    40% {
+        transform: rotate(10deg);
+    }
+
+    60% {
+        transform: rotate(-10deg);
+    }
+
+    80% {
+        transform: rotate(15deg);
+    }
+}
+
+.shake {
+    animation: shake 0.6s ease-in-out;
+}
