@@ -20,7 +20,49 @@
     scrollbar-width: thin;
     scrollbar-color: #4f46e5 #1f2937;
 }*/
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
 
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(31, 41, 55, 0.3); /* bg-gray-800 với độ mờ */
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(107, 114, 128, 0.5); /* bg-gray-500 với độ mờ */
+    border-radius: 10px;
+}
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 0.7); /* bg-gray-500 đậm hơn khi hover */
+    }
+
+/* Line clamp utility (hỗ trợ cho Tailwind) */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Hiệu ứng trượt vào cho thẻ nhiệm vụ */
+.task-card {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 #notifyDropdown{
     user-select: none;
 }

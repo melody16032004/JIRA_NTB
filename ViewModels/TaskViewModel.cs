@@ -1,0 +1,100 @@
+﻿using JIRA_NTB.Models;
+
+namespace JIRA_NTB.ViewModels
+{
+    public class TaskViewModel
+    {
+        public string IdTask { get; set; }
+        public string NameTask { get; set; }
+        public string Priority { get; set; }
+        public string Note { get; set; }
+        public string FileNote { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
+        public Status Status { get; set; }
+        public string ProjectId { get; set; }
+
+        public ProjectInfoViewModel Project { get; set; }
+        public AssigneeInfoViewModel Assignee { get; set; }
+
+        public bool IsCompleted { get; set; }
+
+        //Task chưa hoàn thành mà quá hạn
+        public bool IsOverdue =>
+            EndDate.HasValue &&
+            EndDate.Value < DateTime.Now &&
+            !IsCompleted;
+
+        //Task hoàn thành trễ
+        public bool IsDoneLate =>
+            EndDate.HasValue &&
+            CompletedDate.HasValue &&
+            CompletedDate.Value > EndDate.Value;
+
+        //Task hoàn thành đúng hạn
+        public bool IsDoneOnTime =>
+            EndDate.HasValue &&
+            CompletedDate.HasValue &&
+            CompletedDate.Value <= EndDate.Value;
+
+        //Số ngày còn lại (âm nếu trễ)
+        public int DaysRemaining =>
+        EndDate.HasValue ? (int)Math.Ceiling((EndDate.Value - DateTime.Now).TotalDays) : 0;
+        public int DaysLate
+        {
+            get
+            {
+                if (!IsDoneLate) return 0;
+                return (CompletedDate!.Value - EndDate!.Value).Days;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Thông tin tối thiểu của Project cho Task Card
+    /// </summary>
+    public class ProjectInfoViewModel
+    {
+        public string IdProject { get; set; }
+        public string ProjectName { get; set; }
+    }
+
+    /// <summary>
+    /// Thông tin tối thiểu của Assignee cho Task Card
+    /// </summary>
+    public class AssigneeInfoViewModel
+    {
+        public string Id { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+    }
+
+    /// <summary>
+    /// ViewModel cho một cột trên Kanban Board
+    /// </summary>
+    public class TaskColumnViewModel
+    {
+        public string Status { get; set; }
+        public string StatusId { get; set; }
+        public string StatusTitle { get; set; }
+        public string StatusColor { get; set; }
+        public List<TaskViewModel> Tasks { get; set; } = new List<TaskViewModel>();
+    }
+
+    /// <summary>
+    /// ViewModel chính cho trang Kanban Board
+    /// </summary>
+    public class TaskBoardViewModel
+    {
+        public List<TaskViewModel> TodoTasks { get; set; } = new List<TaskViewModel>();
+        public List<TaskViewModel> InProgressTasks { get; set; } = new List<TaskViewModel>();
+        public List<TaskViewModel> DoneTasks { get; set; } = new List<TaskViewModel>();
+        public List<TaskViewModel> OverdueTasks { get; set; } = new List<TaskViewModel>();
+
+        // Thông tin thống kê
+        public int TotalTasks => TodoTasks.Count + InProgressTasks.Count + DoneTasks.Count;
+        public int OverdueCount => OverdueTasks.Count;
+        public double CompletionRate => TotalTasks > 0 ? (DoneTasks.Count * 100.0 / TotalTasks) : 0;
+    }
+}

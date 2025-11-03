@@ -1,4 +1,80 @@
-﻿<div>
-    Hello
+﻿@* Main Index View *@
+@model TaskBoardViewModel
+@{
+    ViewData["Title"] = "Quản Lý Nhiệm Vụ";
 
+    // Khởi tạo danh sách các cột cho Kanban board
+    var columns = new List<TaskColumnViewModel>
+    {
+        new TaskColumnViewModel
+        {
+            Status = "TO DO",
+            StatusTitle = "CẦN THỰC HIỆN",
+            StatusColor = "bg-gray-500",
+            Tasks = Model.TodoTasks,
+            StatusId = Model.TodoTasks.FirstOrDefault()?.Status?.StatusId ?? ""
+        },
+        new TaskColumnViewModel
+        {
+            Status = "IN PROGRESS",
+            StatusTitle = "ĐANG THỰC HIỆN",
+            StatusColor = "bg-blue-500",
+            Tasks = Model.InProgressTasks,
+            StatusId = Model.InProgressTasks.FirstOrDefault()?.Status?.StatusId ?? ""
+        },
+        new TaskColumnViewModel
+        {
+            Status = "OVERDUE",
+            StatusTitle = "TRỄ HẠN",
+            StatusColor = "bg-red-500",
+            Tasks = Model.OverdueTasks,
+            StatusId = Model.OverdueTasks.FirstOrDefault()?.Status?.StatusId ?? ""
+
+        },
+        new TaskColumnViewModel
+        {
+            Status = "DONE",
+            StatusTitle = "ĐÃ HOÀN THÀNH",
+            StatusColor = "bg-green-500",
+            Tasks = Model.DoneTasks,
+            StatusId = Model.DoneTasks.FirstOrDefault()?.Status?.StatusId ?? ""
+
+        }
+    };
+}
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+        <div class="px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1 max-w-md">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text"
+                           id="searchInput"
+                           placeholder="Tìm kiếm nhiệm vụ..."
+                           class="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                </div>
+
+                <select id="projectFilter" class="px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all cursor-pointer">
+                    <option value="">Tất cả dự án</option>
+                    @* Thêm các @Html.Raw("<option>") cho dự án tại đây *@
+                </select>
+
+                <button class="flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-sm text-gray-200 transition-all">
+                    <i data-lucide="filter" class="w-4 h-4"></i>
+                    <span>Lọc</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            @foreach (var column in columns)
+            {
+                <partial name="_TaskColumn" model="column" />
+            }
+        </div>
+    </div>
 </div>
+<link href="~/css/task-board.css" rel="stylesheet" />
+<script src="~/js/task-board.js"></script>
