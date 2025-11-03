@@ -217,23 +217,67 @@
 
                             <!-- Dropdown -->
                             <div id="userDropdown"
-                                 class="absolute right-0 mt-3 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
-                                <ul class="py-2 text-sm text-gray-200">
-                                    <li>
-                                        <a href="#"
-                                           class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
-                                            <i data-lucide="key-round" class="w-4 h-4 mr-2"></i>
-                                            Đổi mật khẩu
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="#"
-                                           class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
-                                            <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
-                                            Đăng xuất
-                                        </a>
-                                    </li>
-                                </ul>
+                                 class="absolute right-0 mt-3 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
+
+                                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                                {
+                                    <!-- Hiển thị khi ĐÃ đăng nhập -->
+                                    <div class="px-4 py-3 border-b border-gray-700 text-sm text-gray-200">
+                                        <div class="font-medium">@User.Identity.Name</div>
+                                        <div class="text-xs text-gray-400">Đã đăng nhập</div>
+                                    </div>
+                                    <ul class="py-2 text-sm text-gray-200">
+                                        <li>
+                                            <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
+                                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">
+                                                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                                                    Thông tin tài khoản
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <a asp-controller="Account" asp-action="ChangePassword"
+                                               class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
+                                                <i data-lucide="key-round" class="w-4 h-4 mr-2"></i>
+                                                Đổi mật khẩu
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
+                                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">
+                                                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                                                    Đăng xuất
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <!-- Hiển thị khi CHƯA đăng nhập -->
+                                    <ul class="py-2 text-sm text-gray-200">
+                                        <li>
+                                            <a asp-controller="Account" asp-action="Login"
+                                               class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
+                                                <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
+                                                Đăng nhập
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a asp-controller="Account" asp-action="Register"
+                                               class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
+                                                <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>
+                                                Đăng ký
+                                            </a>
+                                        </li>
+                                    </ul>
+                                }
                             </div>
                         </div>
                     </div>
@@ -247,7 +291,10 @@
         </main>
     </div>
 
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
+
     <script>lucide.createIcons();</script>
     <script src="/js/site.js"></script>
 </body>
