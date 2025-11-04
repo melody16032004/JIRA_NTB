@@ -1,0 +1,294 @@
+﻿using JIRA_NTB.Data;
+using JIRA_NTB.Helpers;
+using JIRA_NTB.Models;
+using JIRA_NTB.Models.Enums;
+using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace JIRA_NTB.Controllers
+{
+    public class ProjectController : Controller
+    {
+        private readonly AppDbContext _context;
+
+        public ProjectController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        // GET: Project
+        public async Task<IActionResult> Index(string searchQuery, string filterStatusId)
+        {
+            var query = _context.Projects
+                .Include(p => p.Status)
+                .Include(p => p.Manager)
+                .Include(p => p.ProjectManagers)
+                    .ThenInclude(pm => pm.User)
+                .AsQueryable();
+
+            // Tìm kiếm theo tên
+            if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                query = query.Where(p => p.ProjectName.Contains(searchQuery));
+            }
+
+            var projects = await query
+                .OrderByDescending(p => p.StartDay)
+                .ToListAsync();
+
+            var allStatuses = await _context.Statuses.ToListAsync();
+
+            var viewModel = new ProjectListViewModel
+            {
+                SearchQuery = searchQuery,
+                FilterStatusId = filterStatusId,
+                AllStatuses = allStatuses,
+                Projects = projects.Select(p => new ProjectCardViewModel
+                {
+                    IdProject = p.IdProject,
+                    ProjectName = p.ProjectName,
+                    StartDay = p.StartDay,
+                    EndDay = p.EndDay,
+                    CompletedDate = p.CompletedDate,
+                    StatusId = p.StatusId,
+                    StatusName = p.Status?.StatusName.ToString() ?? "Không xácịnh",
+                    ProjectManager = p.Manager != null ? new MemberAvatarViewModel
+                    {
+                        UserId = p.Manager.Id, 
+                        UserName = p.Manager.FullName ?? "Chưa có",
+                        AvatarUrl = p.Manager.Avt  
+                    } : null, 
+                    Progress = CalculateProgress(p),
+                    TotalMembers = p.ProjectManagers?.Count ?? 0,
+                    Members = (p.ProjectManagers ?? new List<ProjectManagerModel>())
+                        .Take(4)
+                        .Select(pm => new MemberAvatarViewModel
+                        {
+                            UserId = pm.UserId,
+                            UserName = pm.User?.FullName ?? "Unknown",
+                            AvatarUrl = pm.User?.Avt ?? "https://i.pravatar.cc/150?img=1"
+                        }).ToList()
+                }).ToList()
+            };
+
+            // ✅ Lọc sau khi ánh xạ enum → StatusId thật
+            if (!string.IsNullOrEmpty(filterStatusId) && int.TryParse(filterStatusId, out var statusValue))
+            {
+                var statusEnum = (TaskStatusModel)statusValue;
+                string statusKey = statusEnum switch
+                {
+                    TaskStatusModel.Todo => "status-todo",
+                    TaskStatusModel.InProgress => "status-inprogress",
+                    TaskStatusModel.Done => "status-done",
+                    _ => ""
+                };
+
+                viewModel.Projects = viewModel.Projects
+                    .Where(p => (p.StatusId ?? "").Equals(statusKey, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            // Nếu là request từ AJAX (do jQuery gửi lên)
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                // Chỉ trả về HTML của Partial View
+                return PartialView("~/Views/Project/Partial/_ProjectListPartial.cshtml", viewModel);
+            }
+            return View(viewModel);
+        }
+
+
+        // GET: Project/Details/5
+        public async Task<IActionResult> Details(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var project = await _context.Projects
+                .Include(p => p.Status)
+                .Include(p => p.Manager)
+                .Include(p => p.ProjectManagers)
+                    .ThenInclude(pm => pm.User)
+                .Include(p => p.Tasks)
+                .FirstOrDefaultAsync(m => m.IdProject == id);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            return View(project);
+        }
+
+        // GET: Project/Create
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Statuses = await _context.Statuses.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
+            return View();
+        }
+
+        // POST: Project/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ProjectModel project)
+        {
+            if (ModelState.IsValid)
+            {
+                // Generate ID if needed
+                if (string.IsNullOrEmpty(project.IdProject))
+                {
+                    project.IdProject = Guid.NewGuid().ToString();
+                }
+
+                _context.Add(project);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Statuses = await _context.Statuses.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
+            return View(project);
+        }
+
+        // GET: Project/Edit/5
+        public async Task<IActionResult> Edit(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            ViewBag.Statuses = await _context.Statuses.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
+            return View(project);
+        }
+
+        // POST: Project/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(string id, ProjectModel project)
+        {
+            if (id != project.IdProject)
+            {
+                return NotFound();
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(project);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!ProjectExists(project.IdProject))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+
+            ViewBag.Statuses = await _context.Statuses.ToListAsync();
+            ViewBag.Users = await _context.Users.ToListAsync();
+            return View(project);
+        }
+
+        // GET: Project/Delete/5
+        public async Task<IActionResult> Delete(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return NotFound();
+            }
+
+            var project = await _context.Projects
+                .Include(p => p.Status)
+                .Include(p => p.Manager)
+                .FirstOrDefaultAsync(m => m.IdProject == id);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            return View(project);
+        }
+
+        // POST: Project/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(string id)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project != null)
+            {
+                _context.Projects.Remove(project);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private bool ProjectExists(string id)
+        {
+            return _context.Projects.Any(e => e.IdProject == id);
+        }
+
+        // Helper method to calculate progress
+        private int CalculateProgress(ProjectModel project)
+        {
+            // Nếu đã hoàn thành
+            if (project.CompletedDate.HasValue)
+                return 100;
+
+            // Nếu chưa bắt đầu
+            if (!project.StartDay.HasValue || project.StartDay > DateTime.Now)
+                return 0;
+
+            // Tính toán dựa trên số tasks đã hoàn thành
+            if (project.Tasks != null && project.Tasks.Any())
+            {
+                var totalTasks = project.Tasks.Count;
+                var completedTasks = project.Tasks.Count(t =>
+                    t.Status?.StatusName.ToString()?.ToLower() == "Done"
+                    || t.Status?.StatusName.ToString()?.ToLower() == "hoàn thành"
+                    || t.Status?.StatusName.ToString()?.ToLower() == "completed");
+
+                return totalTasks > 0 ? (int)((double)completedTasks / totalTasks * 100) : 0;
+            }
+
+            // Tính toán dựa trên thời gian nếu không có tasks
+            if (project.StartDay.HasValue && project.EndDay.HasValue)
+            {
+                var totalDays = (project.EndDay.Value - project.StartDay.Value).TotalDays;
+                var elapsedDays = (DateTime.Now - project.StartDay.Value).TotalDays;
+
+                if (totalDays > 0)
+                {
+                    var progress = (int)((elapsedDays / totalDays) * 100);
+                    return Math.Min(Math.Max(progress, 0), 99); // Giới hạn từ 0-99%
+                }
+            }
+
+            return 0;
+        }
+    }
+}
