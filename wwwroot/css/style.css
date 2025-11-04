@@ -1,14 +1,23 @@
-﻿/* Scrollbar cho main */
-/*.main-content::-webkit-scrollbar {
-    width: 6px;
-    mảnh hơn
+﻿body{
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
+#progressText{
+    user-select: none;
+}
+#previewContainerEdit{
+    box-sizing: border-box;
+}
+.task-card {
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.main-content::-webkit-scrollbar-track {
-    background: #1f2937;*/ /*màu track */
-    /*border-radius: 3px;
+.hidden-task {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
 }
-
+#notifyDropdown {
 .main-content::-webkit-scrollbar-thumb {
     background-color: #4f46e5;*/ /*màu thumb*/
     /*border-radius: 3px;
@@ -84,7 +93,68 @@
     background-color: rgba(79, 70, 229, 0.15); /* Indigo-600 mờ */
 }
 
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
+.custom-scroll::-webkit-scrollbar {
+    width: 6px; /* thin */
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent; /* màu nền thanh cuộn */
+    border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: gray; /* màu mặc định */
+    border-radius: 10px;
+    transition: background 0.2s ease; /* mượt hơn khi hover */
+}
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #6366f1; /* indigo-500 */
+    }
+
+/* ✅ Select sổ lên trên */
+.custom-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg fill='white' height='10' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M0 10 L5 0 L10 10 Z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 10px;
+}
+
+    /* Khi mở dropdown sổ lên trên */
+    .custom-select:focus {
+        position: relative;
+        z-index: 50;
+    }
+
+    .custom-select option {
+        background-color: #1f2937;
+        color: white;
+    }
+
+    .custom-select::-ms-expand {
+        display: none;
+    }
+
+/* Trick: ép dropdown hiển thị lên trên */
+.custom-select {
+    transform-origin: bottom center;
+}
+
+    .custom-select:focus {
+        transform: translateY(-4px);
+    }
+
+#previewContainerEdit{
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
 /*==================================================*/
 @keyframes cardFadeIn {
     from {
@@ -126,4 +196,20 @@
 
 .shake {
     animation: shake 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.25s ease-out;
 }
