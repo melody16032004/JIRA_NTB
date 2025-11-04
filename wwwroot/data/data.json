@@ -1,0 +1,104 @@
+{
+  "projects": [
+    {
+      "id": "P000",
+      "name": "Hệ thống báo cáo nội bộ",
+      "description": "Xây dựng hệ thống báo cáo tự động hóa nội bộ.",
+      "progress": 65,
+      "startDate": "2025-10-28",
+      "endDate": "2025-11-02",
+      "file": {
+        "name": "Báo cáo tuần 9.pdf",
+        "url": "/resources/Báo cáo tuần 9.pdf"
+      },
+      "tasks": [
+        {
+          "id": "T000",
+          "name": "Viết báo cáo tuần",
+          "description": "Viết nội dung tổng hợp tiến độ công việc tuần 9.",
+          "assignee": "Doãn Trung Hoàng",
+          "startDate": "2025-10-28",
+          "endDate": "2025-10-30",
+          "status": "Hoàn thành",
+          "priority": "Cao",
+          "progress": 100,
+          "file": {
+            "name": "Báo cáo tuần 9.pdf",
+            "url": "/resources/Báo cáo tuần 9.pdf"
+          }
+        },
+        {
+          "id": "T001",
+          "name": "Phân tích dữ liệu",
+          "description": "Phân tích dữ liệu kết quả để tạo biểu đồ báo cáo.",
+          "assignee": "Nguyễn Minh Đức",
+          "startDate": "2025-11-01",
+          "endDate": "2025-11-02",
+          "status": "Đang thực hiện",
+          "priority": "Trung bình",
+          "progress": 60,
+          "file": {}
+        },
+        {
+          "id": "T001",
+          "name": "Phân tích dữ liệu",
+          "description": "Phân tích dữ liệu kết quả để tạo biểu đồ báo cáo.",
+          "assignee": "Nguyễn Minh Đức",
+          "startDate": "2025-11-01",
+          "endDate": "2025-11-02",
+          "status": "Đang thực hiện",
+          "priority": "Trung bình",
+          "progress": 60,
+          "file": {}
+        },
+      ]
+    },
+    {
+      "id": "P001",
+      "name": "Trang quản lý dự án",
+      "description": "Xây dựng module quản lý dự án cho hệ thống nội bộ.",
+      "progress": 40,
+      "startDate": "2025-11-01",
+      "endDate": "2025-11-15",
+      "file": {},
+      "tasks": [
+        {
+          "id": "T010",
+          "name": "Thiết kế giao diện",
+          "description": "Tạo layout dashboard và sidebar điều hướng.",
+          "assignee": "Trần Hữu Phước",
+          "startDate": "2025-11-01",
+          "endDate": "2025-11-08",
+          "status": "Đang thực hiện",
+          "priority": "Trung bình",
+          "progress": 15,
+          "file": {}
+        },
+        {
+          "id": "T011",
+          "name": "Kết nối backend",
+          "description": "Tích hợp API từ server vào module quản lý.",
+          "assignee": "Lê Thị Khánh Linh",
+          "startDate": "2025-11-02",
+          "endDate": "2025-11-10",
+          "status": "Chưa bắt đầu",
+          "priority": "Cao",
+          "progress": 0,
+          "file": {}
+        },
+        {
+          "id": "T011",
+          "name": "Kết nối backend",
+          "description": "Tích hợp API từ server vào module quản lý.",
+          "assignee": "Lê Thị Khánh Linh",
+          "startDate": "2025-11-02",
+          "endDate": "2025-11-10",
+          "status": "Chưa bắt đầu",
+          "priority": "Cao",
+          "progress": 0,
+          "file": {}
+        },
+      ]
+    }
+  ]
+}

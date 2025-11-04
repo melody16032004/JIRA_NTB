@@ -1,71 +1,72 @@
-﻿@* 
-    Views/Home/Index.cshtml 
-    View mẫu để hiển thị trong layout
-*@
+﻿@using JIRA_NTB.Models.Test
+@using Newtonsoft.Json
+@model List<Project>
 
 @{
     ViewData["Title"] = "Tổng quan";
+    const int x = -1;
+    const int y = -1;
 }
 <!-- Dashboard Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
 
     <!-- Card 1 -->
-    <div class="bg-gray-900 border-t-4 border-indigo-500 rounded-xl shadow-md p-4 hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[100ms]">
+    <div class="bg-gray-900 border-t-4 border-indigo-500 rounded-xl shadow-md p-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[25ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-indigo-600/20 text-indigo-400">
-                <i data-lucide="folder-open-dot" class="w-6 h-6"></i>
+                <i data-lucide="folder-open-dot" class="w-4 h-4"></i>
             </div>
-            <p class="text-3xl font-bold text-white">6</p>
+            <p id="tongduan" class="text-xl font-bold text-white">0</p>
         </div>
-        <h3 class="mt-2 text-gray-200 font-semibold text-base">TỔNG DỰ ÁN</h3>
+        <h3 class="mt-2 text-gray-200 font-semibold text-sm">TỔNG DỰ ÁN</h3>
         <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
-            <li>• Hoàn thành: <span class="text-gray-300 font-medium">1</span></li>
-            <li>• Tỷ lệ: <span class="text-indigo-400 font-medium">17%</span></li>
+            <li>• Hoàn thành: <span id="duanhoanthanh" class="text-gray-300 font-medium">0</span></li>
+            <li>• Tỷ lệ: <span id="duanhoanthanhpro" class="text-indigo-400 font-medium">0%</span></li>
         </ul>
     </div>
 
     <!-- Card 2 -->
-    <div class="bg-gray-900 border-t-4 border-green-500 rounded-xl shadow-md p-4 hover:shadow-green-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[200ms]">
+    <div class="bg-gray-900 border-t-4 border-green-500 rounded-xl shadow-md p-3 hover:shadow-green-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[50ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-green-600/20 text-green-400">
-                <i data-lucide="list-checks" class="w-6 h-6"></i>
+                <i data-lucide="list-checks" class="w-4 h-4"></i>
             </div>
-            <p class="text-3xl font-bold text-white">11</p>
+            <p id="tongnhiemvu" class="text-xl font-bold text-white">0</p>
         </div>
-        <h3 class="mt-2 text-gray-200 font-semibold text-base">TỔNG NHIỆM VỤ</h3>
+        <h3 class="mt-2 text-gray-200 font-semibold text-sm">TỔNG NHIỆM VỤ</h3>
         <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
-            <li>• Hoàn thành: <span class="text-gray-300 font-medium">3</span></li>
-            <li>• Tỷ lệ: <span class="text-green-400 font-medium">27%</span></li>
+            <li>• Hoàn thành: <span id="nhiemvuhoanthanh" class="text-gray-300 font-medium">0</span></li>
+            <li>• Tỷ lệ: <span id="nhiemvuhoanthanhpro" class="text-green-400 font-medium">0%</span></li>
         </ul>
     </div>
 
     <!-- Card 3 -->
-    <div class="bg-gray-900 border-t-4 border-yellow-400 rounded-xl shadow-md p-4 hover:shadow-yellow-400/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[300ms]">
+    <div class="bg-gray-900 border-t-4 border-yellow-400 rounded-xl shadow-md p-3 hover:shadow-yellow-400/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[75ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-yellow-500/20 text-yellow-400">
-                <i data-lucide="settings" class="w-6 h-6"></i>
+                <i data-lucide="hourglass" class="w-4 h-4"></i>
             </div>
-            <p class="text-3xl font-bold text-white">4</p>
+            <p id="nhiemvudanglam" class="text-xl font-bold text-white">0</p>
         </div>
-        <h3 class="mt-2 text-gray-200 font-semibold text-base">NHIỆM VỤ ĐANG LÀM</h3>
+        <h3 class="mt-2 text-gray-200 font-semibold text-sm">NHIỆM VỤ ĐANG LÀM</h3>
         <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
-            <li>• Chưa bắt đầu: <span class="text-gray-300 font-medium">1</span></li>
-            <li>• Tạm dừng: <span class="text-gray-300 font-medium">1</span></li>
+            <li>• Chưa bắt đầu: <span id="nhiemvuchuabd" class="text-gray-300 font-medium">0</span></li>
+            <li>• Tạm dừng: <span class="text-gray-300 font-medium">0</span></li>
         </ul>
     </div>
 
     <!-- Card 4 -->
-    <div class="bg-gray-900 border-t-4 border-red-500 rounded-xl shadow-md p-4 hover:shadow-red-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[400ms]">
+    <div class="bg-gray-900 border-t-4 border-red-500 rounded-xl shadow-md p-3 hover:shadow-red-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[100ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-red-600/20 text-red-400">
-                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
             </div>
-            <p class="text-3xl font-bold text-white">3</p>
+            <p id="nhiemvuquahan" class="text-xl font-bold text-white">0</p>
         </div>
-        <h3 class="mt-2 text-gray-200 font-semibold text-base">NHIỆM VỤ QUÁ HẠN</h3>
+        <h3 class="mt-2 text-gray-200 font-semibold text-sm">NHIỆM VỤ QUÁ HẠN</h3>
         <ul class="mt-1.5 text-xs text-gray-400 space-y-0.5">
-            <li>• Tổng nhiệm vụ: <span class="text-gray-300 font-medium">11</span></li>
-            <li>• Tỷ lệ: <span class="text-red-400 font-medium">27%</span></li>
+            <li>• Tổng nhiệm vụ: <span class="text-gray-300 font-medium">0</span></li>
+            <li>• Tỷ lệ: <span id="nhiemvuquahanpro" class="text-red-400 font-medium">0%</span></li>
         </ul>
     </div>
 </div>
@@ -75,298 +76,436 @@
     <!-- CỘT TRÁI -->
     <div class="lg:col-span-2 bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-white">Dự án & Nhiệm vụ</h2>
-            <div class="flex gap-2">
-                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+            <h2 class="text-md font-semibold text-white">Dự án & Nhiệm vụ</h2>
+            <div class="flex gap-3">
+                <div class="relative flex items-center">
+                    <input type="text" id="searchInput"
+                           placeholder="Tìm kiếm..."
+                           class="bg-gray-800 text-white text-xs pl-9 pr-3 py-2 rounded-lg border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition w-60" />
+                    <i data-lucide="search"
+                       class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                </div>
+                <button id="openUpdateProjectBtnAdd-@y-@y" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                     <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                 </button>
-                <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+                <button id="openUpdateTaskBtnAdd-@x-@x" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                     <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
                 </button>
             </div>
         </div>
 
-        <!-- Thanh tiến trình -->
-        <div class="w-full bg-gray-700 rounded-full h-3 mb-4">
-            <div class="bg-indigo-500 h-3 rounded-full" style="width: 50%"></div>
-        </div>
-        <p class="text-gray-400 text-sm mb-4">1/2 nhiệm vụ - Hoàn thành 50%</p>
+        <hr class="border-t border-gray-700 my-4" />
 
         <!-- Danh sách Dự án -->
         <div class="space-y-4">
 
             <!-- Nút điều khiển -->
-            <div class="flex justify-end mb-2">
+            <div class="flex justify-end mb-2 gap-[10px]">
+                <div class="relative group cursor-pointer">
+                    <div class="flex items-center gap-3 bg-gray-800/80 border-2 border-red-600 rounded-lg px-2 py-2 cursor-pointer hover:bg-red-600/10 transition-all duration-300 shadow-sm group">
+                        @* <input type="checkbox" id="priorityHigh" class="w-5 h-5 accent-red-500 cursor-pointer" /> *@
+                        <label for="priorityHigh" class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="priorityHigh" class="hidden peer" />
+                            <span class="w-4 h-4 border-2 border-gray-500 rounded peer-checked:bg-red-500 peer-checked:border-red-500 transition-all"></span>
+                        </label>
+
+                        <label for="priorityHigh" class="flex items-center gap-2 text-red-400 font-medium cursor-pointer select-none">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 group-hover:text-red-300 transition-all"></i>
+                            <span class="text-xs group-hover:text-red-300">Ưu tiên cao</span>
+                        </label>
+                    </div>
+                    <span class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full mr-2
+                        bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90
+                        group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                        Chọn để lọc nhiệm vụ có độ ưu tiên cao
+                    </span>
+                </div>
+
+
                 <button id="toggleAllBtn"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                    <i data-lucide="chevron-up" class="w-4 h-4"></i> Thu gọn tất cả
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-1">
+                    <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                    <span class="text-xs">Thu gọn tất cả</span>
                 </button>
             </div>
 
-            <!-- Dự án 1 -->
-            <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 transition"
-                     data-toggle="project-1">
-                    <h3 class="font-semibold text-white">Hệ thống báo cáo nội bộ (P002)</h3>
-                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300"></i>
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg flex flex-col items-center justify-center gap-3">
+                    <i data-lucide="folder-x" class="w-[80px] h-[80px] text-gray-500"></i>
+                    <span>Hiện chưa có dự án nào.</span>
                 </div>
+            }
+            else
+            {
+                @foreach (var project in Model)
+                {
+                    <!-- Dự án 1 -->
+                    <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+                        <div class="flex justify-between items-center p-4 gap-[20px] cursor-pointer hover:bg-gray-700 transition"
+                             data-toggle="project-@project.Id">
+                            <div class="w-full">
+                                <div class="flex items-center justify-between w-full gap-[20px]">
+                                    <div class="flex items-center gap-[5px]">
+                                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300"></i>
+                                    <h3 class="font-semibold text-md text-white">
+                                        @* Hệ thống báo cáo nội bộ (P00-@i) *@
+                                        @project.Name
+                                    </h3>
+                                    </div>
+                                    <div class="relative group">
+                                        @{
+                                            string borderColor =
+                                            project.Progress == 0 ? "border-gray-500" :
+                                            project.Progress < 25 ? "border-red-700" :
+                                            project.Progress < 50 ? "border-yellow-400" :
+                                            project.Progress < 75 ? "border-blue-400" :
+                                            project.Progress < 100 ? "border-orange-400" :
+                                            project.Progress == 100 ? "border-green-500":
+                                            "border-gray-500";
+                                    
+                                            string bgColor = project.Progress == 0 ? "bg-gray-500" :
+                                                            project.Progress < 25 ? "bg-red-700" :
+                                                            project.Progress < 50 ? "bg-yellow-400" :
+                                                            project.Progress < 75 ? "bg-blue-400" :
+                                                            project.Progress < 100 ? "bg-orange-400" :
+                                                            project.Progress == 100 ? "bg-green-500":"bordbger-gray-500";
+                                        }
+                                        <div class="flex items-center gap-3 bg-gray-700 rounded-full px-2 py-1 w-fit border-[2px] @borderColor">
+                                            <div class="bg-gray-600 rounded-full h-2 w-32 overflow-hidden">
+                                                <div class="h-2 rounded-full @bgColor" style="width: @project.Progress%"></div>
+                                            </div>
+                                            <p class="text-gray-300 text-xs whitespace-nowrap">
+                                                @project.Progress%
+                                            </p>
+                                        </div>
+                                        <span class="absolute -left-1/2 -top-[-1px] -translate-x-[4.5rem] bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                            Tiến độ hoàn thành dự án
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mt-5 flex align-items-center gap-3">
+                                    <div class="flex gap-1 items-center  bg-gray-700/50 px-4 py-1.5 rounded-full">
+                                        <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
+                                        <span class="text-xs">
+                                            Admin
+                                        </span>
+                                    </div>
 
-                <div id="project-1" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
-                    <div class="p-4 border-t border-gray-700 bg-gray-900/60">
-                        <div class="mb-4 p-4 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <h4 class="text-white font-semibold flex items-center gap-2">
-                                    <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
-                                    Mô tả dự án
-                                </h4>
-                                <div class="flex items-center gap-2 relative">
-                                    <!-- thêm relative để modal có reference -->
-                                    <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-                                            onclick="downloadFile()">
-                                        <i data-lucide='download' class='w-4 h-4'></i>
-                                        Tải xuống
-                                    </button>
+                                    <div class="flex gap-1 items-center  bg-green-900/50 px-4 py-1.5 rounded-full">
+                                        <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
+                                        <span class="text-xs">
+                                            @project.StartDate
+                                        </span>
+                                    </div>
 
-                                    <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-                                            onclick="viewFile()" href="/resources/Báo cáo tuần 9.pdf">
-                                        <i data-lucide='eye' class='w-4 h-4'></i>
-                                        Xem
-                                    </button>
+                                    <div class="flex gap-1 items-center  bg-red-900/50 px-4 py-1.5 rounded-full" ">
+                                        <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
+                                        <span class="text-xs">
+                                            @project.EndDate
+                                        </span>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
 
-                                    <button id="addFileBtn" class="flex items-center gap-2 text-sm text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
-                                        <i data-lucide='plus' class='w-4 h-4'></i>
-                                        Thêm file
-                                    </button>
+                        <div id="project-@project.Id" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
+                            <div class="p-4 border-t border-gray-700 bg-gray-900/60">
+                                <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h4 class="text-white text-sm font-semibold flex items-center gap-2">
+                                            <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
+                                            Mô tả dự án
+                                        </h4>
+                                        <div class="flex items-center gap-2 relative">
+                                            <!-- thêm relative để modal có reference -->
+                                            @if (project.File != null && !string.IsNullOrEmpty(project.File.Url))
+                                            {
+                                                <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                                        onclick="downloadFile('@project.File.Name', '@project.File.Url')">
+                                                    <i data-lucide='download' class='w-3 h-3'></i>
+                                                    Tải xuống
+                                                </button>
 
-                                    <!-- Modal Upload ngay dưới nút -->
-                                    <div id="uploadModal" class="absolute top-full right-0 mt-2 w-96 bg-gray-900 rounded-xl shadow-2xl p-6 hidden z-50">
-                                        <button onclick="closeUploadModal()" class="absolute top-3 right-3 text-gray-400 hover:text-white">
-                                            <i data-lucide="x" class="w-5 h-5"></i>
-                                        </button>
+                                                <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                                        onclick="viewFile('@project.File.Url')">
+                                                    <i data-lucide='eye' class='w-3 h-3'></i>
+                                                    Xem
+                                                </button>
+                                            }
 
-                                        <h3 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                                            <i data-lucide="file-plus" class="w-5 h-5 text-indigo-400"></i>
-                                            Import File Dự Án
-                                        </h3>
-
-                                        <form id="uploadForm" class="flex flex-col gap-4">
-                                            <label for="fileInput" class="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all shadow-md">
-                                                <i data-lucide="upload" class="w-4 h-4"></i>
-                                                Chọn tệp
-                                            </label>
-                                            <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" />
-
-                                            <p id="fileName" class="text-sm text-indigo-300"></p>
-                                            <div id="previewContainer" class="mt-2"></div>
-
-                                            <button type="submit" class="mt-3 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white font-medium shadow-md transition-all">
-                                                Upload
+                                            <button id="addFileBtn-@project.Id" data-project="@project.Id" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
+                                                <i data-lucide='plus' class='w-3 h-3'></i>
+                                                Thêm file
                                             </button>
-                                        </form>
+                                        </div>
                                     </div>
+
+                                    <p class="text-gray-300 text-sm leading-relaxed">
+                                        @* Xây dựng hệ thống báo cáo tự động hóa nội bộ. *@
+                                        @project.Description
+                                    </p>
+                                </div>
+
+                                <div class="max-h-[420px] overflow-y-auto overflow-x-hidden scroll-smooth custom-scroll">
+                                    @* Task 1 *@
+                                    @foreach (var task in project!.Tasks!)
+                                    {
+                                        string priorityBorder = "";
+                                        switch (task.Priority?.ToString()?.ToLower())
+                                        {
+                                            case "cao":
+                                                priorityBorder = "border-red-900 ";//shadow-md shadow-red-500/50
+                                                break;
+                                            default:
+                                                priorityBorder = "border-gray-700";
+                                                break;
+                                        }
+
+                                        <div class="task-card border-l-[2px] @priorityBorder p-4 ml-[50px] rounded-bl-[10px] transition transform duration-300"
+                                                data-project-id="@project.Id"
+                                                data-priority="@task!.Priority!.ToString().ToLower()">
+                                            <div class="flex justify-between items-center">
+                                                <h2 class="font-semibold text-white text-sm">
+                                                    @* Viết báo cáo *@
+                                                    @task.Name
+                                                </h2>
+                                                <div class="relative group">
+                                                    <button id="openUpdateTaskBtn-@project.Id-@task.Id"
+                                                        class="p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg"
+                                                        data-name="@task.Name"
+                                                        data-assignee="@task.Assignee"
+                                                        data-desc="@task.Description"
+                                                        data-start="@task.StartDate"
+                                                        data-end="@task.EndDate"
+                                                        data-status="@task.Status"
+                                                        data-prior="@task.Priority"
+                                                        data-progress="@task.Progress"
+                                                        data-filename="@task.File!.Name"
+                                                        data-fileurl="@task.File.Url"
+                                                        >
+
+                                                        <i data-lucide="bolt" class="w-4 h-4 text-gray-300"></i>
+                                                    </button>
+                                                    <span class="absolute z-20 left-1/2 -top-[-1px] -translate-x-[6.5rem] bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                        Xem chi tiết
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center justify-between mb-6 mt-3 bg-gray-700/40 px-2 py-1 rounded-lg border border-gray-600">
+                                                <!-- Phần mô tả -->
+                                                <div class="flex items-start gap-2 max-w-[70%]">
+                                                    <i data-lucide="info" class="w-5 h-5 text-indigo-400"></i>
+                                                    <p class="text-indigo-300 text-xs leading-relaxed">
+                                                        <span class="font-semibold text-white">Mô tả: </span>
+                                                        <span>
+                                                            @* Viết nội dung giới thiệu và dịch vụ cho website 33 *@
+                                                            @task.Description
+                                                        </span>
+                                                    </p>
+                                                </div>
+
+                                                <!-- Nhóm nút -->
+                                                <div class="flex items-center gap-2 relative">
+                                                    <!-- thêm relative để modal có reference -->
+                                                    <div class="relative group">
+                                                        <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-2 py-2 transition-all">
+                                                            <i data-lucide='paperclip' class='w-4 h-4'></i>
+                                                        </button>
+                                                        <div class="absolute -top-0 z-100 right-0 -translate-x-1/3 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                            <div class="flex justify-end gap-[10px] bg-gray-900">
+                                                                @* @if (task.File != null && !string.IsNullOrEmpty(task.File.Url))
+                                                                { *@
+                                                                <div class="relative group">
+                                                                    <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                                                            onclick="downloadFile('@task.File.Name', '@task.File.Url')"
+                                                                            @(task.File == null || string.IsNullOrEmpty(task.File.Url) ? "disabled" : "")>
+                                                                        <i data-lucide='download' class='w-3 h-3'></i>
+                                                                    </button>
+                                                                    <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                                        Tải xuống
+                                                                    </span>
+                                                                </div>
+
+                                                                <div class="relative group">
+                                                                    <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
+                                                                            onclick="viewFile('@task.File.Url')"
+                                                                            @(task.File == null || string.IsNullOrEmpty(task.File.Url) ? "disabled" : "")>
+                                                                        <i data-lucide='eye' class='w-3 h-3'></i>
+                                                                    </button>
+                                                                    <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                                        Xem
+                                                                    </span>
+                                                                </div>
+                                                                @* } *@
+                                            
+                                                                <div class="relative group">
+                                                                    <button id="addFileBtnTask-@project.Id-@task.Id" data-project="@task.Id"
+                                                                        class="flex items-center gap-2 text-sm text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
+                                                                        <i data-lucide='plus' class='w-3 h-3'></i>
+                                                                    </button>
+                                                                    <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                                        Thêm file
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                    
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                            @* Info - Progress *@
+                                            <div class="flex flex-row justify-between items-center w-full">
+                                                <div class="flex justify-start gap-3 items-center text-sm text-gray-400">
+                                                    @* Label status-prority*@
+                                                    <div class="flex flex-wrap gap-2">
+                                                        @{
+                                                            string statusText = "";
+                                                            string statusClass = "";
+
+                                                            // 🟢 Xác định trạng thái theo tiến độ
+                                                            switch (@task.Status?.ToString()?.ToLower())
+                                                            {
+                                                                case "chưa bắt đầu":
+                                                                    statusText = "CHƯA BẮT ĐẦU";
+                                                                    statusClass = "bg-gray-700/40 text-gray-300 border-gray-600";
+                                                                    break;
+                                                                case "đang thực hiện":
+                                                                    statusText = "ĐANG THỰC HIỆN";
+                                                                    statusClass = "bg-blue-900/40 text-blue-400 border-blue-900";
+                                                                    break;
+                                                                case "hoàn thành":
+                                                                    statusText = "HOÀN THÀNH";
+                                                                    statusClass = "bg-green-900/40 text-green-400 border-green-900";
+                                                                    break;
+                                                                case "trễ hạn":
+                                                                    statusText = "TRỄ HẠN";
+                                                                    statusClass = "bg-red-900/40 text-red-400 border-red-900";
+                                                                    break;
+                                                                default:
+                                                                    statusText = "KHÔNG XÁC ĐỊNH";
+                                                                    statusClass = "bg-gray-900/40 text-gray-400 border-gray-600";
+                                                                    break;
+                                                            }
+
+                                                            // 🔶 Ưu tiên
+                                                            string priorityText = "";
+                                                            string priorityClass = "";
+
+                                                            switch (task.Priority?.ToString()?.ToLower())
+                                                            {
+                                                                case "thấp":
+                                                                    priorityText = "THẤP";
+                                                                    priorityClass = "bg-purple-900/40 text-purple-400";
+                                                                    break;
+                                                                case "trung bình":
+                                                                    priorityText = "TRUNG BÌNH";
+                                                                    priorityClass = "bg-yellow-900/40 text-yellow-400";
+                                                                    break;
+                                                                case "cao":
+                                                                    priorityText = "CAO";
+                                                                    priorityClass = "bg-red-900/40 text-red-400";
+                                                                    break;
+                                                                default:
+                                                                    priorityText = "KHÔNG XÁC ĐỊNH";
+                                                                    priorityClass = "bg-gray-900/40 text-gray-400";
+                                                                    break;
+                                                            }
+                                                        }
+
+                                                        <span class="px-4 inline-flex items-center rounded-full border text-[10px] @statusClass">@statusText</span>
+                                                        @* <span class="px-4 inline-flex items-center rounded-full text-[10px] @priorityClass">@priorityText</span> *@
+                                                    </div>
+                                                    <span class="text-gray-400">•</span>
+                                                    <div class="relative group cursor-pointer text-xs">
+                                                        <div class="flex gap-1 items-center">
+                                                            <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
+                                                            <span>
+                                                                @* Doãn Trung Hoàng *@
+                                                                @task.Assignee
+                                                            </span>
+                                                        </div>
+                                                        <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                            Người thực hiện
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-gray-400">•</span>
+                                                    <div class="relative group cursor-pointer text-xs">
+                                                        <div class="flex gap-1 items-center">
+                                                            <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
+                                                            <span>
+                                                                @task.StartDate
+                                                            </span>
+                                                        </div>
+                                                        <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                            Thời gian bắt đầu
+                                                        </span>
+                                                    </div>
+                                                    <span class="text-gray-400">•</span>
+                                                    <div class="relative group cursor-pointer text-xs">
+                                                        <div class="flex gap-1 items-center">
+                                                            <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
+                                                            <span>
+                                                                @task.EndDate
+                                                            </span>
+                                                        </div>
+                                                        <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                            Thời gian hết hạn
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="relative group">
+                                                    <div class="flex items-center gap-4">
+                                                        <div class="relative w-10 h-10  cursor-pointer group" data-progress="@task.Progress">
+                                                            <svg class="w-10 h-10" viewBox="0 0 36 36">
+                                                                <!-- Vòng nền -->
+                                                                <path class="text-gray-800"
+                                                                        stroke="currentColor"
+                                                                        stroke-width="3"
+                                                                        fill="none"
+                                                                        d="M18 2.0845
+                                                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                                                        a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                                <!-- Vòng tiến độ -->
+                                                                <path class="progress-ring text-blue-500"
+                                                                        stroke="currentColor"
+                                                                        stroke-width="2"
+                                                                        stroke-linecap="round"
+                                                                        fill="none"
+                                                                        d="M18 2.0845
+                                                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                                                        a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                            </svg>
+                                                            <span class="absolute inset-0 flex items-center justify-center text-xs text-gray-200 font-semibold">
+                                                                0%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <span class="absolute left-1/2 top-[8px] -translate-x-[9rem] bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                                        Tiến độ hoàn thành
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
                             </div>
-
-                            <p class="text-gray-300 text-sm leading-relaxed">
-                                Xây dựng hệ thống báo cáo tự động hóa nội bộ.
-                            </p>
                         </div>
-
-
-                        @* Task 1 *@
-                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-1 duration-300">
-                            <h4 class="font-semibold text-white">Viết báo cáo</h4>
-                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
-                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
-                                <p class="text-indigo-300 text-sm leading-relaxed">
-                                    <span class="font-semibold text-white">Mô tả: </span>
-                                    Viết nội dung giới thiệu và dịch vụ cho website 33
-                                </p>
-                            </div>
-
-                            <div class="flex flex-wrap gap-2 mt-2">
-                                <span class="px-2 py-1 bg-blue-900/40 text-blue-400 text-xs rounded-full">ĐANG THỰC HIỆN</span>
-                                <span class="px-2 py-1 bg-purple-900/40 text-purple-400 text-xs rounded-full">THẤP</span>
-                            </div>
-
-                            <div class="flex flex-row justify-between items-center w-full">
-                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
-                                        <span>Thu Thảo</span>
-                                    </div>
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
-                                        <span>20/10/2025</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="relative w-10 h-10">
-                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-                                            <!-- Background Circle -->
-                                            <path class="text-gray-700"
-                                                    stroke="currentColor"
-                                                    stroke-width="3"
-                                                    fill="none"
-                                                    d="M18 2.0845
-                                                a 15.9155 15.9155 0 0 1 0 31.831
-                                                a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                            <!-- Progress Circle -->
-                                            <path class="text-blue-500"
-                                                    stroke="currentColor"
-                                                    stroke-width="3"
-                                                    stroke-linecap="round"
-                                                    fill="none"
-                                                    stroke-dasharray="45, 100"
-                                                    d="M18 2.0845
-                                                a 15.9155 15.9155 0 0 1 0 31.831
-                                                a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        </svg>
-                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        @* Task 2 *@
-                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-1 duration-300">
-                            <h4 class="font-semibold text-white">Viết nội dung</h4>
-                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
-                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
-                                <p class="text-indigo-300 text-sm leading-relaxed">
-                                    <span class="font-semibold text-white">Mô tả: </span>
-                                    Viết nội dung giới thiệu và dịch vụ cho website 33
-                                </p>
-                            </div>
-                            <div class="flex flex-wrap gap-2 mt-3">
-                                <span class="px-2 py-1 bg-blue-900/40 text-blue-400 text-xs rounded-full">ĐANG THỰC HIỆN</span>
-                                <span class="px-2 py-1 bg-yellow-900/40 text-yellow-400 text-xs rounded-full">TRUNG BÌNH</span>
-                            </div>
-                            <div class="flex flex-row justify-between items-center w-full">
-                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
-                                        <span>Như Hoa</span>
-                                    </div>
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
-                                        <span>10/06/2025</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="relative w-10 h-10">
-                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-                                            <!-- Background Circle -->
-                                            <path class="text-gray-700"
-                                                  stroke="currentColor"
-                                                  stroke-width="3"
-                                                  fill="none"
-                                                  d="M18 2.0845
-                                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                            <!-- Progress Circle -->
-                                            <path class="text-blue-500"
-                                                  stroke="currentColor"
-                                                  stroke-width="3"
-                                                  stroke-linecap="round"
-                                                  fill="none"
-                                                  stroke-dasharray="45, 100"
-                                                  d="M18 2.0845
-                                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        </svg>
-                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dự án 2 -->
-            <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
-                <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 transition"
-                     data-toggle="project-2">
-                    <h3 class="font-semibold text-white">Website bán hàng nhạc cụ (P003)</h3>
-                    <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform duration-300"></i>
-                </div>
-
-                <div id="project-2" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
-                    <div class="p-4 border-t border-gray-700 bg-gray-900/60">
-                        <div class="mb-4 p-4 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
-                            <h4 class="text-white font-semibold mb-1 flex items-center gap-2">
-                                <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
-                                Mô tả dự án
-                            </h4>
-                            <p class="text-gray-300 text-sm leading-relaxed">
-                                Phát triển website thương mại điện tử bán nhạc cụ online
-                            </p>
-                        </div>
-
-                        <div class="border border-gray-700 rounded-xl p-4 mb-3 hover:shadow-purple-500/30 transition transform hover:-translate-y-1 duration-300">
-                            <h4 class="font-semibold text-white">Thiết kế giao diện</h4>
-                            <div class="flex items-start gap-2 mb-4 mt-2 bg-gray-700/40 p-2 rounded-lg border border-gray-600">
-                                <i data-lucide="info" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
-                                <p class="text-indigo-300 text-sm leading-relaxed">
-                                    <span class="font-semibold text-white">Mô tả: </span>
-                                    Xây dựng giao diện chính với ReactJS và Tailwind
-                                </p>
-                            </div>
-                            <div class="flex flex-wrap gap-2 mt-3">
-                                <span class="px-2 py-1 bg-green-900/40 text-green-400 text-xs rounded-full">HOÀN THÀNH</span>
-                                <span class="px-2 py-1 bg-orange-900/40 text-orange-400 text-xs rounded-full">CAO</span>
-                            </div>
-                            <div class="flex flex-row justify-between items-center w-full">
-                                <div class="flex justify-start gap-8 items-center mt-3 text-sm text-gray-400">
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="circle-user-round" class="w-5 h-5 text-white"></i>
-                                        <span>Minh Quân</span>
-                                    </div>
-                                    <div class="flex gap-1 items-center">
-                                        <i data-lucide="calendar-days" class="w-5 h-5 text-white"></i>
-                                        <span>12/06/2025</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="relative w-10 h-10">
-                                        <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-                                            <!-- Background Circle -->
-                                            <path class="text-gray-700"
-                                                  stroke="currentColor"
-                                                  stroke-width="3"
-                                                  fill="none"
-                                                  d="M18 2.0845
-                                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                            <!-- Progress Circle -->
-                                            <path class="text-blue-500"
-                                                  stroke="currentColor"
-                                                  stroke-width="3"
-                                                  stroke-linecap="round"
-                                                  fill="none"
-                                                  stroke-dasharray="45, 100"
-                                                  d="M18 2.0845
-                                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        </svg>
-                                        <span class="absolute inset-0 flex items-center justify-center text-xs text-white-400 font-semibold">45%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+                    </div>    
+                }    
+            }
         </div>
     </div>
-
+     
     <!-- CỘT PHẢI -->
     <div class="space-y-6">
         <!-- Chart 1 -->
         <div class="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-white mb-4">Trạng thái nhiệm vụ</h3>
+            <h3 class="text-lg font-semibold text-white mb-4" id="TaskStatusProgress">Trạng thái nhiệm vụ</h3>
             <canvas id="statusChart" height="200"></canvas>
         </div>
 
@@ -378,56 +517,273 @@
     </div>
 </div>
 
+@* ============================================================================ *@
+
+@* ============================================================================ *@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
-<script>
-    lucide.createIcons();
 
-    // Biểu đồ donut (trạng thái nhiệm vụ)
-    const ctx1 = document.getElementById("statusChart").getContext("2d");
-    new Chart(ctx1, {
-      type: "doughnut",
-      data: {
-        labels: ["Đang thực hiện", "Hoàn thành", "Quá hạn"],
-        datasets: [
-          {
-            data: [5, 8, 2],
-            backgroundColor: ["#3b82f6", "#22c55e", "#ef4444"],
-            borderWidth: 0,
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+
+      // 🔹 Chờ Razor render xong rồi mới gắn event
+      setTimeout(() => {
+        const toggleButtons = document.querySelectorAll("[data-toggle]");
+
+        toggleButtons.forEach(btn => {
+          const targetId = btn.getAttribute("data-toggle");
+          const content = document.getElementById(targetId);
+          const icon = btn.querySelector("svg");
+
+          // Mặc định mở tất cả
+          content.classList.remove("max-h-0");
+          content.classList.add("max-h-[1000px]");
+          btn.classList.add("open");
+
+          btn.addEventListener("click", () => {
+            const isOpen = btn.classList.contains("open");
+
+            if (isOpen) {
+              content.classList.remove("max-h-[1000px]");
+              content.classList.add("max-h-0");
+              btn.classList.remove("open");
+            } else {
+              content.classList.remove("max-h-0");
+              content.classList.add("max-h-[1000px]");
+              btn.classList.add("open");
+            }
+
+            if (icon) {
+              icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+              icon.style.transition = "transform 0.3s ease";
+            }
+          });
+        });
+
+        // 🔹 Nút "Thu gọn / Mở tất cả"
+        const toggleAllBtn = document.getElementById("toggleAllBtn");
+        let allOpen = true;
+
+        toggleAllBtn.addEventListener("click", () => {
+          toggleButtons.forEach(btn => {
+            const targetId = btn.getAttribute("data-toggle");
+            const content = document.getElementById(targetId);
+            const icon = btn.querySelector("svg");
+
+            if (allOpen) {
+              content.classList.remove("max-h-[1000px]");
+              content.classList.add("max-h-0");
+              btn.classList.remove("open");
+              if (icon) icon.style.transform = "rotate(0deg)";
+            } else {
+              content.classList.remove("max-h-0");
+              content.classList.add("max-h-[1000px]");
+              btn.classList.add("open");
+              if (icon) icon.style.transform = "rotate(180deg)";
+            }
+          });
+
+          allOpen = !allOpen;
+          toggleAllBtn.innerHTML = allOpen
+            ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> <span class="text-xs">Thu gọn tất cả</span>`
+            : `<i data-lucide="chevron-down" class="w-4 h-4"></i> <span class="text-xs">Mở tất cả</span>`;
+
+          lucide.createIcons();
+        });
+      }, 100); // ⏳ chờ DOM của Razor render xong
+    });
+</script>
+
+@section Scripts {
+    <script>
+        document.getElementById("searchInput").addEventListener("input", function () {
+            const keyword = this.value.toLowerCase();
+            document.querySelectorAll(".task-card").forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(keyword) ? "block" : "none";
+            });
+        });
+
+    </script>
+
+    @* Card *@
+    <script>
+        const projects0 = @Html.Raw(JsonConvert.SerializeObject(Model));
+
+        // Lấy Id elements
+        const tongduan = document.getElementById("tongduan");
+        const duanhoanthanh = document.getElementById("duanhoanthanh");
+        const duanhoanthanhpro = document.getElementById("duanhoanthanhpro");
+
+        const tongnhiemvu = document.getElementById("tongnhiemvu");
+        const nhiemvuhoanthanh = document.getElementById("nhiemvuhoanthanh");
+        const nhiemvuhoanthanhpro = document.getElementById("nhiemvuhoanthanhpro");
+
+        const nhiemvudanglam = document.getElementById("nhiemvudanglam");
+        const nhiemvuchuabd = document.getElementById("nhiemvuchuabd");
+
+        const nhiemvuquahan = document.getElementById("nhiemvuquahan");
+        const nhiemvuquahanpro = document.getElementById("nhiemvuquahanpro");
+
+        //Xử lý dữ liệu
+        let countProject = 0;
+        let countProjectDone = 0;
+        let countTask = 0;
+        let countTaskDone = 0;
+        let countTaskInProgress = 0;
+        let countTaskTodo = 0;
+        let countTaskOverDue = 0;
+
+        projects0.forEach(p => {
+            countProject++;
+            if(p.Progress == 100){
+                countProjectDone++;
+            }
+
+            p.Tasks.forEach(t => {
+                countTask++;
+                if(t.Progress == 100) {
+                    countTaskDone++;
+                }
+                if (t.Progress < 100 && t.Progress > 0){
+                    countTaskInProgress++;
+                }
+                if(t.Progress == 0){
+                    countTaskTodo++;
+                }
+                if (new Date(t.EndDate) < new Date()) {
+                    countTaskOverDue++;
+                }
+            });
+        });
+
+        let propt = null;
+        // Gán dữ liệu
+        tongduan.textContent = `${countProject}`;
+        duanhoanthanh.textContent = `${countProjectDone}`;
+        propt = countProject == 0? 0 : (countProjectDone / countProject) * 100;
+        duanhoanthanhpro.textContent = `${propt.toFixed(2)}%`;
+
+        tongnhiemvu.textContent = `${countTask}`;
+        nhiemvuhoanthanh.textContent = `${countTaskDone}`;
+        propt = countTask == 0 ? 0 : (countTaskDone / countTask) * 100;
+        nhiemvuhoanthanhpro.textContent = `${propt.toFixed(2)}%`;
+
+        nhiemvudanglam.textContent = `${countTaskInProgress}`;
+        nhiemvuchuabd.textContent = `${countTaskTodo}`;
+
+        nhiemvuquahan.textContent = `${countTaskOverDue}`;
+        propt = countTask == 0 ? 0 : (countTaskOverDue / countTask) * 100;
+        nhiemvuquahanpro.textContent = `${propt.toFixed(2)}`;
+    </script>
+
+    @* Filter High Priority*@
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const checkbox = document.getElementById("priorityHigh");
+          const taskCards = document.querySelectorAll(".task-card");
+
+          checkbox.addEventListener("change", function () {
+            const showHighOnly = checkbox.checked;
+
+            taskCards.forEach(card => {
+              const priority = card.dataset.priority?.toLowerCase();
+              const isHigh = priority === "cao";
+
+              if (showHighOnly && !isHigh) {
+                card.classList.add("hidden-task");
+                setTimeout(() => (card.style.display = "none"), 300);
+              } else {
+                card.style.display = "block";
+                setTimeout(() => card.classList.remove("hidden-task"), 10);
+              }
+            });
+          });
+        });
+    </script>
+
+    <script>
+        lucide.createIcons();
+        // 🔹 Lấy dữ liệu từ Model C# sang JS
+        const projects = @Html.Raw(JsonConvert.SerializeObject(Model));
+
+        // 🔹 Biến đếm trạng thái
+        let notStarted = 0;
+        let inProgress = 0;
+        let completed = 0;
+        let overdue = 0;
+        let qtt = 0;
+
+        // 🔹 Tính theo logic bạn đưa ra
+        projects.forEach(p => {
+            const progress = p.Progress || 0;
+            const endDate = new Date(p.EndDate);
+            const now = new Date();
+            qtt++;
+
+            if (progress === 0) {
+                notStarted++;
+            } else if (progress > 0 && progress < 100) {
+                inProgress++;
+            } else if (progress === 100) {
+                completed++;
+            }
+
+            // Quá hạn: chưa hoàn thành & endDate < hiện tại
+            if (progress < 100 && endDate < now) {
+                overdue++;
+            }
+        });
+
+        // Biểu đồ donut (trạng thái nhiệm vụ)
+        const ctx1 = document.getElementById("statusChart").getContext("2d");
+        new Chart(ctx1, {
+          type: "doughnut",
+          data: {
+            labels: ["Chưa triển khai", "Đang thực hiện", "Hoàn thành", "Quá hạn"],
+            datasets: [
+              {
+                data: [notStarted, inProgress, completed, overdue],
+                backgroundColor: ["#333", "#3b82f6", "#22c55e", "#ef4444"],
+                borderWidth: 0,
+              },
+            ],
           },
-        ],
-      },
-      options: {
-        cutout: "50%",
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              color: "#d1d5db",
-              boxWidth: 12,
-              padding: 15,
+          options: {
+            cutout: "50%",
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: "#d1d5db",
+                  boxWidth: 12,
+                  padding: 15,
+                },
+              },
+              datalabels: {
+                color: "#fff",
+                font: {
+                  size: 14,
+                  weight: "bold",
+                },
+                formatter: (value, ctx) => {
+                  const dataArr = ctx.chart.data.datasets[0].data;
+                  const sum = dataArr.reduce((a, b) => a + b, 0);
+
+                  // ✅ Nếu tổng = 0 → không hiển thị %
+                  if (sum === 0 || value === 0) return "";
+                  const percentage = ((value / sum) * 100).toFixed(1) + "%";
+                  return percentage;
+                },
+              },
             },
           },
-          datalabels: {
-            color: "#fff",
-            font: {
-              size: 14,
-              weight: "bold",
-            },
-            formatter: (value, ctx) => {
-              const dataArr = ctx.chart.data.datasets[0].data;
-              const sum = dataArr.reduce((a, b) => a + b, 0);
-              const percentage = ((value / sum) * 100).toFixed(1) + "%";
-              return percentage;
-            },
-          },
-        },
-      },
-      plugins: [
-          ChartDataLabels,
-          {
+          plugins: [
+            ChartDataLabels,
+            {
               id: "centerText",
               beforeDraw: (chart) => {
                 const { width, height, ctx } = chart;
@@ -435,229 +791,578 @@
                 const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
 
                 ctx.font = "bold 16px sans-serif";
-                ctx.fillStyle = "#e5e7eb"; // text-gray-200
+                ctx.fillStyle = "#e5e7eb";
                 ctx.textBaseline = "middle";
                 ctx.textAlign = "center";
-                ctx.fillText(`Tổng số: ${total}`, width / 2, height / 2.2);
+
+                const content = document.getElementById("TaskStatusProgress");
+
+                // ✅ Nếu tất cả bằng 0 → hiện chữ khác
+                if (total === 0) {
+                  ctx.fillText("Không có dữ liệu", width / 2, height / 2.2);
+                  content.textContent = `Trạng thái nhiệm vụ [ ${qtt} ]`;
+                }
+                else {
+                  ctx.fillText(`Tổng số: ${qtt}`, width / 2, height / 2.2);
+                  content.textContent = `Trạng thái nhiệm vụ [ ${qtt} ]`;
+                }
                 ctx.save();
-              }
-          }
-      ], // 🔹 kích hoạt plugin hiển thị %
-    });
-
-    // Biểu đồ cột (phân bố tiến độ)
-    // Biểu đồ cột (phân bố tiến độ theo số lượng dự án)
-    const ctx2 = document.getElementById("progressChart").getContext("2d");
-    new Chart(ctx2, {
-      type: "bar",
-      data: {
-        labels: ["0%-25%", "25%-50%", "50%-75%", "75%-99%", "100%"],
-        datasets: [{
-          label: "Số lượng dự án",
-          data: [2, 3, 5, 4, 6], // 👉 thay bằng dữ liệu thật
-          backgroundColor: [
-            "#ef4444", // 0%-25% → đỏ
-            "#f97316", // 25%-50% → cam
-            "#eab308", // 50%-75% → vàng
-            "#3b82f6", // 75%-99% → xanh lá
-            "#22c55e"  // 100% → xanh dương
+              },
+            },
           ],
-          borderRadius: 6,
-        }]
-      },
-      options: {
-        indexAxis: "x",
-        scales: {
-          x: {
-            title: { display: true, text: "Khoảng tiến độ (%)", color: "#d1d5db" },
-            ticks: { color: "#9ca3af" },
-            grid: { color: "#1f2937" },
-          },
-          y: {
-            title: { display: true, text: "Số lượng dự án", color: "#d1d5db" },
-            ticks: { color: "#9ca3af", stepSize: 1 },
-            grid: { color: "#1f2937" },
-            beginAtZero: true
-          }
-        },
-        plugins: {
-          legend: { labels: { color: "#d1d5db" } },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return ` ${context.dataset.label}: ${context.formattedValue}`;
-              }
+        });
+
+        // Biểu đồ cột (phân bố tiến độ)
+        // Biểu đồ cột (phân bố tiến độ theo số lượng dự án)
+        // Đếm số lượng dự án theo khoảng tiến độ
+        let count0_25 = 0;
+        let count25_50 = 0;
+        let count50_75 = 0;
+        let count75_99 = 0;
+        let count100 = 0;
+
+        projects.forEach(p => {
+            const progress = p.Progress || 0;
+
+            if(progress < 25){
+                count0_25++;
+            } else if(progress < 50){
+                count25_50++;
+            } else if (progress < 75){
+                count50_75++;
+            } else if (progress < 100){
+                count75_99++;
+            } else{
+                count100++;
             }
-          }
-        },
-      },
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // 🔹 Toggle từng dự án
-      document.querySelectorAll("[data-toggle]").forEach(btn => {
-        const targetId = btn.getAttribute("data-toggle");
-        const content = document.getElementById(targetId);
-
-        // Mặc định mở tất cả
-        content.classList.remove("max-h-0");
-        content.classList.add("max-h-[1000px]");
-        btn.classList.add("open"); // đánh dấu mở
-
-        // Xử lý click
-        btn.addEventListener("click", () => {
-          const isOpen = btn.classList.contains("open");
-
-          if (isOpen) {
-            content.classList.remove("max-h-[1000px]");
-            content.classList.add("max-h-0");
-            btn.classList.remove("open");
-          } else {
-            content.classList.remove("max-h-0");
-            content.classList.add("max-h-[1000px]");
-            btn.classList.add("open");
-          }
-
-          // Xoay icon SVG
-          const icon = btn.querySelector("svg");
-          if (icon) {
-            icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-            icon.style.transition = "transform 0.3s ease";
-          }
         });
-      });
-
-      // 🔹 Nút "Thu gọn / Mở tất cả"
-      const toggleAllBtn = document.getElementById("toggleAllBtn");
-      let allOpen = true;
-
-      toggleAllBtn.addEventListener("click", () => {
-        document.querySelectorAll("[data-toggle]").forEach(btn => {
-          const targetId = btn.getAttribute("data-toggle");
-          const content = document.getElementById(targetId);
-          const icon = btn.querySelector("svg");
-
-          if (allOpen) {
-            content.classList.remove("max-h-[1000px]");
-            content.classList.add("max-h-0");
-            btn.classList.remove("open");
-            if (icon) icon.style.transform = "rotate(0deg)";
-          } else {
-            content.classList.remove("max-h-0");
-            content.classList.add("max-h-[1000px]");
-            btn.classList.add("open");
-            if (icon) icon.style.transform = "rotate(180deg)";
-          }
+        const ctx2 = document.getElementById("progressChart").getContext("2d");
+        new Chart(ctx2, {
+          type: "bar",
+          data: {
+            labels: ["0%-25%", "25%-50%", "50%-75%", "75%-99%", "100%"],
+            datasets: [{
+              label: "Số lượng dự án",
+              data: [
+                count0_25,
+                count25_50,
+                count50_75,
+                count75_99,
+                count100
+              ], // 👉 thay bằng dữ liệu thật
+              backgroundColor: [
+                "#ef4444", // 0%-25% → đỏ
+                "#f97316", // 25%-50% → cam
+                "#eab308", // 50%-75% → vàng
+                "#3b82f6", // 75%-99% → xanh lá
+                "#22c55e"  // 100% → xanh dương
+              ],
+              borderRadius: 6,
+            }]
+          },
+          options: {
+            indexAxis: "x",
+            scales: {
+              x: {
+                title: { display: true, text: "Khoảng tiến độ (%)", color: "#d1d5db" },
+                ticks: { color: "#9ca3af" },
+                grid: { color: "#1f2937" },
+              },
+              y: {
+                title: { display: true, text: "Số lượng dự án", color: "#d1d5db" },
+                ticks: { color: "#9ca3af", stepSize: 1 },
+                grid: { color: "#1f2937" },
+                beginAtZero: true
+              }
+            },
+            plugins: {
+              legend: { labels: { color: "#d1d5db" } },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return ` ${context.dataset.label}: ${context.formattedValue}`;
+                  }
+                }
+              }
+            },
+          },
         });
+    </script>
 
-        allOpen = !allOpen;
-        toggleAllBtn.innerHTML = allOpen
-          ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> Thu gọn tất cả`
-          : `<i data-lucide="chevron-down" class="w-4 h-4"></i> Mở tất cả`;
+    <script>
+        window.onerror = function (message, source, lineno, colno, error) {
+            console.error("⚠️ Lỗi runtime:", message, "Tại:", source, "Dòng:", lineno);
+            alert("Đã xảy ra lỗi! Kiểm tra console để xem chi tiết.");
+        };
 
-        lucide.createIcons();
-      });
 
-      lucide.createIcons();
-    });
-</script>
-<script>
-    lucide.createIcons();
+        const fileUrl = "/resources/Báo cáo tuần 9.pdf";
+        const fileName = "Báo cáo tuần 9.pdf";
 
-    // File mẫu để demo (có thể thay bằng đường dẫn thật từ server)
-    const fileUrl = "/resources/Báo cáo tuần 9.pdf";
-    const fileName = "Báo cáo tuần 9.pdf";
+        // 🔹 Modal Upload
+        const uploadModal = document.getElementById(`uploadModal`);
+        const uploadOverlay = document.getElementById(`uploadOverlay`);
+        const dropZone = document.getElementById(`dropZone`);
+        const dropZoneProject = document.getElementById(`dropZoneProject`);
+        const fileInput = document.getElementById(`fileInput`);
+        const previewContainer = document.getElementById(`previewContainer`);
+        const fileNameEl = document.getElementById(`fileName`);
+        const uploadForm = document.getElementById(`uploadForm`);
 
-    // Nút mở modal import
-    function openUploadModal() {
-        const modal = document.getElementById("uploadModal");
-        modal.classList.remove("opacity-0", "pointer-events-none");
-    }
+        // Modal Update
+        const updateTaskModal = document.getElementById("updateTaskModal");
+        const updateProjectModal = document.getElementById("updateProjectModal");
+        const closeUpdateTaskBtn = document.getElementById("closeUpdateTaskBtn");
+        const updateTaskForm = document.getElementById("updateTaskForm");
+        const fileInputEdit = document.getElementById("fileInputEdit");
+        const fileInputEditProject = document.getElementById("fileInputEditProject");
+        const fileNameEditProject = document.getElementById("fileNameEditProject");
+        const previewContainerEditProject = document.getElementById("previewContainerEditProject");
+        const fileNameElEdit = document.getElementById("fileNameEdit");
+        const previewElEdit = document.getElementById("previewContainerEdit");
 
-    function closeUploadModal() {
-        const modal = document.getElementById("uploadModal");
-        modal.classList.add("opacity-0", "pointer-events-none");
-        document.getElementById("uploadForm").reset();
-        document.getElementById("fileName").textContent = "";
-        document.getElementById("previewContainer").innerHTML = "";
-    }
+        let currentContext = {};
 
-    // Nút Tải xuống
-    function downloadFile() {
-        const link = document.createElement("a");
-        link.href = fileUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+        // --- HÀM MỞ/ĐÓNG MODAL UPLOAD ---
+        function openUploadModal(projectId, taskId = null) {
+            currentContext = { projectId, taskId }; // Lưu lại i và j (nếu có)
+            uploadModal.classList.remove("hidden");
+            uploadOverlay.classList.remove("hidden");
+        }
 
-    // Nút Xem file
-    function viewFile() {
-        window.open(fileUrl, "_blank");
-    }
+        // Gán hàm này cho window để HTML `onclick` có thể gọi
+        window.closeUploadModal = function() {
+            uploadModal.classList.add("hidden");
+            uploadOverlay.classList.add("hidden");
 
-    // Xử lý preview khi chọn file mới trong modal
-    const fileInput = document.getElementById("fileInput");
-    fileInput.addEventListener("change", function() {
-        const file = this.files[0];
-        const fileNameEl = document.getElementById("fileName");
-        const previewEl = document.getElementById("previewContainer");
-        previewEl.innerHTML = "";
+            // Reset form
+            uploadForm.reset();
+            fileNameEl.textContent = "";
+            previewContainer.innerHTML = `<p class="text-gray-400 text-sm text-center">Preview File</p>`;
+            currentContext = null; // Xóa ngữ cảnh
+        }
 
-        if(file) {
-            fileNameEl.textContent = `File được chọn: ${file.name}`;
+        // --- HÀM MỞ/ĐÓNG MODAL UPDATE ---
+        function openUpdateTaskModal(projectId, taskId, task = null) {
+            currentContext = { projectId, taskId }; // Lưu lại i và j
+
+            if(task){
+                document.getElementById("taskName").value = task.name || "";
+                document.getElementById("taskAssignee").value = task.assignee || "";
+                document.getElementById("taskDesc").value = task.desc || "";
+                document.getElementById("taskStart").value = new Date(task.start).toISOString().split("T")[0];
+                document.getElementById("taskEnd").value = new Date(task.end).toISOString().split("T")[0];
+
+                const statusSelect = document.getElementById("taskStatus");
+                if(task.status){
+                    const options = Array.from(statusSelect.options);
+                    const match = options.find(opt => opt.text.trim().toLowerCase() === task.status.trim().toLowerCase());
+                    if(match) statusSelect.value = match.text;
+                }
+                const priorSelect = document.getElementById("taskPriority");
+                if(task.status){
+                    const options = Array.from(priorSelect.options);
+                    const match = options.find(opt => opt.text.trim().toLowerCase() === task.prior.trim().toLowerCase());
+                    if(match) priorSelect.value = match.text;
+                }
+                const fileNameEdit = document.getElementById("fileNameEdit");
+                const previewContainer = document.getElementById("previewContainerEdit");
+                fileNameEdit.textContent = "";
+                previewContainer.innerHTML = `<p class="text-gray-400 text-sm text-center">Preview File</p>`;
+                if (task.fileurl && task.filename) {
+                    fileNameEdit.textContent = task.filename;
+
+                    const ext = task.filename.split('.').pop().toLowerCase();
+
+                    if (["png", "jpg", "jpeg"].includes(ext)) {
+                        previewContainer.innerHTML = `
+                            <img src="${task.fileurl}" alt="${task.filename}"
+                                 class="max-h-[180px] rounded-lg mx-auto" />
+                        `;
+                    }
+                    else if (ext === "pdf") {
+                        previewContainer.innerHTML = `
+                            <embed src="${task.fileurl}" type="application/pdf"
+                                   class="w-full h-[180px] rounded-lg" />
+                        `;
+                    }
+                    else {
+                        previewContainer.innerHTML = `
+                            <div class="flex flex-col items-center justify-center text-center text-gray-300">
+                                <i data-lucide="file-text" class="w-8 h-8 text-indigo-400 mb-2"></i>
+                                <p class="text-sm">Tệp: <span class="font-medium text-white">${task.filename}</span></p>
+                            </div>
+                        `;
+                        lucide.createIcons(); // render lại icon
+                    }
+                }
+            }
+
+            updateTaskModal.classList.remove("hidden");
+            uploadOverlay.classList.remove("hidden");
+        }
+
+        function openUpdateProjectModal(projectId, taskId, task = null) {
+            currentContext = { projectId, taskId };
+
+            updateProjectModal.classList.remove("hidden");
+            uploadOverlay.classList.remove("hidden");
+        }
+
+        function closeUpdateTaskModal() {
+            updateTaskModal.classList.add("hidden");
+            uploadOverlay.classList.add("hidden");
+
+            // Reset form
+            updateTaskForm.reset();
+            fileNameElEdit.textContent = "";
+            fileNameEditProject.textContent = "";
+            previewElEdit.innerHTML = `<p class="text-gray-400 text-sm text-center">Preview File</p>`;
+            previewContainerEditProject.innerHTML = `<p class="text-gray-400 text-sm text-center">Preview File</p>`;
+            currentContext = null; // Xóa ngữ cảnh
+        }
+        
+        function closeUpdateProjectModal() {
+            updateProjectModal.classList.add("hidden");
+            uploadOverlay.classList.add("hidden");
+
+            // Reset form
+            updateProjectForm.reset();
+            currentContext = null; // Xóa ngữ cảnh
+        }
+
+        // --- HÀM XỬ LÝ FILE (CHUNG) ---
+
+        // Xử lý preview file cho modal UPLOAD
+        function handleFile(e) {
+            const file = e.target.files[0];
+            previewContainer.innerHTML = "";
+            if (!file) {
+                fileNameEl.textContent = "";
+                return;
+            }
+
+            fileNameEl.textContent = `File đã chọn: ${file.name}`;
             const fileType = file.type;
 
-            if(fileType.startsWith("image/")) {
+            if (fileType.startsWith("image/"))
+            {
                 const img = document.createElement("img");
                 img.src = URL.createObjectURL(file);
-                img.className = "max-h-40 mt-2 rounded-md border border-gray-700";
-                previewEl.appendChild(img);
-            } else if(fileType === "application/pdf") {
+                img.className = "max-h-48 rounded-md border border-gray-700";
+                previewContainer.appendChild(img);
+            }
+            else if (fileType === "application/pdf")
+            {
                 const iframe = document.createElement("iframe");
                 iframe.src = URL.createObjectURL(file);
-                iframe.className = "w-full h-48 mt-2 rounded-md border border-gray-700";
-                previewEl.appendChild(iframe);
-            } else if(fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || fileType === "application/msword") {
+                iframe.className = "w-full h-48 rounded-md border border-gray-700";
+                previewContainer.appendChild(iframe);
+            }
+            else if (fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || fileType === "application/msword")
+            {
                 const div = document.createElement("div");
                 div.className = "flex items-center gap-2 text-gray-200";
                 div.innerHTML = `<i data-lucide="file-text" class="w-5 h-5 text-green-400"></i> <span>${file.name}</span>`;
-                previewEl.appendChild(div);
+                previewContainer.appendChild(div);
                 lucide.createIcons();
-            } else {
-                previewEl.textContent = "Không thể xem trước loại file này.";
             }
-        } else {
-            fileNameEl.textContent = "";
+            else if (fileType === "application/vnd.ms-excel" || fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            {
+                const div = document.createElement("div");
+                div.className = "flex items-center gap-2 text-gray-200";
+                div.innerHTML = `<i data-lucide="table" class="w-5 h-5 text-green-400"></i> <span>${file.name}</span>`;
+                previewContainer.appendChild(div);
+                lucide.createIcons();
+            }
+            else
+            {
+                previewContainer.innerHTML = `<p class="text-gray-400 text-sm text-center">Không thể xem trước loại file này.</p>`;
+            }
         }
-    });
 
-    // Upload file
-    const uploadForm = document.getElementById("uploadForm");
-    uploadForm.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const file = fileInput.files[0];
-        if(file) {
-            alert(`File "${file.name}" đã được import!`);
-            closeUploadModal();
-            // 👉 Gửi file lên server tại đây
+        // Shorten name
+        function shortenFileName(name, maxLength = 30) {
+            if (name.length <= maxLength) return name;
+            const extIndex = name.lastIndexOf(".");
+            const extension = extIndex !== -1 ? name.slice(extIndex) : "";
+            const baseName = name.slice(0, maxLength - extension.length - 3); // trừ phần đuôi + "..."
+            return baseName + "..." + extension;
         }
-    });
 
-        const addFileBtn = document.getElementById("addFileBtn");
-        const uploadModal = document.getElementById("uploadModal");
+        // Xử lý preview file cho modal UPDATE
+        function handleFileEdit(e) {
+            const file = e.target.files[0];
+            previewElEdit.innerHTML = "";
+            if (!file) {
+                fileNameElEdit.textContent = "";
+                return;
+            }
+            let shortName = shortenFileName(file.name, 24);
 
-        addFileBtn.addEventListener("click", () => {
-            uploadModal.classList.toggle("hidden");
+            fileNameElEdit.textContent = `📄 ${shortName}`;
+            const fileType = file.type;
+            if (fileType.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = URL.createObjectURL(file);
+                img.className = "max-h-40 rounded-md border border-gray-700";
+                previewElEdit.appendChild(img);
+            } else if (fileType === "application/pdf") {
+                const iframe = document.createElement("iframe");
+                iframe.src = URL.createObjectURL(file);
+                iframe.className = "w-full h-48 rounded-md border border-gray-700";
+                previewElEdit.appendChild(iframe);
+            } else {
+                previewElEdit.innerHTML = `<p class="text-gray-400 text-sm text-center">Không thể xem trước loại file này.</p>`;
+            }
+        }
+        function handleFileEditPro(e) {
+            const file = e.target.files[0];
+            previewContainerEditProject.innerHTML = "";
+            if (!file) {
+                fileNameEditProject.textContent = "";
+                return;
+            }
+            let shortName = shortenFileName(file.name, 24);
+
+            fileNameEditProject.textContent = `📄 ${shortName}`;
+            const fileType = file.type;
+            if (fileType.startsWith("image/")) {
+                const img = document.createElement("img");
+                img.src = URL.createObjectURL(file);
+                img.className = "max-h-40 rounded-md border border-gray-700";
+                previewContainerEditProject.appendChild(img);
+            } else if (fileType === "application/pdf") {
+                const iframe = document.createElement("iframe");
+                iframe.src = URL.createObjectURL(file);
+                iframe.className = "w-full h-48 rounded-md border border-gray-700";
+                previewContainerEditProject.appendChild(iframe);
+            } else {
+                previewContainerEditProject.innerHTML = `<p class="text-gray-400 text-sm text-center">Không thể xem trước loại file này.</p>`;
+            }
+        }
+
+        // --- HÀM DOWNLOAD/VIEW (DEMO) ---
+        // (Những hàm này đã được gọi từ HTML nên giữ nguyên)
+        function downloadFile(nameFile, urlFile) {
+            if (!urlFile || urlFile === "{}") {
+                alert("Không có file để xem!");
+                return;
+            }
+            const link = document.createElement("a");
+            link.href = urlFile;
+            link.download = nameFile;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function viewFile(urlFile) {
+            if (!urlFile || urlFile === "{}") {
+                alert("Không có file để xem!");
+                return;
+            }
+            window.open(urlFile, "_blank");
+        }
+
+
+        // --- GÁN SỰ KIỆN KHI DOM SẴN SÀNG ---
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons(); // Gọi lại để render icon (nếu cần)
+
+            // 1. GÁN SỰ KIỆN CHO CÁC NÚT MỞ MODAL UPLOAD
+            // Lấy tất cả nút "Thêm file" của DỰ ÁN
+            document.querySelectorAll('[id^="addFileBtn-"]').forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idParts = btn.id.split('-'); // Tách "addFileBtn-i"
+                    const i = idParts[1];
+                    openUploadModal(i);
+                });
+            });
+
+            // Lấy tất cả nút "Thêm file" của TASK
+            document.querySelectorAll('[id^="addFileBtnTask-"]').forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idParts = btn.id.split('-'); // Tách "addFileBtnTask-i-j"
+                    const i = idParts[1];
+                    const j = idParts[2];
+                    openUploadModal(i, j);
+                });
+            });
+
+            // 2. GÁN SỰ KIỆN CHO CÁC NÚT MỞ MODAL UPDATE
+            // Lấy tất cả nút "Cập nhật task"
+            document.querySelectorAll('[id^="openUpdateTaskBtn-"]').forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idParts = btn.id.split('-'); // Tách "openUpdateTaskBtn-i-j"
+                    const i = idParts[1];
+                    const j = idParts[2];
+
+                    // Data
+                    const task = {
+                        name: btn.dataset.name,
+                        assignee: btn.dataset.assignee,
+                        desc: btn.dataset.desc,
+                        start: btn.dataset.start,
+                        end: btn.dataset.end,
+                        status: btn.dataset.status,
+                        prior: btn.dataset.prior,
+                        progress: btn.dataset.progress,
+                        filename: btn.dataset.filename,
+                        fileurl: btn.dataset.fileurl,
+                    }
+
+                    openUpdateTaskModal(i, j, task);
+                });
+            });
+
+            document.querySelectorAll('[id^="openUpdateTaskBtnAdd-"]').forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idParts = btn.id.split('-'); // Tách "openUpdateTaskBtn-i-j"
+                    const i = idParts[1];
+                    const j = idParts[2];
+
+                    openUpdateTaskModal(i, j);
+                });
+            });
+            document.querySelectorAll('[id^="openUpdateProjectBtnAdd-"]').forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const idParts = btn.id.split('-'); // Tách "openUpdateTaskBtn-i-j"
+                    const i = idParts[1];
+                    const j = idParts[2];
+
+                    openUpdateProjectModal(i, j);
+                });
+            });
+
+            // 3. GÁN SỰ KIỆN ĐÓNG MODAL
+            // Nút X trên modal Update
+            closeUpdateTaskBtn.addEventListener("click", closeUpdateTaskModal);
+            closeUpdateProjectBtn.addEventListener("click", closeUpdateProjectModal);
+
+            // OPTIONAL: đóng bằng phím Esc
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeUploadModal();
+                    closeUpdateTaskModal();
+                    closeUpdateProjectModal();
+                }
+            });
+
+
+            // 4. GÁN SỰ KIỆN CHO FORM UPLOAD
+            uploadForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const file = fileInput.files[0];
+                if (file) {
+                    // Sử dụng currentContext để biết upload cho ai
+                    let contextMsg = `Dự án ${currentContext.projectId}`;
+                    if (currentContext.taskId !== null) {
+                        contextMsg += `, Task ${currentContext.taskId}`;
+                    }
+                    // Bạn sẽ không dùng alert, đây là ví dụ
+                    alert(`File "${file.name}" đã được upload cho ${contextMsg}!`);
+                    closeUploadModal();
+                } else {
+                    alert("Vui lòng chọn file trước khi upload!");
+                }
+            });
+
+            // Drag & Drop cho Upload Modal
+            fileInput.addEventListener("change", handleFile);
+            dropZone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZone.classList.add("bg-indigo-600/10", "border-indigo-400");
+            });
+            dropZone.addEventListener("dragleave", () => {
+                dropZone.classList.remove("bg-indigo-600/10", "border-indigo-400");
+            });
+            dropZone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZone.classList.remove("bg-indigo-600/10", "border-indigo-400");
+                fileInput.files = e.dataTransfer.files;
+                handleFile({ target: fileInput }); // Giả lập sự kiện change
+            });
+
+            dropZoneProject.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropZoneProject.classList.add("bg-indigo-600/10", "border-indigo-400");
+            });
+            dropZoneProject.addEventListener("dragleave", () => {
+                dropZoneProject.classList.remove("bg-indigo-600/10", "border-indigo-400");
+            });
+            dropZoneProject.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropZoneProject.classList.remove("bg-indigo-600/10", "border-indigo-400");
+                fileInput.files = e.dataTransfer.files;
+                handleFile({ target: fileInput }); // Giả lập sự kiện change
+            });
+
+
+            // 5. GÁN SỰ KIỆN CHO FORM UPDATE
+            updateTaskForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const name = document.getElementById("taskName").value;
+                const desc = document.getElementById("taskDesc").value;
+                const start = document.getElementById("taskStart").value;
+                const end = document.getElementById("taskEnd").value;
+                const status = document.getElementById("taskStatus").value;
+
+                // Sử dụng currentContext để biết cập nhật cho ai
+                let contextMsg = `Dự án ${currentContext.projectId}, Task ${currentContext.taskId}`;
+
+                // Bạn sẽ không dùng alert, đây là ví dụ
+                alert(`✅ Task "${name}" (${contextMsg}) đã được cập nhật!\nTrạng thái: ${status}`);
+                closeUpdateTaskModal();
+            });
+
+            // File input cho Update Modal
+            fileInputEdit.addEventListener("change", handleFileEdit);
+            fileInputEditProject.addEventListener("change", handleFileEditPro);
         });
+    </script>
 
-        function closeUploadModal() {
-            uploadModal.classList.add("hidden");
-            document.getElementById("uploadForm").reset();
-            document.getElementById("fileName").textContent = "";
-            document.getElementById("previewContainer").innerHTML = "";
-        }
+    @* Circle Progress *@
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+          const radius = 15.9155;
+          const circumference = 2 * Math.PI * radius;
 
-</script>
+          document.querySelectorAll("[data-progress]").forEach(wrapper => {
+            const circle = wrapper.querySelector(".progress-ring");
+            const text = wrapper.querySelector("span");
+            if (!circle || !text) return;
+
+            const percent = parseInt(wrapper.dataset.progress) || 0;
+
+            circle.style.strokeDasharray = `${circumference}`;
+            circle.style.strokeDashoffset = `${circumference}`;
+            circle.style.transition = "stroke-dashoffset 1s ease-out, stroke 0.5s ease";
+
+            function setProgress(value) {
+              const offset = circumference - (value / 100) * circumference;
+              circle.style.strokeDashoffset = offset;
+              text.textContent = `${value}%`;
+
+              // Đổi màu theo tiến độ
+              if (value < 31) {
+                circle.style.stroke = "#ef4444"; // đỏ
+              } else if (value < 71) {
+                circle.style.stroke = "#facc15"; // vàng
+              } else {
+                circle.style.stroke = "#22c55e"; // xanh
+              }
+            }
+
+            setProgress(percent);
+
+            wrapper.addEventListener("click", () => {
+              const newPercent = prompt("Nhập phần trăm mới (0-100):", percent);
+              if (newPercent === null) return;
+              const value = Math.max(0, Math.min(100, parseInt(newPercent)));
+              setProgress(value);
+            });
+          });
+        });
+    </script>
+}
