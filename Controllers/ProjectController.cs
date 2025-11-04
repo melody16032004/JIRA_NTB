@@ -4,10 +4,12 @@ using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace JIRA_NTB.Controllers
 {
@@ -46,6 +48,7 @@ namespace JIRA_NTB.Controllers
             {
                 SearchQuery = searchQuery,
                 FilterStatusId = filterStatusId,
+                
                 AllStatuses = allStatuses,
                 Projects = projects.Select(p => new ProjectCardViewModel
                 {
@@ -55,7 +58,7 @@ namespace JIRA_NTB.Controllers
                     EndDay = p.EndDay,
                     CompletedDate = p.CompletedDate,
                     StatusId = p.StatusId,
-                    StatusName = p.Status?.StatusName.ToString() ?? "Không xácịnh",
+                    StatusName = p.Status?.StatusName.ToString() ?? "Không xác định",
                     ProjectManager = p.Manager != null ? new MemberAvatarViewModel
                     {
                         UserId = p.Manager.Id, 
@@ -97,6 +100,35 @@ namespace JIRA_NTB.Controllers
                 // Chỉ trả về HTML của Partial View
                 return PartialView("~/Views/Project/Partial/_ProjectListPartial.cshtml", viewModel);
             }
+            
+
+
+            viewModel.NewProject = new ProjectModel
+            {
+                IdProject = string.Empty,
+                ProjectName = string.Empty
+            };
+            // 2. Tải danh sách Users cho dropdown quản lý
+            viewModel.AvailableUsers = await _context.Users
+                .OrderBy(u => u.FullName)
+                .Select(u => new SelectListItem
+                {
+                    Value = u.Id,
+                    Text = u.FullName ?? u.Email // Hiển thị FullName hoặc Email
+                })
+                .ToListAsync();
+
+            // 3. Tải danh sách Statuses (tận dụng biến allStatuses bạn đã lấy)
+            viewModel.AvailableStatuses = allStatuses
+                .Select(s => new SelectListItem
+                {
+                    Value = s.StatusId, // Giả sử StatusId là "status-todo", "status-inprogress"
+                    Text = s.StatusName.ToString() // Hiển thị tên trạng thái
+                })
+                .ToList();
+
+
+
             return View(viewModel);
         }
 
@@ -133,28 +165,45 @@ namespace JIRA_NTB.Controllers
             return View();
         }
 
-        // POST: Project/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ProjectModel project)
+        public async Task<IActionResult> Create(ProjectModel NewProject)
         {
-            if (ModelState.IsValid)
-            {
-                // Generate ID if needed
-                if (string.IsNullOrEmpty(project.IdProject))
-                {
-                    project.IdProject = Guid.NewGuid().ToString();
-                }
+            // Xóa validate không cần thiết
+            ModelState.Remove("IdProject");
+            ModelState.Remove("Manager");
+            ModelState.Remove("Status");
+            ModelState.Remove("Tasks");
+            ModelState.Remove("ProjectManagers");
+            ModelState.Remove("FileNote");
+            ModelState.Remove("CompletedDate");
 
-                _context.Add(project);
-                await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+            {
+                foreach (var kvp in ModelState)
+                {
+                    foreach (var err in kvp.Value.Errors)
+                    {
+                        Console.WriteLine($"❌ Field: {kvp.Key} → {err.ErrorMessage}");
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Statuses = await _context.Statuses.ToListAsync();
-            ViewBag.Users = await _context.Users.ToListAsync();
-            return View(project);
+            try
+            {
+                _context.Projects.Add(NewProject);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("✅ Project saved successfully!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Save error: " + ex.Message);
+            }
+
+            return RedirectToAction(nameof(Index));
         }
+
 
         // GET: Project/Edit/5
         public async Task<IActionResult> Edit(string id)

@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using JIRA_NTB.Helpers;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums; // để dùng TaskStatusModel
-using JIRA_NTB.Helpers;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
+using System.Collections.Generic;
 
 namespace JIRA_NTB.ViewModels
 {
@@ -12,6 +13,14 @@ namespace JIRA_NTB.ViewModels
         public string SearchQuery { get; set; }
         public string FilterStatusId { get; set; }
         public List<Status> AllStatuses { get; set; }
+        public ProjectModel NewProject { get; set; } = new ProjectModel
+        {
+            IdProject = string.Empty,
+            ProjectName = string.Empty
+        };
+        public IEnumerable<SelectListItem> AvailableUsers { get; set; } = new List<SelectListItem>();
+        public IEnumerable<SelectListItem> AvailableStatuses { get; set; } = new List<SelectListItem>();
+
 
         public ProjectListViewModel()
         {
@@ -40,6 +49,7 @@ namespace JIRA_NTB.ViewModels
         public MemberAvatarViewModel ProjectManager { get; set; }
         // ⚡ Lấy Enum thực tế dựa trên StatusId (mapping không cần đổi DB)
         public TaskStatusModel StatusEnum => StatusMapper.ToEnum(StatusId);
+
 
         // 🎨 Màu banner trên thẻ
         public string StatusColor => StatusEnum switch
