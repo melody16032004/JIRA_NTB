@@ -15,7 +15,7 @@ namespace JIRA_NTB.Data
         public DbSet<TaskItemModel> Tasks { get; set; }
         public DbSet<Status> Statuses { get; set; }
         public DbSet<ProjectManagerModel> ProjectManagers { get; set; }
-        protected override void OnModelCreating(ModelBuilder builder)
+		protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
