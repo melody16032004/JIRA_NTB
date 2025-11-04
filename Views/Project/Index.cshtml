@@ -1,0 +1,82 @@
+﻿@model JIRA_NTB.ViewModels.ProjectListViewModel
+@{
+    ViewData["Title"] = "Dự án";
+}
+
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
+<!-- Filter and Search Section -->
+<form id="filter-form" asp-action="Index" method="get" class="mb-5">
+    <div class="flex items-center gap-3">
+        <!-- Search Input -->
+        <div class="flex-1 relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            <input type="text"
+                   name="searchQuery"
+                   value="@Model.SearchQuery"
+                   placeholder="Tìm kiếm dự án..."
+                   class="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
+        </div>
+
+        <!-- Status Filter -->
+        <div class="relative">
+            <select name="filterStatusId"
+                    class="appearance-none pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">
+                    Tất cả trạng thái
+                </option>
+                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo)"
+                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo).ToString())">
+                    Lên kế hoạch
+                </option>
+                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress)"
+                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress).ToString())">
+                    Đang thực hiện
+                </option>
+                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done)"
+                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done).ToString())">
+                    Hoàn thành
+                </option>
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+        </div>
+
+        <!-- Create Button -->
+        <a asp-action="Create"
+           class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Tạo mới</span>
+        </a>
+    </div>
+</form>
+
+
+<!-- Project List -->
+<div id="project-list">
+    @await Html.PartialAsync("~/Views/Project/Partial/_ProjectListPartial.cshtml", Model)
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Auto-submit form on filter change
+        $(function () {
+            $("#filter-form").on("change", "select, input", function () {
+                $.get("/Project/Index", $("#filter-form").serialize(), function (data) {
+                    $("#project-list").html(data);
+                    // Reinitialize icons after content update
+                    lucide.createIcons();
+                });
+            });
+        });
+    </script>
+}
