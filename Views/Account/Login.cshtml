@@ -68,7 +68,8 @@
                                    autocomplete="current-password" />
                             <button type="button" 
                                     onclick="togglePassword()"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                                    tabindex="-1">
                                 <i data-lucide="eye" id="eyeIcon" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -80,19 +81,21 @@
                         <div class="flex items-center">
                             <input asp-for="RememberMe" 
                                    type="checkbox"
+                                   tabindex="-1"
                                    class="w-4 h-4 bg-gray-900/50 border-gray-600 rounded text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer" />
                             <label asp-for="RememberMe" class="ml-2 text-sm text-gray-300 cursor-pointer">
                                 Nhớ đăng nhập
                             </label>
                         </div>
-                        <a href="#" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+                        <a href="#" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors" tabindex="-1">
                             Quên mật khẩu?
                         </a>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" 
-                            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                            tabindex="-1">
                         <i data-lucide="log-in" class="w-5 h-5"></i>
                         Đăng nhập
                     </button>
@@ -112,7 +115,8 @@
                 <div class="text-center">
                     <p class="text-gray-400 text-sm">
                         Chưa có tài khoản? 
-                        <a asp-action="Register" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors ml-1">
+                        <a asp-action="Register" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors ml-1"
+                           tabindex="-1">
                             Đăng ký ngay
                             <i data-lucide="arrow-right" class="w-4 h-4 inline ml-1"></i>
                         </a>

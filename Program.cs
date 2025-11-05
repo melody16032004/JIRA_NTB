@@ -39,6 +39,20 @@ builder.Services.Configure<IdentityOptions>(options =>
 	options.Tokens.EmailConfirmationTokenProvider = "EmailConfirmationTokenProvider";
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	// Cài đặt thời gian cookie hết hạn
+	options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+
+	// Nếu true, mỗi khi người dùng truy cập trang (sau 1/2 thời gian),
+	// cookie sẽ được làm mới lại đủ 60 phút.
+	// Nếu người dùng "im lặng" quá 60 phút, họ sẽ bị logout.
+	options.SlidingExpiration = true;
+
+	// ... các cài đặt khác như LoginPath
+	options.LoginPath = "/Account/Login";
+});
+
 builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 
 // Đăng ký background service để tự động xóa tài khoản chưa xác nhận
@@ -62,7 +76,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
+	name: "areas",
+	pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

@@ -4,6 +4,7 @@ using JIRA_NTB.Models.ViewModels;
 using JIRA_NTB.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 
@@ -49,18 +50,30 @@ namespace JIRA_NTB.Controllers
 				ModelState.AddModelError(string.Empty, "❌ Email hoặc mật khẩu không đúng.");
 				return View(model);
 			}
+
+			// KIỂM TRA TÌNH TRẠNG KÍCH HOẠT
+			if (!user.IsActive)
+			{
+				ModelState.AddModelError(string.Empty, "⚠️ Tài khoản này đã bị khóa. Vui lòng liên hệ quản trị viên.");
+				return View(model);
+			}
+
 			if (ModelState.IsValid)
 			{
 				//KHI ĐÃ CÓ USER, KIỂM TRA MẬT KHẨU
+				// isPersistent = model.RememberMe: Nếu checked → Cookie persistent (30 ngày)
+				//                                  Nếu không → Session cookie (đóng browser = logout)
 				var result = await _signInManager.PasswordSignInAsync(
 					user,
 					model.Password,
-					model.RememberMe,
+					isPersistent: model.RememberMe,
 					lockoutOnFailure: false
 				);
 
 				if (result.Succeeded)
 				{
+					// Debug log để kiểm tra RememberMe
+					Console.WriteLine($"✅ Login thành công - RememberMe: {model.RememberMe}");
 					return RedirectToAction("Index", "Home");
 				}
 
@@ -81,16 +94,29 @@ namespace JIRA_NTB.Controllers
 			return View(model);
 		}
 
-		public async Task<IActionResult> Logout(string returnUrl = "/")
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Logout()
 		{
 			await _signInManager.SignOutAsync();
-			return Redirect(returnUrl);
+			return RedirectToAction("Login", "Account");
 		}
 
 		[HttpGet]
 		public IActionResult Register()
 		{
-			return View();
+			var model = new RegisterViewModel
+			{
+				// Load danh sách phòng ban từ database
+				DepartmentList = _context.Departments
+			.Select(d => new SelectListItem
+			{
+				Value = d.IdDepartment,
+				Text = d.DepartmentName
+			})
+			.ToList()
+			};
+			return View(model);
 		}
 
 		[HttpPost]
@@ -107,18 +133,21 @@ namespace JIRA_NTB.Controllers
 					return View(model);
 				}
 
-				var user = new UserModel 
-				{ 
+				var user = new UserModel
+				{
+					IdDepartment = model.DepartmentId.ToString(),
 					FullName = model.FullName,
 					UserName = model.Email, // Sử dụng Email làm UserName
-					Email = model.Email 
-				};
+					Email = model.Email				};
 				var result = await _userManager.CreateAsync(user, model.Password);
 
 				if (result.Succeeded)
 				{
 					// Thêm tài khoản vào danh sách chờ xác nhận (sẽ tự động xóa sau 10 phút nếu không xác nhận)
 					UnconfirmedAccountCleanupService.AddPendingAccount(user.Id);
+
+					// Gán role "Employee" cho user mới tạo
+					await _userManager.AddToRoleAsync(user, "EMPLOYEE");
 
 					// Generate token với custom provider (10 phút)
 					var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -170,8 +199,15 @@ namespace JIRA_NTB.Controllers
 					ModelState.AddModelError(string.Empty, error.Description);
 				}
 			}
+			// Reload lại danh sách phòng ban trước khi trả về View
+			model.DepartmentList = _context.Departments
+				.Select(d => new SelectListItem
+				{
+					Value = d.IdDepartment,
+					Text = d.DepartmentName
+				})
+				.ToList();
 
-			// Nếu ModelState không hợp lệ (ví dụ: pass yếu), 
 			// trả về View cũ và hiển thị lỗi
 			return View(model);
 		}
@@ -213,7 +249,7 @@ namespace JIRA_NTB.Controllers
 				{
 					// Trả về View thông báo lỗi
 					return View("ConfirmEmailError");
-				}	
+				}
 			}
 			catch (Exception)
 			{
@@ -221,5 +257,20 @@ namespace JIRA_NTB.Controllers
 				return View("ConfirmEmailError");
 			}
 		}
+
+		// ------ 1. Hiển thị trang yêu cầu ------
+		[HttpGet]
+		public IActionResult ForgotPassword()
+		{
+			return View();
+		}
+
+		// ------ 2. Xử lý việc gửi link ------
+		//[HttpPost]
+		//[ValidateAntiForgeryToken]
+		//public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+		//{
+		//	return View();
+		//}
 	}
 }
