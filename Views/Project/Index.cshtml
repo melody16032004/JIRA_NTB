@@ -20,13 +20,13 @@
                    name="searchQuery"
                    value="@Model.SearchQuery"
                    placeholder="Tìm kiếm dự án..."
-                   class="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
+                   class="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 dark:bg-gray-800 border border-gray-700 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
         </div>
 
         <!-- Status Filter -->
         <div class="relative">
             <select name="filterStatusId"
-                    class="appearance-none pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                    class="appearance-none pl-4 pr-10 py-2 text-sm bg-gray-800 dark:bg-gray-800 border border-gray-700 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
                 <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">
                     Tất cả trạng thái
                 </option>
