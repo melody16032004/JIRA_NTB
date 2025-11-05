@@ -30,6 +30,8 @@ namespace JIRA_NTB.Controllers
                 .Include(p => p.Manager)
                 .Include(p => p.ProjectManagers)
                     .ThenInclude(pm => pm.User)
+                .Include(p => p.Tasks)
+                    .ThenInclude(t => t.Status)
                 .AsQueryable();
 
             // Tìm kiếm theo tên
@@ -133,7 +135,79 @@ namespace JIRA_NTB.Controllers
         }
 
 
-        // GET: Project/Details/5
+        //public async Task<IActionResult> Details(string id)
+        //{
+        //    if (string.IsNullOrEmpty(id))
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    // 1. Lấy thông tin dự án
+        //    var project = await _context.Projects
+        //        .Include(p => p.Manager)
+        //        .Include(p => p.Status) // Status của Project
+        //        .FirstOrDefaultAsync(p => p.IdProject == id);
+
+        //    if (project == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    // 2. Lấy danh sách thành viên
+        //    var members = await _context.ProjectManagers
+        //        .Where(pm => pm.ProjectId == id)
+        //        .Include(pm => pm.User)
+        //        .Select(pm => pm.User)
+        //        .ToListAsync();
+
+        //    // 3. Lấy tất cả Task của dự án (QUAN TRỌNG: Include Status của Task)
+        //    var tasks = await _context.Tasks
+        //        .Include(t => t.Status) // Phải Include Status (object) CỦA TASK
+        //        .Where(t => t.ProjectId == id)
+        //        .ToListAsync();
+
+        //    // 4. Xử lý dữ liệu cho biểu đồ
+        //    var taskStatusData = tasks
+        //        .Where(t => t.Status != null) // Lọc ra các task có status
+        //        .GroupBy(t => t.Status.StatusName) // Group by StatusName (là INT 1, 2, 3)
+        //        .Select(group => new
+        //        {
+        //            StatusEnumAsInt = group.Key, // Key bây giờ là INT (1, 2, 3)
+        //            Count = group.Count()
+        //        })
+        //        .AsEnumerable() // Chuyển sang xử lý in-memory để dùng switch/cast
+        //        .Select(d => new
+        //        {
+        //            // === SỬA LỖI TẠI ĐÂY ===
+        //            // Chuyển INT (1, 2, 3) thành string ("Lên kế hoạch", ...)
+        //            // một cách an toàn bằng cách cast về Enum
+        //            StatusLabel = ((TaskStatusModel)d.StatusEnumAsInt) switch
+        //            {
+        //                TaskStatusModel.Todo => "Lên kế hoạch",
+        //                TaskStatusModel.InProgress => "Đang thực hiện",
+        //                TaskStatusModel.Done => "Hoàn thành",
+        //                _ => "Không xác định"
+        //            },
+        //            Count = d.Count
+        //        })
+        //        .OrderBy(x => x.StatusLabel); // Sắp xếp theo tên cho đẹp
+
+        //    // 5. Tạo ViewModel
+        //    var viewModel = new ProjectDetailViewModel
+        //    {
+        //        Project = project,
+        //        Members = members,
+        //        Tasks = tasks,
+        //        TaskStatusChart = new ChartData
+        //        {
+        //            // Gán StatusLabel (string) vào Labels
+        //            Labels = taskStatusData.Select(d => d.StatusLabel).ToList(),
+        //            Series = taskStatusData.Select(d => d.Count).ToList()
+        //        }
+        //    };
+
+        //    return View(viewModel);
+        //}
         public async Task<IActionResult> Details(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -141,28 +215,86 @@ namespace JIRA_NTB.Controllers
                 return NotFound();
             }
 
+            // 1. Thông tin dự án
             var project = await _context.Projects
-                .Include(p => p.Status)
                 .Include(p => p.Manager)
-                .Include(p => p.ProjectManagers)
-                    .ThenInclude(pm => pm.User)
-                .Include(p => p.Tasks)
-                .FirstOrDefaultAsync(m => m.IdProject == id);
+                .Include(p => p.Status)
+                .FirstOrDefaultAsync(p => p.IdProject == id);
 
             if (project == null)
             {
                 return NotFound();
             }
 
-            return View(project);
-        }
+            // 2. Thành viên
+            var members = await _context.ProjectManagers
+                .Where(pm => pm.ProjectId == id)
+                .Include(pm => pm.User)
+                .Select(pm => pm.User)
+                .ToListAsync();
 
-        // GET: Project/Create
-        public async Task<IActionResult> Create()
-        {
-            ViewBag.Statuses = await _context.Statuses.ToListAsync();
-            ViewBag.Users = await _context.Users.ToListAsync();
-            return View();
+            // 3. Task của dự án
+            var tasks = await _context.Tasks
+                .Include(t => t.Status)
+                .Include(t => t.Assignee)
+                .Where(t => t.ProjectId == id)
+                .ToListAsync();
+
+            // 4. Biểu đồ trạng thái
+            var taskStatusData = tasks
+                .Where(t => t.Status != null) // Lọc ra các task có status
+                .GroupBy(t => t.Status.StatusName) // Group by StatusName (là INT 1, 2, 3)
+                .Select(group => new
+                {
+                    StatusEnumAsInt = group.Key, // Key bây giờ là INT (1, 2, 3)
+                    Count = group.Count()
+                })
+                .AsEnumerable() // Chuyển sang xử lý in-memory để dùng switch/cast
+                .Select(d => new
+                {
+                    // === SỬA LỖI TẠI ĐÂY ===
+                    // Chuyển INT (1, 2, 3) thành string ("Lên kế hoạch", ...)
+                    // một cách an toàn bằng cách cast về Enum
+                    StatusLabel = ((TaskStatusModel)d.StatusEnumAsInt) switch
+                    {
+                        TaskStatusModel.Todo => "Lên kế hoạch",
+                        TaskStatusModel.InProgress => "Đang thực hiện",
+                        TaskStatusModel.Done => "Hoàn thành",
+                        _ => "Không xác định"
+                    },
+                    Count = d.Count
+                })
+                .OrderBy(x => x.StatusLabel); // Sắp xếp theo tên cho đẹp
+
+            // 5. Biểu đồ thời gian (Gantt)
+            var ganttData = tasks
+                .Where(t => t.StartDate != null && t.EndDate != null)
+                .Select(t => new GanttTaskData
+                {
+                    Name = t.NameTask,
+                    Assignee = t.Assignee?.FullName ?? "Chưa giao",
+                    Priority = t.Priority ?? "Medium",
+                    Start = ((DateTimeOffset)t.StartDate.Value).ToUnixTimeMilliseconds(),
+                    End = ((DateTimeOffset)t.EndDate.Value).ToUnixTimeMilliseconds(),
+                    Overdue = (t.EndDate < DateTime.Now && t.StatusId != TaskStatusModel.Done.ToString())
+                })
+                .ToList();
+
+            // 6. ViewModel
+            var viewModel = new ProjectDetailViewModel
+            {
+                Project = project,
+                Members = members,
+                Tasks = tasks,
+                TaskStatusChart = new ChartData
+                {
+                    Labels = taskStatusData.Select(d => d.StatusLabel).ToList(),
+                    Series = taskStatusData.Select(d => d.Count).ToList()
+                },
+                TaskTimelineData = ganttData
+            };
+
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -308,33 +440,37 @@ namespace JIRA_NTB.Controllers
             if (project.CompletedDate.HasValue)
                 return 100;
 
-            // Nếu chưa bắt đầu
-            if (!project.StartDay.HasValue || project.StartDay > DateTime.Now)
-                return 0;
-
             // Tính toán dựa trên số tasks đã hoàn thành
+            // (Đảm bảo action Index đã .Include(p => p.Tasks).ThenInclude(t => t.Status))
             if (project.Tasks != null && project.Tasks.Any())
             {
                 var totalTasks = project.Tasks.Count;
-                var completedTasks = project.Tasks.Count(t =>
-                    t.Status?.StatusName.ToString()?.ToLower() == "Done"
-                    || t.Status?.StatusName.ToString()?.ToLower() == "hoàn thành"
-                    || t.Status?.StatusName.ToString()?.ToLower() == "completed");
+                if (totalTasks == 0) return 0;
 
-                return totalTasks > 0 ? (int)((double)completedTasks / totalTasks * 100) : 0;
+                // === ĐÂY LÀ PHẦN SỬA LỖI ===
+                // So sánh t.Status.StatusName (là INT) 
+                // với (int)TaskStatusModel.Done (cũng là INT, giá trị là 3)
+                var completedTasks = project.Tasks.Count(t =>
+                    t.Status != null &&
+                    t.Status.StatusName == JIRA_NTB.Models.Enums.TaskStatusModel.Done); 
+                // ============================
+
+                return (int)((double)completedTasks / totalTasks * 100);
             }
+
+            // Nếu chưa bắt đầu
+            if (!project.StartDay.HasValue || project.StartDay > DateTime.Now)
+                return 0;
 
             // Tính toán dựa trên thời gian nếu không có tasks
             if (project.StartDay.HasValue && project.EndDay.HasValue)
             {
                 var totalDays = (project.EndDay.Value - project.StartDay.Value).TotalDays;
-                var elapsedDays = (DateTime.Now - project.StartDay.Value).TotalDays;
+                if (totalDays <= 0) return 0; // Tránh chia cho 0
 
-                if (totalDays > 0)
-                {
-                    var progress = (int)((elapsedDays / totalDays) * 100);
-                    return Math.Min(Math.Max(progress, 0), 99); // Giới hạn từ 0-99%
-                }
+                var elapsedDays = (DateTime.Now - project.StartDay.Value).TotalDays;
+                var progress = (int)((elapsedDays / totalDays) * 100);
+                return Math.Min(Math.Max(progress, 0), 99); // Giới hạn từ 0-99%
             }
 
             return 0;

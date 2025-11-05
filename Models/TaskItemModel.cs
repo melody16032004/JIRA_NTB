@@ -25,8 +25,7 @@ namespace JIRA_NTB.Models
         public DateTime? EndDate { get; set; }
 
         // Foreign Keys
-        [Required]
-        public string Assignee_Id { get; set; }
+        public string? Assignee_Id { get; set; }
 
         [ForeignKey("Assignee_Id")]
         public UserModel? Assignee { get; set; }
