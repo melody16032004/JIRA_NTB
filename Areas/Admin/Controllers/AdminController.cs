@@ -121,5 +121,56 @@ namespace JIRA_NTB.Admin.Controllers
 
 			return Json(new { success = false, message = "Không thể cập nhật trạng thái" });
 		}
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> SetUserRole(string userId, string roleName)
+		{
+			if(string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(roleName))
+			{
+				return BadRequest("UserId và RoleName không được để trống.");
+			}
+
+			// 2. Chỉ cho phép gán 2 role này
+			if (roleName != "LEADER" && roleName != "EMPLOYEE")
+			{
+				// Ngăn admin cố gán role "ADMIN" qua form
+				return RedirectToAction("Index");
+			}
+
+			var user = await _userManager.FindByIdAsync(userId);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			// 3. Ngăn Admin tự thay đổi role của chính mình
+			var currentUser = await _userManager.GetUserAsync(User);
+			if (user.Id == currentUser.Id)
+			{
+				// Thêm lỗi vào TempData để hiển thị
+				TempData["ErrorMessage"] = "Bạn không thể thay đổi vai trò của chính mình.";
+				return RedirectToAction("Index");
+			}
+
+			// 4. Ngăn admin thay đổi role của 1 admin khác
+			if (await _userManager.IsInRoleAsync(user, "ADMIN"))
+			{
+				TempData["ErrorMessage"] = "Bạn không thể thay đổi vai trò của Quản trị viên khác.";
+				return RedirectToAction("Index");
+			}
+
+			// 5. Xử lý gán role
+			var currentRoles = await _userManager.GetRolesAsync(user);
+
+			// Xóa TẤT CẢ role cũ
+			await _userManager.RemoveFromRolesAsync(user, currentRoles);
+
+			// Thêm role mới
+			await _userManager.AddToRoleAsync(user, roleName);
+
+			TempData["SuccessMessage"] = $"Đã gán quyền {roleName} cho {user.Email}";
+			return RedirectToAction("Index");
+		}
 	}
 }

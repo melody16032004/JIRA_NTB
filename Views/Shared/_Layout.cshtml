@@ -56,7 +56,7 @@
 
                 @if (User.IsInRole("ADMIN") || User.IsInRole("LEADER"))
                 {
-                    <a asp-controller="/" asp-action="Index"
+                    <a asp-area="" asp-controller="Project" asp-action="Index"
                        class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                         <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                             <i data-lucide="folder-git-2" class="w-4 h-4"></i>
