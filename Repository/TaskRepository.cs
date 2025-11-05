@@ -73,31 +73,22 @@ namespace JIRA_NTB.Repository
         }
         public async Task UpdateAsync(TaskItemModel task)
         {
-            if (task == null)
-                throw new ArgumentNullException(nameof(task));
-
-            var existingTask = await _context.Tasks
-                .FirstOrDefaultAsync(t => t.IdTask == task.IdTask);
-
-            if (existingTask == null)
-                throw new KeyNotFoundException($"Task with ID {task.IdTask} not found.");
-
-            // Cập nhật các trường cần thiết
-            existingTask.NameTask = task.NameTask;
-            existingTask.Priority = task.Priority;
-            existingTask.Note = task.Note;
-            existingTask.FileNote = task.FileNote;
-            existingTask.StartDate = task.StartDate;
-            existingTask.EndDate = task.EndDate;
-            existingTask.ProjectId = task.ProjectId;
-            existingTask.Assignee_Id = task.Assignee_Id;
-            existingTask.StatusId = task.StatusId;
-
-            // ✅ Cập nhật cờ Overdue dựa vào EndDate (logic tái sử dụng)
-            existingTask.Overdue = Helper.IsOverdue(existingTask);
-
-            _context.Tasks.Update(existingTask);
+            _context.Tasks.Update(task);
             await _context.SaveChangesAsync();
+        }
+        public async Task AddAsync(TaskItemModel task)
+        {
+            _context.Tasks.Add(task);
+            await _context.SaveChangesAsync();
+        }
+        public async Task DeleteAsync(string id)
+        {
+            var task = await _context.Tasks.FindAsync(id);
+            if (task != null)
+            {
+                _context.Tasks.Remove(task);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

@@ -1,9 +1,9 @@
 ﻿@* PartialView/_TaskCard.cshtml *@
 @model TaskViewModel
 
-<div class="group bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-sm rounded-xl p-4 border
+<div class="task-card group bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-sm rounded-xl p-4 border
      @GetPriorityClasses(Model.Priority)
-     hover:shadow-lg transition-all duration-300 cursor-pointer task-card"
+     hover:shadow-lg transition-all duration-300 cursor-pointer"
      data-task-id="@Model.IdTask"
      data-project-id="@Model.ProjectId">
 
@@ -22,7 +22,7 @@
             }
         </div>
 
-        <div class="flex flex-col items-end gap-1">
+        <div class="flex items-center gap-2">
             @if (!string.IsNullOrEmpty(Model.Priority))
             {
                 <span class="px-2.5 py-1 @GetPriorityClass(Model.Priority) text-[10px] font-bold rounded-md border uppercase tracking-wider">
@@ -30,12 +30,26 @@
                 </span>
             }
 
-            @if (Model.IsOverdue)
-            {
-                <span class="px-2.5 py-1 bg-red-500/20 text-red-400 text-[10px] font-bold rounded-md border border-red-500/30 uppercase tracking-wider">
-                    Trễ hạn
-                </span>
-            }
+            @* Menu 3 chấm *@
+            <div class="relative task-menu-container">
+                <button class="task-menu-btn p-1.5 hover:bg-gray-700 rounded-lg transition-colors"
+                        type="button">
+                    <i data-lucide="more-vertical" class="w-4 h-4 text-gray-400"></i>
+                </button>
+
+                <div class="task-menu absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[140px] z-50 hidden">
+                    <button class="edit-task-btn w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            data-task-id="@Model.IdTask">
+                        <i data-lucide="edit" class="w-4 h-4 text-blue-400"></i>
+                        <span>Chỉnh sửa</span>
+                    </button>
+                    <button class="delete-task-btn w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            data-task-id="@Model.IdTask">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Xóa</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -113,11 +127,24 @@
 
         @if (Model.Assignee != null)
         {
-            <div class="flex items-center gap-2">
-                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.Assignee.FullName)&background=6366f1&color=fff&size=32"
+            <div class="flex items-center gap-2 text-sm text-gray-300 group-hover:text-gray-100 transition-colors">
+                <!-- Avatar nhỏ hơn -->
+                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.Assignee.FullName)&background=6366f1&color=fff&size=28"
                      alt="@Model.Assignee.FullName"
                      title="@Model.Assignee.FullName"
-                     class="w-8 h-8 rounded-full border-2 border-gray-700 shadow-lg ring-2 ring-gray-800 group-hover:ring-indigo-500/50 transition-all">
+                     class="w-6 h-6 rounded-full border border-gray-600 shadow-sm ring-1 ring-gray-700 group-hover:ring-indigo-500 transition-all duration-200" />
+
+                <!-- Tên người -->
+                <span class="truncate max-w-[120px]" title="@Model.Assignee.FullName">
+                    @Model.Assignee.FullName
+                </span>
+            </div>
+        }
+        else
+        {
+            <div class="flex items-center gap-2 text-sm text-gray-500 italic">
+                <i data-lucide="user-x" class="w-4 h-4"></i>
+                <span>Chưa giao</span>
             </div>
         }
     </div>
@@ -139,13 +166,8 @@
     {
         return priority?.ToUpper() switch
         {
-            // Khi "HIGH": border đỏ mờ, khi hover thì border đỏ rõ hơn + shadow đỏ
             "HIGH" => "border-red-500/50 hover:border-red-500/75 hover:shadow-red-500/25",
-
-            // Khi "MEDIUM": border vàng mờ, khi hover thì border vàng rõ hơn + shadow vàng
             "MEDIUM" => "border-yellow-500/50 hover:border-yellow-500/75 hover:shadow-yellow-500/25",
-
-            // Khi "LOW" (hoặc mặc định): border xám mờ, khi hover thì border xám rõ hơn + shadow xám
             "LOW" => "border-gray-700/50 hover:border-gray-500/75 hover:shadow-gray-500/10",
             _ => "border-gray-700/50 hover:border-gray-500/75 hover:shadow-gray-500/10"
         };

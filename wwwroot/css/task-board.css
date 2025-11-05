@@ -16,15 +16,6 @@
     cursor: grabbing;
 }
 
-/* Drop zone đang được hover */
-.tasks-container.drag-over {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 2px dashed rgba(99, 102, 241, 0.5);
-    border-radius: 0.75rem;
-    padding: 0.5rem;
-    transition: all 0.3s ease;
-}
-
 /* Animation cho empty state */
 .empty-state {
     animation: fadeIn 0.3s ease-in-out;
@@ -73,12 +64,6 @@
 
 .animate-slide-down {
     animation: slide-down 0.3s ease-in forwards;
-}
-
-/* Style cho task cards container */
-.tasks-container {
-    min-height: 100px;
-    transition: all 0.3s ease;
 }
 
 /* Hiệu ứng khi card được thả vào */
@@ -165,12 +150,20 @@
 
 /* Column highlight khi drag over */
 .task-column {
-    transition: all 0.3s ease;
+    position: relative; /* Để pseudo-element định vị đúng */
+    transition: border 0.3s ease, box-shadow 0.3s ease;
 }
 
-    .task-column:has(.tasks-container.drag-over) {
-        transform: scale(1.02);
+    /* Khi drag over: chỉ hiển border, không đổi layout */
+    .task-column.drag-over {
+        border: 2px dashed rgba(99, 102, 241, 0.6);
+        border-radius: 0.75rem;
+        background: none; /* ❌ bỏ background làm mờ */
+        padding: inherit; /* ❌ không thay đổi padding */
+        box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); /* thêm glow nhẹ nếu muốn */
     }
+
+     
 
 /* Smooth transitions cho task counts */
 .task-count-badge {
@@ -185,4 +178,38 @@
         left: 1rem;
         max-width: none;
     }
+}
+/* Task Menu Styles */
+.task-menu-container {
+    position: relative;
+}
+
+.task-menu-btn {
+    transition: all 0.2s ease;
+}
+
+.task-menu {
+    animation: menuFadeIn 0.15s ease-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+    .task-menu.hidden {
+        display: none;
+    }
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effect cho task card để hiện nút 3 chấm */
+.task-card:hover .task-menu-btn {
+    opacity: 1;
 }

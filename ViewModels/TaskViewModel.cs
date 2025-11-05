@@ -14,9 +14,10 @@ namespace JIRA_NTB.ViewModels
         public DateTime? CompletedDate { get; set; }
         public Status Status { get; set; }
         public string ProjectId { get; set; }
+        public string? AssigneeId { get; set; }
 
         public ProjectInfoViewModel Project { get; set; }
-        public AssigneeInfoViewModel Assignee { get; set; }
+        public AssigneeInfoViewModel? Assignee { get; set; }
 
         public bool IsCompleted { get; set; }
 
@@ -59,15 +60,14 @@ namespace JIRA_NTB.ViewModels
         public string IdProject { get; set; }
         public string ProjectName { get; set; }
     }
-
     /// <summary>
     /// Thông tin tối thiểu của Assignee cho Task Card
     /// </summary>
     public class AssigneeInfoViewModel
     {
-        public string Id { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
+        public string? Id { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
     }
 
     /// <summary>
@@ -91,6 +91,8 @@ namespace JIRA_NTB.ViewModels
         public List<TaskViewModel> InProgressTasks { get; set; } = new List<TaskViewModel>();
         public List<TaskViewModel> DoneTasks { get; set; } = new List<TaskViewModel>();
         public List<TaskViewModel> OverdueTasks { get; set; } = new List<TaskViewModel>();
+        public List<ProjectModel> Projects { get; set; } = new();
+        public List<Status> Statuses { get; set; } = new();
 
         // Thông tin thống kê
         public int TotalTasks => TodoTasks.Count + InProgressTasks.Count + DoneTasks.Count;

@@ -1,4 +1,6 @@
-﻿// task-drag-drop.js - Quản lý drag and drop cho task board
+﻿// ==========================
+// task-drag-drop.js - Quản lý drag and drop cho task board
+// ==========================
 
 class TaskDragDrop {
     constructor() {
@@ -29,7 +31,8 @@ class TaskDragDrop {
     initDropZones() {
         const columns = document.querySelectorAll('.task-column');
         columns.forEach(column => {
-            const dropZone = column.querySelector('.tasks-container');
+            // Lấy container chứa tasks (có data-status)
+            const dropZone = column.querySelector('[data-status]');
             if (dropZone) {
                 dropZone.addEventListener('dragover', (e) => this.handleDragOver(e));
                 dropZone.addEventListener('dragleave', (e) => this.handleDragLeave(e));
@@ -57,8 +60,8 @@ class TaskDragDrop {
     handleDragEnd(e) {
         e.currentTarget.classList.remove('dragging');
 
-        // Xóa tất cả highlight
-        document.querySelectorAll('.tasks-container').forEach(container => {
+        // Xóa tất cả highlight từ các drop zones
+        document.querySelectorAll('[data-status]').forEach(container => {
             container.classList.remove('drag-over');
         });
     }
@@ -77,7 +80,10 @@ class TaskDragDrop {
     }
 
     handleDragLeave(e) {
-        e.currentTarget.classList.remove('drag-over');
+        // Chỉ remove class khi rời khỏi chính element đó, không phải children
+        if (e.currentTarget === e.target) {
+            e.currentTarget.classList.remove('drag-over');
+        }
     }
 
     async handleDrop(e) {
@@ -87,7 +93,20 @@ class TaskDragDrop {
 
         e.preventDefault();
 
-        const dropZone = e.currentTarget;
+        // Lấy container chứa các task cards (có data-status)
+        let dropZone = e.currentTarget;
+
+        // Nếu drop vào column header hoặc vùng khác, tìm đúng task container
+        if (!dropZone.hasAttribute('data-status')) {
+            const column = dropZone.closest('.task-column');
+            dropZone = column?.querySelector('[data-status]');
+        }
+
+        if (!dropZone) {
+            console.error('Không tìm thấy drop zone hợp lệ');
+            return false;
+        }
+
         dropZone.classList.remove('drag-over');
 
         // Lấy status mới từ column đích
@@ -100,8 +119,12 @@ class TaskDragDrop {
             return false;
         }
 
+        // Lưu thông tin để undo
+        const sourceColumn = this.draggedElement.closest('.task-column');
+        const originalHTML = this.draggedElement.outerHTML;
+
         // Hiển thị loading
-        this.showLoading();
+        const loader = TaskUtils.showLoading('Đang cập nhật...');
 
         try {
             // Gọi API để cập nhật status
@@ -122,193 +145,43 @@ class TaskDragDrop {
                 // Di chuyển card đến column mới
                 this.moveCardToColumn(this.draggedElement, dropZone);
 
-                // Cập nhật số lượng tasks
-                this.updateTaskCounts();
+                // Cập nhật số lượng tasks sử dụng TaskUtils
+                TaskUtils.updateTaskCounts();
 
                 // Hiển thị thông báo thành công với nút Undo
-                this.showSuccessWithUndo(result.message, result.data);
+                TaskUtils.showSuccessWithUndo(result.message, {
+                    taskId: result.data.taskId,
+                    previousStatusId: result.data.previousStatusId,
+                    originalHTML: originalHTML,
+                    parentStatusId: this.previousStatusId
+                });
             } else {
-                this.showError(result.message);
+                TaskUtils.showError(result.message);
             }
         } catch (error) {
             console.error('Error updating task status:', error);
-            this.showError('Có lỗi xảy ra khi cập nhật trạng thái');
+            TaskUtils.showError('Có lỗi xảy ra khi cập nhật trạng thái');
         } finally {
-            this.hideLoading();
+            loader.remove();
         }
 
         return false;
     }
 
     moveCardToColumn(card, targetDropZone) {
-        // Kiểm tra xem column có empty state không
-        const emptyState = targetDropZone.querySelector('.empty-state');
-        if (emptyState) {
-            emptyState.remove();
-        }
-
-        // Di chuyển card
-        targetDropZone.appendChild(card);
-
-        // Kiểm tra column nguồn có còn card không
+        // Lưu lại sourceColumn trước khi di chuyển
         const sourceColumn = card.closest('.task-column');
-        const sourceDropZone = sourceColumn?.querySelector('.tasks-container');
-        if (sourceDropZone && sourceDropZone.querySelectorAll('.task-card').length === 0) {
-            this.addEmptyState(sourceDropZone);
-        }
-    }
+        const sourceTaskContainer = sourceColumn?.querySelector('[data-status]');
 
-    addEmptyState(container) {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'empty-state';
-        emptyState.innerHTML = `
-            <div class="text-center py-8 px-4">
-                <div class="text-gray-500 mb-2">
-                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2"></i>
-                </div>
-                <p class="text-gray-400 text-sm">Không có nhiệm vụ</p>
-            </div>
-        `;
-        container.appendChild(emptyState);
+        // Xóa empty state nếu có sử dụng TaskUtils
+        TaskUtils.removeEmptyState(targetDropZone);
 
-        // Refresh lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-    }
+        // Di chuyển card lên đầu column (prepend thay vì appendChild)
+        targetDropZone.prepend(card);
 
-    updateTaskCounts() {
-        const columns = document.querySelectorAll('.task-column');
-        columns.forEach(column => {
-            const taskCount = column.querySelectorAll('.task-card').length;
-            const badge = column.querySelector('.task-count-badge');
-            if (badge) {
-                badge.textContent = taskCount;
-            }
-        });
-    }
-
-    showSuccessWithUndo(message, data) {
-        // Tạo toast notification với nút Undo
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3 animate-slide-up';
-        toast.innerHTML = `
-            <i data-lucide="check-circle" class="w-5 h-5"></i>
-            <span class="flex-1">${message}</span>
-            <button class="undo-btn px-3 py-1 bg-white/20 hover:bg-white/30 rounded transition-colors text-sm font-medium">
-                Hoàn tác
-            </button>
-            <button class="close-toast ml-2 text-white/70 hover:text-white">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        `;
-
-        document.body.appendChild(toast);
-
-        // Refresh lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // Xử lý nút Undo
-        const undoBtn = toast.querySelector('.undo-btn');
-        undoBtn.addEventListener('click', () => {
-            this.undoStatusChange(data);
-            toast.remove();
-        });
-
-        // Xử lý nút đóng
-        const closeBtn = toast.querySelector('.close-toast');
-        closeBtn.addEventListener('click', () => {
-            toast.remove();
-        });
-
-        // Tự động ẩn sau 8 giây
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.classList.add('animate-slide-down');
-                setTimeout(() => toast.remove(), 300);
-            }
-        }, 8000);
-    }
-
-    async undoStatusChange(data) {
-        this.showLoading();
-
-        try {
-            const response = await fetch('/Task/UndoStatus', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    taskId: data.taskId,
-                    previousStatusId: data.previousStatusId
-                })
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                // Reload trang để cập nhật lại UI
-                location.reload();
-            } else {
-                this.showError(result.message);
-            }
-        } catch (error) {
-            console.error('Error undoing status change:', error);
-            this.showError('Có lỗi xảy ra khi hoàn tác');
-        } finally {
-            this.hideLoading();
-        }
-    }
-
-    showError(message) {
-        const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-red-600 text-white px-6 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3 animate-slide-up';
-        toast.innerHTML = `
-            <i data-lucide="alert-circle" class="w-5 h-5"></i>
-            <span>${message}</span>
-            <button class="close-toast ml-2 text-white/70 hover:text-white">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        `;
-
-        document.body.appendChild(toast);
-
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        toast.querySelector('.close-toast').addEventListener('click', () => {
-            toast.remove();
-        });
-
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.classList.add('animate-slide-down');
-                setTimeout(() => toast.remove(), 300);
-            }
-        }, 5000);
-    }
-
-    showLoading() {
-        const loader = document.createElement('div');
-        loader.id = 'drag-drop-loader';
-        loader.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
-        loader.innerHTML = `
-            <div class="bg-gray-800 rounded-lg p-6 flex items-center gap-3">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                <span class="text-white">Đang cập nhật...</span>
-            </div>
-        `;
-        document.body.appendChild(loader);
-    }
-
-    hideLoading() {
-        const loader = document.getElementById('drag-drop-loader');
-        if (loader) {
-            loader.remove();
+        // Kiểm tra column nguồn có còn card không và thêm empty state
+        if (sourceTaskContainer && sourceTaskContainer.querySelectorAll('.task-card').length === 0) {
+            TaskUtils.addEmptyState(sourceTaskContainer);
         }
     }
 
@@ -321,4 +194,5 @@ class TaskDragDrop {
 // Khởi tạo khi DOM ready
 document.addEventListener('DOMContentLoaded', function () {
     window.taskDragDrop = new TaskDragDrop();
+    TaskUtils.checkAndShowReloadNotification();
 });

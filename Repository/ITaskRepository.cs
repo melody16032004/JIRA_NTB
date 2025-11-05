@@ -10,5 +10,7 @@ namespace JIRA_NTB.Repository
         Task<List<TaskItemModel>> GetByAssigneeIdAsync(string userId);
         Task UpdateAsync(TaskItemModel task);
         Task RefreshOverdueStatusAsync();
+        Task AddAsync(TaskItemModel task);
+        Task DeleteAsync(string id);
     }
 }

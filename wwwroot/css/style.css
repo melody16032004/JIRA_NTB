@@ -47,10 +47,6 @@
     overflow: hidden;
 }
 
-/* Hiệu ứng trượt vào cho thẻ nhiệm vụ */
-.task-card {
-    animation: slideIn 0.3s ease-out;
-}
 
 @keyframes slideIn {
     from {

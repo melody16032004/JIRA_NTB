@@ -246,7 +246,8 @@
             </div>
         </main>
     </div>
-
+    <!-- Global Modals nằm ngoài layout -->
+    @RenderSection("GlobalModals", required: false)
     @await RenderSectionAsync("Scripts", required: false)
     <script>lucide.createIcons();</script>
     <script src="/js/site.js"></script>
