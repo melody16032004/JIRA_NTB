@@ -276,7 +276,15 @@ namespace JIRA_NTB.Controllers
                     Priority = t.Priority ?? "Medium",
                     Start = ((DateTimeOffset)t.StartDate.Value).ToUnixTimeMilliseconds(),
                     End = ((DateTimeOffset)t.EndDate.Value).ToUnixTimeMilliseconds(),
-                    Overdue = (t.EndDate < DateTime.Now && t.StatusId != TaskStatusModel.Done.ToString())
+                    Overdue = (t.EndDate < DateTime.Now && t.StatusId != TaskStatusModel.Done.ToString()),
+                    Status = t.Status != null ? 
+                        (((TaskStatusModel)t.Status.StatusName) switch
+                        {
+                            TaskStatusModel.Todo => "Lên kế hoạch",
+                            TaskStatusModel.InProgress => "Đang thực hiện",
+                            TaskStatusModel.Done => "Hoàn thành",
+                            _ => "Không xác định"
+                        }) : "Không xác định"
                 })
                 .ToList();
 
@@ -316,7 +324,7 @@ namespace JIRA_NTB.Controllers
                 {
                     foreach (var err in kvp.Value.Errors)
                     {
-                        Console.WriteLine($"❌ Field: {kvp.Key} → {err.ErrorMessage}");
+                        Console.WriteLine($"Field: {kvp.Key} → {err.ErrorMessage}");
                     }
                 }
                 return RedirectToAction(nameof(Index));
@@ -326,11 +334,11 @@ namespace JIRA_NTB.Controllers
             {
                 _context.Projects.Add(NewProject);
                 await _context.SaveChangesAsync();
-                Console.WriteLine("✅ Project saved successfully!");
+                Console.WriteLine("Project saved successfully!");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Save error: " + ex.Message);
+                Console.WriteLine("Save error: " + ex.Message);
             }
 
             return RedirectToAction(nameof(Index));

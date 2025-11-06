@@ -31,7 +31,7 @@
                 </div>
             </div>
         </div>
-
+        @await Html.PartialAsync("~/Views/Project/Partial/_KanbanBoardPartial.cshtml", Model)
         <!-- Biểu đồ thời gian công việc -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
@@ -165,23 +165,18 @@
             }
 
             var ganttSeries = [{
-                data: timelineData.map(t => {
-                    var gradient = getPriorityGradient(t.priority);
-                    return {
-                        x: t.name,
-                        y: [t.start, t.end],
-                        fillColor: getPriorityColor(t.priority),
-                        assignee: t.assignee,
-                        priority: t.priority,
-                        goals: [{
-                            name: t.priority,
-                            value: t.end,
-                            strokeColor: gradient.to
-                        }]
-                    };
-                })
+            data: timelineData
+                .filter(t => t.status !== "Hoàn thành") // ❌ Ẩn các task đã hoàn thành
+                .map(t => ({
+                    x: t.name,
+                    y: [t.start, t.end],
+                    fillColor: getPriorityColor(t.priority),
+                    assignee: t.assignee,
+                    priority: t.priority,
+                    status: t.status,
+                    overdue: t.overdue
+                }))
             }];
-
             var isDark = document.body.classList.contains('dark');
 
             var ganttOptions = {

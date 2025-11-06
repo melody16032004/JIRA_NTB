@@ -41,5 +41,6 @@ namespace JIRA_NTB.ViewModels
         public long Start { get; set; }
         public long End { get; set; }
         public bool Overdue { get; set; }
+        public string Status { get; set; }
     }
 }
