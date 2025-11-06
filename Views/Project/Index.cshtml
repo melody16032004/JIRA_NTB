@@ -1,8 +1,4 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectListViewModel
-@{
-    ViewData["Title"] = "Dự án";
-}
-
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     [x-cloak] {
@@ -61,7 +57,7 @@
     <div id="project-list">
         @await Html.PartialAsync("~/Views/Project/Partial/_ProjectListPartial.cshtml", Model)
     </div>
-
+    <template x-teleport="body">
     <!-- Modal -->
     <div x-show="isModalOpen"
          x-cloak
@@ -72,9 +68,8 @@
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-75">
-
-        <div @@click.outside ="isModalOpen = false"
-             class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4"
+        <div @@click.outside="isModalOpen = false"
+             class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
              x-show="isModalOpen"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 transform scale-90"
@@ -95,8 +90,8 @@
                 </button>
             </div>
 
-            <form asp-action="Create" asp-controller="Project" method="post">
-                <div class="p-6 space-y-4">
+            <form asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1">
+                <div class="p-6 space-y-4 overflow-y-auto flex-1">
                     <div>
                         <label asp-for="NewProject.ProjectName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tên dự án</label>
                         <input asp-for="NewProject.ProjectName"
@@ -160,6 +155,7 @@
             </form>
         </div>
     </div>
+    </template>
 </div>
 
 @section Scripts {
