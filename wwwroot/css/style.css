@@ -114,6 +114,15 @@ button:disabled,
 #userSuggestions::-webkit-scrollbar-track {
     background: #1f2937;
 }
+
+.sidebar-item {
+    transition: all 0.2s ease;
+}
+
+    .sidebar-item.border-l-4 {
+        background-color: rgba(99, 102, 241, 0.15); /* hơi tím nhạt */
+    }
+
 /*==================================================*/
 @keyframes cardFadeIn {
     from {

@@ -10,55 +10,156 @@
     }
 </style>
 
-<!-- Filter and Search Section -->
-<form id="filter-form" asp-action="Index" method="get" class="mb-5">
-    <div class="flex items-center gap-3">
-        <!-- Search Input -->
-        <div class="flex-1 relative">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-            <input type="text"
-                   name="searchQuery"
-                   value="@Model.SearchQuery"
-                   placeholder="Tìm kiếm dự án..."
-                   class="w-full pl-9 pr-4 py-2 text-sm bg-gray-800 dark:bg-gray-800 border border-gray-700 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
-        </div>
+<div x-data="{ isModalOpen: false }">
+    <!-- Filter and Search Section -->
+    <form id="filter-form" asp-action="Index" method="get" class="mb-5">
+        <div class="flex items-center gap-3">
+            <!-- Search Input -->
+            <div class="flex-1 relative">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                <input type="text"
+                       name="searchQuery"
+                       value="@Model.SearchQuery"
+                       placeholder="Tìm kiếm dự án..."
+                       class="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
+            </div>
 
-        <!-- Status Filter -->
-        <div class="relative">
-            <select name="filterStatusId"
-                    class="appearance-none pl-4 pr-10 py-2 text-sm bg-gray-800 dark:bg-gray-800 border border-gray-700 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">
-                    Tất cả trạng thái
-                </option>
-                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo)"
-                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo).ToString())">
-                    Lên kế hoạch
-                </option>
-                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress)"
-                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress).ToString())">
-                    Đang thực hiện
-                </option>
-                <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done)"
-                        selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done).ToString())">
-                    Hoàn thành
-                </option>
-            </select>
-            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-        </div>
+            <!-- Status Filter -->
+            <div class="relative">
+                <select name="filterStatusId"
+                        class="appearance-none pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">
+                        Tất cả trạng thái
+                    </option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo)"
+                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo).ToString())">
+                        Lên kế hoạch
+                    </option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress)"
+                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress).ToString())">
+                        Đang thực hiện
+                    </option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done)"
+                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done).ToString())">
+                        Hoàn thành
+                    </option>
+                </select>
+                <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            </div>
 
-        <!-- Create Button -->
-        <a asp-action="Create"
-           class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
-            <i data-lucide="plus" class="w-4 h-4"></i>
-            <span>Tạo mới</span>
-        </a>
+            <!-- Create Button -->
+            <button type="button"
+                    @@click ="isModalOpen = true"
+                    class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Tạo mới</span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Project List -->
+    <div id="project-list">
+        @await Html.PartialAsync("~/Views/Project/Partial/_ProjectListPartial.cshtml", Model)
     </div>
-</form>
 
+    <!-- Modal -->
+    <div x-show="isModalOpen"
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-75">
 
-<!-- Project List -->
-<div id="project-list">
-    @await Html.PartialAsync("~/Views/Project/Partial/_ProjectListPartial.cshtml", Model)
+        <div @@click.outside ="isModalOpen = false"
+             class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4"
+             x-show="isModalOpen"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform scale-90"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-90">
+
+            <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    Tạo dự án mới
+                </h3>
+                <button type="button"
+                        @@click ="isModalOpen = false"
+                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                    <span class="sr-only">Đóng modal</span>
+                </button>
+            </div>
+
+            <form asp-action="Create" asp-controller="Project" method="post">
+                <div class="p-6 space-y-4">
+                    <div>
+                        <label asp-for="NewProject.ProjectName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tên dự án</label>
+                        <input asp-for="NewProject.ProjectName"
+                               type="text"
+                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                               placeholder="Nhập tên dự án" required>
+                        <span asp-validation-for="NewProject.ProjectName" class="text-red-500 text-sm mt-1"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label asp-for="NewProject.StartDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày bắt đầu</label>
+                            <input asp-for="NewProject.StartDay"
+                                   type="date"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <div>
+                            <label asp-for="NewProject.EndDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày kết thúc</label>
+                            <input asp-for="NewProject.EndDay"
+                                   type="date"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label asp-for="NewProject.UserId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Người quản lý</label>
+                        <select asp-for="NewProject.UserId"
+                                asp-items="@Model.AvailableUsers"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">-- Chọn người quản lý --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label asp-for="NewProject.StatusId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
+                        <select asp-for="NewProject.StatusId"
+                                asp-items="@Model.AvailableStatuses"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                            <option value="">-- Chọn trạng thái --</option>
+                        </select>
+                        <span asp-validation-for="NewProject.StatusId" class="text-red-500 text-sm mt-1"></span>
+                    </div>
+
+                    <div>
+                        <label asp-for="NewProject.Note" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ghi chú</label>
+                        <textarea asp-for="NewProject.Note"
+                                  rows="3"
+                                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                  placeholder="Thêm ghi chú cho dự án..."></textarea>
+                    </div>
+                </div>
+
+                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
+                    <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">
+                        Tạo dự án
+                    </button>
+                    <button type="button" @@click ="isModalOpen = false" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">
+                        Hủy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -70,12 +171,13 @@
 
         // Auto-submit form on filter change
         $(function () {
-            $("#filter-form").on("change", "select, input", function () {
-                $.get("/Project/Index", $("#filter-form").serialize(), function (data) {
-                    $("#project-list").html(data);
-                    // Reinitialize icons after content update
-                    lucide.createIcons();
-                });
+            $("#filter-form").on("change", "select, input[type='text']", function () {
+                setTimeout(function () {
+                    $.get("/Project/Index", $("#filter-form").serialize(), function (data) {
+                        $("#project-list").html(data);
+                        lucide.createIcons(); // Reinitialize icons
+                    });
+                }, 500);
             });
         });
     </script>

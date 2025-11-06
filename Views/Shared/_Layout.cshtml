@@ -45,7 +45,7 @@
                 </a>
 
                 <a asp-controller="#" asp-action="Index"
-                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="Building" class="w-4 h-4"></i>
                     </div>
@@ -61,7 +61,7 @@
                 </a>
 
                 <a asp-controller="Project" asp-action="Index"
-                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="folder-git-2" class="w-4 h-4"></i>
                     </div>
@@ -311,6 +311,21 @@
 
     @RenderSection("GlobalModals", required: false)
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const menuItems = document.querySelectorAll("#sidebarMenu .sidebar-item");
+
+            menuItems.forEach(item => {
+                item.addEventListener("click", function() {
+                    // Xóa border của tất cả các item
+                    menuItems.forEach(i => i.classList.remove("border-l-4", "border-indigo-500"));
+
+                    // Thêm border cho item được chọn
+                    this.classList.add("border-l-4", "border-indigo-500");
+                });
+            });
+        });
+    </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>lucide.createIcons();</script>
