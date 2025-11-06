@@ -134,6 +134,16 @@ namespace JIRA_NTB.Controllers
 				if (existingEmail != null)
 				{
 					ModelState.AddModelError("Email", "Email này đã được sử dụng.");
+
+					// Load lại danh sách phòng ban khi có lỗi
+					model.DepartmentList = _context.Departments
+						.Select(d => new SelectListItem
+						{
+							Value = d.IdDepartment,
+							Text = d.DepartmentName
+						})
+						.ToList();
+
 					return View(model);
 				}
 
@@ -142,7 +152,8 @@ namespace JIRA_NTB.Controllers
 					IdDepartment = model.DepartmentId.ToString(),
 					FullName = model.FullName,
 					UserName = model.Email, // Sử dụng Email làm UserName
-					Email = model.Email				};
+					Email = model.Email
+				};
 				var result = await _userManager.CreateAsync(user, model.Password);
 
 				if (result.Succeeded)
@@ -203,6 +214,7 @@ namespace JIRA_NTB.Controllers
 					ModelState.AddModelError(string.Empty, error.Description);
 				}
 			}
+			
 			// Reload lại danh sách phòng ban trước khi trả về View
 			model.DepartmentList = _context.Departments
 				.Select(d => new SelectListItem
@@ -270,11 +282,11 @@ namespace JIRA_NTB.Controllers
 		}
 
 		// ------ 2. Xử lý việc gửi link ------
-		//[HttpPost]
-		//[ValidateAntiForgeryToken]
-		//public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
-		//{
-		//	return View();
-		//}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+		{
+			return View();
+		}
 	}
 }
