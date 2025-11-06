@@ -1,5 +1,7 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
+using JIRA_NTB.Repository;
+using JIRA_NTB.Service;
 using JIRA_NTB.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,11 @@ builder.Services.AddIdentity<UserModel, ApplicationRole>()
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders()
 .AddTokenProvider<EmailConfirmationTokenProvider<UserModel>>("EmailConfirmationTokenProvider");
+builder.Services.AddScoped<IStatusRepository, StatusRepository>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -51,7 +58,41 @@ builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 builder.Services.AddHostedService<UnconfirmedAccountCleanupService>();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
 
+    string email = "testuser@example.com";
+    string password = "Test@123";
+
+    var existingUser = await userManager.FindByEmailAsync(email);
+    if (existingUser == null)
+    {
+        var user = new UserModel
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(user, password);
+
+        if (result.Succeeded)
+        {
+            Console.WriteLine($"✅ User test đã tạo thành công. ID: {user.Id}");
+        }
+        else
+        {
+            Console.WriteLine("❌ Lỗi tạo user test:");
+            foreach (var error in result.Errors)
+                Console.WriteLine($" - {error.Description}");
+        }
+    }
+    else
+    {
+        Console.WriteLine($"⚠️ User test đã tồn tại. ID: {existingUser.Id}");
+    }
+}
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

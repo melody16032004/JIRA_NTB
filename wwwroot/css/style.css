@@ -38,14 +38,15 @@
     background-color: rgba(79, 70, 229, 0.15); /* Indigo-600 mờ */
 }
 
-button:disabled {
+button:disabled,
+#departmentDisplay:disabled,
+#taskAssignee:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     pointer-events: none;
 }
-
 .custom-scroll::-webkit-scrollbar {
-    width: 6px; /* thin */
+    width: 5px; /* thin */
 }
 
 .custom-scroll::-webkit-scrollbar-track {
@@ -54,7 +55,7 @@ button:disabled {
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-    background: gray; /* màu mặc định */
+    background: #777387; /* màu mặc định */
     border-radius: 10px;
     transition: background 0.2s ease; /* mượt hơn khi hover */
 }
@@ -100,6 +101,28 @@ button:disabled {
     scroll-behavior: smooth;
     scrollbar-width: thin;
 }
+
+#userSuggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+#userSuggestions::-webkit-scrollbar-thumb {
+    background-color: #6366f1; /* màu indigo */
+    border-radius: 9999px;
+}
+
+#userSuggestions::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+.sidebar-item {
+    transition: all 0.2s ease;
+}
+
+    .sidebar-item.border-l-4 {
+        background-color: rgba(99, 102, 241, 0.15); /* hơi tím nhạt */
+    }
+
 /*==================================================*/
 @keyframes cardFadeIn {
     from {
