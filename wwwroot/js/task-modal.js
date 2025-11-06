@@ -1,0 +1,449 @@
+﻿// ==========================
+// task-modal.js - Updated with shared TaskUtils
+// ==========================
+
+// Khởi tạo icon Lucide
+lucide.createIcons();
+
+// Biến DOM chính
+const modal = document.getElementById('modalCreateTask');
+const modalTitle = document.getElementById('modalTitle');
+const btnCreateTask = document.getElementById('btnCreateTask');
+const btnCloseModal = document.getElementById('btnCloseModal');
+const btnCancelTask = document.getElementById('btnCancelTask');
+const btnSaveTask = document.getElementById('btnSaveTask');
+const form = document.getElementById('formCreateTask');
+const taskIdField = document.getElementById('taskId');
+
+// Upload file
+const fileUploadArea = document.getElementById('fileUploadArea');
+const fileInput = document.getElementById('taskFiles');
+const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+const filePreview = document.getElementById('filePreview');
+const fileList = document.getElementById('fileList');
+let selectedFiles = [];
+let isEditMode = false;
+
+// ====== Modal control ======
+if (btnCreateTask) {
+    btnCreateTask.addEventListener('click', () => {
+        openModalForCreate();
+    });
+}
+
+function openModalForCreate() {
+    isEditMode = false;
+    modalTitle.textContent = 'Tạo nhiệm vụ mới';
+    btnSaveTask.textContent = 'Tạo nhiệm vụ';
+    taskIdField.value = '';
+    modal.classList.remove('hidden');
+    setTimeout(() => lucide.createIcons(), 10);
+}
+
+function openModalForEdit(taskData) {
+    isEditMode = true;
+    modalTitle.textContent = 'Chỉnh sửa nhiệm vụ';
+    btnSaveTask.textContent = 'Cập nhật';
+
+    // Điền dữ liệu vào form
+    taskIdField.value = taskData.idTask;
+    document.getElementById('taskName').value = taskData.nameTask || '';
+    document.getElementById('taskDescription').value = taskData.note || '';
+    document.getElementById('taskPriority').value = taskData.priority?.toLowerCase() || 'low';
+
+    // Xử lý ngày tháng
+    if (taskData.startDate) {
+        const startDate = new Date(taskData.startDate);
+        document.getElementById('taskStartDate').value = startDate.toISOString().split('T')[0];
+    }
+    if (taskData.endDate) {
+        const endDate = new Date(taskData.endDate);
+        document.getElementById('taskDeadline').value = endDate.toISOString().split('T')[0];
+    }
+
+    // Chọn project và load members
+    const projectSelect = document.getElementById('taskProjectModal');
+    projectSelect.value = taskData.projectId || '';
+
+    // Trigger change để load members
+    const event = new Event('change');
+    projectSelect.dispatchEvent(event);
+
+    // Đợi members load xong rồi chọn assignee
+    setTimeout(() => {
+        const assigneeSelect = document.getElementById('taskAssignee');
+        if (taskData.assigneeId) {
+            assigneeSelect.value = taskData.assigneeId;
+        }
+    }, 500);
+
+    modal.classList.remove('hidden');
+    setTimeout(() => lucide.createIcons(), 10);
+}
+
+function closeModal() {
+    modal.classList.add('hidden');
+    form.reset();
+    selectedFiles = [];
+    filePreview.classList.add('hidden');
+    uploadPlaceholder.classList.remove('hidden');
+    fileList.innerHTML = '';
+    isEditMode = false;
+    taskIdField.value = '';
+
+    // Reset dropdown người thực hiện khi đóng modal
+    const assigneeSelect = document.getElementById('taskAssignee');
+    if (assigneeSelect) {
+        assigneeSelect.innerHTML = '<option value="">-- Chọn người --</option>';
+        assigneeSelect.disabled = true;
+    }
+}
+
+if (btnCloseModal) btnCloseModal.addEventListener('click', closeModal);
+if (btnCancelTask) btnCancelTask.addEventListener('click', closeModal);
+
+// Click ra ngoài để đóng
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+});
+
+// ====== File upload ======
+fileUploadArea.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    fileInput.click();
+});
+
+fileUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.add('drag-over');
+});
+
+fileUploadArea.addEventListener('dragleave', () => {
+    fileUploadArea.classList.remove('drag-over');
+});
+
+fileUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    fileUploadArea.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files);
+});
+
+function handleFiles(files) {
+    selectedFiles = Array.from(files);
+    displayFiles();
+}
+
+function displayFiles() {
+    if (selectedFiles.length === 0) {
+        filePreview.classList.add('hidden');
+        uploadPlaceholder.classList.remove('hidden');
+        return;
+    }
+
+    uploadPlaceholder.classList.add('hidden');
+    filePreview.classList.remove('hidden');
+    fileList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'flex items-center justify-between bg-gray-700 rounded-lg p-3';
+
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'flex items-center gap-3 flex-1';
+
+        const icon = getFileIcon(file.type);
+        fileInfo.innerHTML = `
+            <i data-lucide="${icon}" class="w-5 h-5 text-indigo-400"></i>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-200 truncate">${file.name}</p>
+                <p class="text-xs text-gray-400">${formatFileSize(file.size)}</p>
+            </div>`;
+
+        const btnRemove = document.createElement('button');
+        btnRemove.type = 'button';
+        btnRemove.className = 'text-gray-400 hover:text-red-400 transition-colors';
+        btnRemove.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i>';
+        btnRemove.addEventListener('click', (event) => {
+            event.stopPropagation();
+            removeFile(index);
+        });
+
+        fileItem.appendChild(fileInfo);
+        fileItem.appendChild(btnRemove);
+        fileList.appendChild(fileItem);
+    });
+
+    lucide.createIcons();
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    displayFiles();
+}
+
+function getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.includes('pdf')) return 'file-text';
+    if (mimeType.includes('word')) return 'file-text';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'file-spreadsheet';
+    return 'file';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ====== Save/Update task with API call ======
+if (btnSaveTask) {
+    btnSaveTask.addEventListener('click', async () => {
+        // Validation mô tả
+        const description = document.getElementById('taskDescription').value;
+        if (description && description.length > 450) {
+            alert('Mô tả không được vượt quá 450 ký tự!');
+            return;
+        }
+
+        // Validation ngày
+        const startDate = document.getElementById('taskStartDate').value;
+        const endDate = document.getElementById('taskDeadline').value;
+
+        if (startDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedStart = new Date(startDate);
+
+            if (selectedStart < today) {
+                alert('Ngày bắt đầu không được là ngày trong quá khứ!');
+                return;
+            }
+        }
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+
+            if (end <= start) {
+                alert('Hạn chót phải sau ngày bắt đầu!');
+                return;
+            }
+        }
+
+        // Tạo FormData
+        const formData = new FormData();
+
+        if (isEditMode) {
+            formData.append('IdTask', taskIdField.value);
+        }
+
+        formData.append('NameTask', document.getElementById('taskName').value);
+        formData.append('ProjectId', document.getElementById('taskProjectModal').value);
+
+        if (description) formData.append('Note', description);
+
+        const assignee = document.getElementById('taskAssignee').value;
+        if (assignee) formData.append('AssigneeId', assignee);
+
+        const priority = document.getElementById('taskPriority').value;
+        formData.append('Priority', priority || 'low');
+
+        if (startDate) formData.append('StartDate', startDate);
+        if (endDate) formData.append('EndDate', endDate);
+
+        // Thêm files
+        selectedFiles.forEach(file => {
+            formData.append('Files', file);
+        });
+
+        // Disable nút để tránh submit nhiều lần
+        btnSaveTask.disabled = true;
+        btnSaveTask.textContent = isEditMode ? 'Đang cập nhật...' : 'Đang tạo...';
+
+        try {
+            const url = isEditMode ? '/Task/UpdateTask' : '/Task/CreateTask';
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                TaskUtils.saveNotificationForReload('✅ ' + result.message, 'success');
+                closeModal();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+               
+            } else {
+                TaskUtils.showSimpleToast('❌ ' + result.message, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Lỗi:', error);
+            TaskUtils.showSimpleToast('❌ Đã xảy ra lỗi!', 'error');
+        } finally {
+            btnSaveTask.disabled = false;
+            btnSaveTask.textContent = isEditMode ? 'Cập nhật' : 'Tạo nhiệm vụ';
+        }
+    });
+}
+
+// ==========================
+// Load danh sách user khi chọn Project TRONG MODAL
+// ==========================
+document.addEventListener('DOMContentLoaded', () => {
+    const projectSelect = document.getElementById('taskProjectModal');
+    const assigneeSelect = document.getElementById('taskAssignee');
+
+    if (!projectSelect || !assigneeSelect) {
+        console.error('❌ Không tìm thấy dropdown trong modal!');
+        return;
+    }
+
+    projectSelect.addEventListener('change', async () => {
+        const projectId = projectSelect.value;
+
+        // Reset dropdown người thực hiện
+        assigneeSelect.innerHTML = '<option value="">-- Chọn người --</option>';
+        assigneeSelect.disabled = true;
+
+        if (!projectId) return;
+
+        try {
+            const response = await fetch(`/Task/GetMembersByProject?projectId=${projectId}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const users = await response.json();
+
+            if (!users || users.length === 0) {
+                assigneeSelect.innerHTML = '<option value="">-- Không có thành viên --</option>';
+                return;
+            }
+
+            users.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u.userId;
+                option.textContent = u.userName;
+                assigneeSelect.appendChild(option);
+            });
+
+            assigneeSelect.disabled = false;
+
+        } catch (err) {
+            console.error('❌ Lỗi khi load danh sách:', err);
+            assigneeSelect.innerHTML = '<option value="">-- Lỗi tải dữ liệu --</option>';
+        }
+    });
+
+    // ==========================
+    // Xử lý menu 3 chấm
+    // ==========================
+
+    // Toggle menu khi click vào nút 3 chấm
+    document.addEventListener('click', (e) => {
+        const menuBtn = e.target.closest('.task-menu-btn');
+
+        if (menuBtn) {
+            e.stopPropagation();
+            const menu = menuBtn.parentElement.querySelector('.task-menu');
+
+            // Đóng tất cả menu khác
+            document.querySelectorAll('.task-menu').forEach(m => {
+                if (m !== menu) m.classList.add('hidden');
+            });
+
+            // Toggle menu hiện tại
+            menu.classList.toggle('hidden');
+            lucide.createIcons();
+        } else {
+            // Đóng tất cả menu nếu click ra ngoài
+            document.querySelectorAll('.task-menu').forEach(m => {
+                m.classList.add('hidden');
+            });
+        }
+    });
+
+    // Xử lý nút Edit
+    document.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-task-btn');
+        if (!editBtn) return;
+
+        const taskId = editBtn.dataset.taskId;
+
+        try {
+            const response = await fetch(`/Task/GetTaskById?taskId=${taskId}`);
+            if (!response.ok) throw new Error('Không thể tải thông tin task');
+
+            const taskData = await response.json();
+            openModalForEdit(taskData);
+        } catch (error) {
+            console.error('❌ Lỗi khi load task:', error);
+            TaskUtils.showError('❌ Không thể tải thông tin task!');
+        }
+    });
+
+    // Xử lý nút Delete
+    document.addEventListener('click', async (e) => {
+        const deleteBtn = e.target.closest('.delete-task-btn');
+        if (!deleteBtn) return;
+
+        const taskId = deleteBtn.dataset.taskId;
+        const previousStatusId = deleteBtn.dataset.statusId;
+        const taskCard = deleteBtn.closest('.task-card');
+
+        // Lưu thông tin để restore
+        const parentColumn = taskCard ? taskCard.closest('.task-column') : null;
+        const parentStatusId = parentColumn ? parentColumn.dataset.statusId : null;
+        const originalHTML = taskCard ? taskCard.outerHTML : null;
+
+        if (!confirm('⚠️ Bạn có chắc chắn muốn xóa nhiệm vụ này?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/Task/DeleteTask?taskId=${encodeURIComponent(taskId)}`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Ẩn task card với animation
+                if (taskCard) {
+                    taskCard.style.transition = 'all 0.18s ease';
+                    taskCard.style.opacity = '0';
+                    taskCard.style.transform = 'scale(0.96)';
+
+                    setTimeout(() => {
+                        taskCard.remove();
+
+                        // Cập nhật UI sử dụng TaskUtils
+                        TaskUtils.updateTaskCounts();
+                        TaskUtils.checkAndAddEmptyState(parentColumn);
+                    }, 200);
+                }
+
+                // Hiển thị toast với Undo sử dụng TaskUtils
+                TaskUtils.showSuccessWithUndo('✅ Đã xóa nhiệm vụ', {
+                    taskId: taskId,
+                    previousStatusId: result.previousStatusId || previousStatusId,
+                    originalHTML: originalHTML,
+                    parentStatusId: parentStatusId
+                });
+            } else {
+                TaskUtils.showError('❌ ' + result.message);
+            }
+        } catch (error) {
+            console.error('❌ Lỗi khi xóa task:', error);
+            TaskUtils.showError('❌ Đã xảy ra lỗi khi xóa nhiệm vụ!');
+        }
+    });
+});

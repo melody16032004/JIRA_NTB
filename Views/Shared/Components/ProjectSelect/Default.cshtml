@@ -1,0 +1,19 @@
+﻿@model List<JIRA_NTB.Models.ProjectModel>
+
+<div>
+    <select id="@(ViewBag.ElementId ?? "taskProject")"
+            name="ProjectId"
+            required
+            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer">
+        <option value="">-- Chọn dự án --</option>
+
+        @foreach (var project in Model)
+        {
+            <option value="@project.IdProject"
+                    selected="@(project.IdProject == (ViewBag.SelectedId as string) ? "selected" : null)">
+                @project.ProjectName
+            </option>
+        }
+    </select>
+</div>

@@ -1,0 +1,175 @@
+﻿@* PartialView/_TaskCard.cshtml *@
+@model TaskViewModel
+
+<div class="task-card group bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-sm rounded-xl p-4 border
+     @GetPriorityClasses(Model.Priority)
+     hover:shadow-lg transition-all duration-300 cursor-pointer"
+     data-task-id="@Model.IdTask"
+     data-project-id="@Model.ProjectId">
+
+    <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="flex flex-col flex-1">
+            <h4 class="text-gray-100 font-semibold text-sm leading-snug group-hover:text-indigo-400 transition-colors line-clamp-2">
+                @Model.NameTask
+            </h4>
+
+            @if (Model.IsDoneLate)
+            {
+                <span class="mt-1 inline-flex items-center gap-1 text-[11px] text-red-400 font-medium">
+                    <i class="fa-solid fa-clock"></i>
+                    Hoàn thành trễ @Model.DaysLate ngày
+                </span>
+            }
+        </div>
+
+        <div class="flex items-center gap-2">
+            @if (!string.IsNullOrEmpty(Model.Priority))
+            {
+                <span class="px-2.5 py-1 @GetPriorityClass(Model.Priority) text-[10px] font-bold rounded-md border uppercase tracking-wider">
+                    @Model.Priority
+                </span>
+            }
+
+            @* Menu 3 chấm *@
+            <div class="relative task-menu-container">
+                <button class="task-menu-btn p-1.5 hover:bg-gray-700 rounded-lg transition-colors"
+                        type="button">
+                    <i data-lucide="more-vertical" class="w-4 h-4 text-gray-400"></i>
+                </button>
+
+                <div class="task-menu absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[140px] z-50 hidden">
+                    <button class="edit-task-btn w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            data-task-id="@Model.IdTask">
+                        <i data-lucide="edit" class="w-4 h-4 text-blue-400"></i>
+                        <span>Chỉnh sửa</span>
+                    </button>
+                    <button class="delete-task-btn w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            data-task-id="@Model.IdTask">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Xóa</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.StartDate.HasValue || Model.EndDate.HasValue)
+    {
+        <div class="flex flex-col mb-3 text-[11px] text-gray-400">
+            @* --- Dòng 1: Bắt đầu & Kết thúc --- *@
+            <div class="flex items-center gap-3">
+                @if (Model.StartDate.HasValue)
+                {
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="calendar" class="w-3 h-3"></i>
+                        <span>Bắt đầu: @Model.StartDate.Value.ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+
+                @if (Model.EndDate.HasValue)
+                {
+                    <div class="flex items-center gap-1.5 @(Model.IsOverdue ? "text-red-400 font-medium" : "")">
+                        <i data-lucide="calendar-check" class="w-3 h-3"></i>
+                        <span>Kết thúc: @Model.EndDate.Value.ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+            </div>
+
+            @* --- Dòng 2: Còn lại / Quá hạn --- *@
+            @if (!Model.IsCompleted)
+            {
+                if (Model.IsOverdue)
+                {
+                    <span class="mt-1 inline-block text-[10px] px-2 py-0.5 rounded-md border border-red-500/30 bg-red-500/10 text-red-400">
+                        Quá hạn @Math.Abs(Model.DaysRemaining) ngày
+                    </span>
+                }
+                else if (Model.DaysRemaining > 0)
+                {
+                    <span class="mt-1 inline-block text-[10px] px-2 py-0.5 rounded-md border border-gray-600 bg-gray-700/40 text-gray-300">
+                        @Model.DaysRemaining ngày còn lại
+                    </span>
+                }
+            }
+        </div>
+    }
+
+    @if (Model.Project != null)
+    {
+        <div class="flex items-center gap-2 mb-3 px-2.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+            <i data-lucide="folder" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span class="text-xs text-indigo-300 font-medium">@Model.Project.ProjectName</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.Note))
+    {
+        <div class="flex items-start gap-2 mb-3 px-2.5 py-2 bg-gray-800/60 rounded-lg border border-gray-700/50">
+            <i data-lucide="sticky-note" class="w-3 h-3 mt-0.5 flex-shrink-0 text-gray-500"></i>
+            <p class="text-[11px] text-white-400 leading-relaxed line-clamp-2" title="@Model.Note">@Model.Note</p>
+        </div>
+    }
+
+    <div class="flex items-center justify-between pt-3 border-t border-gray-700/30">
+        @if (!string.IsNullOrEmpty(Model.FileNote))
+        {
+            <a href="@Model.FileNote"
+               target="_blank" rel="noopener noreferrer"
+               class="flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-medium rounded-md border border-purple-500/20 transition-all">
+                <i data-lucide="paperclip" class="w-3 h-3"></i>
+                <span>File</span>
+            </a>
+        }
+        else
+        {
+            <div></div> @* Placeholder để giữ cho avatar ở bên phải *@
+        }
+
+        @if (Model.Assignee != null)
+        {
+            <div class="flex items-center gap-2 text-sm text-gray-300 group-hover:text-gray-100 transition-colors">
+                <!-- Avatar nhỏ hơn -->
+                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.Assignee.FullName)&background=6366f1&color=fff&size=28"
+                     alt="@Model.Assignee.FullName"
+                     title="@Model.Assignee.FullName"
+                     class="w-6 h-6 rounded-full border border-gray-600 shadow-sm ring-1 ring-gray-700 group-hover:ring-indigo-500 transition-all duration-200" />
+
+                <!-- Tên người -->
+                <span class="truncate max-w-[120px]" title="@Model.Assignee.FullName">
+                    @Model.Assignee.FullName
+                </span>
+            </div>
+        }
+        else
+        {
+            <div class="flex items-center gap-2 text-sm text-gray-500 italic">
+                <i data-lucide="user-x" class="w-4 h-4"></i>
+                <span>Chưa giao</span>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    // Hàm trợ giúp để lấy lớp CSS dựa trên độ ưu tiên
+    private string GetPriorityClass(string priority)
+    {
+        return priority?.ToUpper() switch
+        {
+            "HIGH" => "bg-red-500/15 text-red-400 border-red-500/30",
+            "MEDIUM" => "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+            "LOW" => "bg-green-500/15 text-green-400 border-green-500/30",
+            _ => "bg-gray-500/15 text-gray-400 border-gray-500/30"
+        };
+    }
+    private string GetPriorityClasses(string priority)
+    {
+        return priority?.ToUpper() switch
+        {
+            "HIGH" => "border-red-500/50 hover:border-red-500/75 hover:shadow-red-500/25",
+            "MEDIUM" => "border-yellow-500/50 hover:border-yellow-500/75 hover:shadow-yellow-500/25",
+            "LOW" => "border-gray-700/50 hover:border-gray-500/75 hover:shadow-gray-500/10",
+            _ => "border-gray-700/50 hover:border-gray-500/75 hover:shadow-gray-500/10"
+        };
+    }
+}
