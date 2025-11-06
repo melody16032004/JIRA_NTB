@@ -41,15 +41,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-	// Cài đặt thời gian cookie hết hạn
-	options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
-
-	// Nếu true, mỗi khi người dùng truy cập trang (sau 1/2 thời gian),
-	// cookie sẽ được làm mới lại đủ 60 phút.
-	// Nếu người dùng "im lặng" quá 60 phút, họ sẽ bị logout.
 	options.SlidingExpiration = true;
-
-	// ... các cài đặt khác như LoginPath
 	options.LoginPath = "/Account/Login";
 });
 
