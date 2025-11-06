@@ -55,7 +55,7 @@ namespace JIRA_NTB.Controllers
 
             if (projects != null)
             {
-                return View(vm);
+                 return View(vm);
             }
             else
             {

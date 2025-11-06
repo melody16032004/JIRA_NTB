@@ -102,11 +102,19 @@
         <!-- Main Content Area -->
         <main class="main-content flex-1 overflow-y-auto divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
             <!-- Header -->
-            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-50">
-                <div class="px-4 py-3 flex items-center justify-between">
-                    <h2 class="text-2xl font-semibold text-white tracking-wide">
-                        @ViewData["Title"]
-                    </h2>
+            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-30">
+                <div class="px-6 py-4 flex items-center justify-between">
+                    <!-- THAY ĐỔI: Bọc nút toggle và tiêu đề trong 1 div -->
+                    <div class="flex items-center">
+                        <!-- THÊM MỚI: Nút Hamburger (chỉ hiện trên di động) -->
+                        <button id="sidebarToggle" class="lg:hidden p-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mr-3 -ml-2 transition-colors">
+                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        </button>
+
+                        <h2 class="text-2xl font-semibold text-white tracking-wide">
+                            @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
+                        </h2>
+                    </div>
 
                     <!-- Action buttons -->
                     <div class="flex items-center space-x-3 relative">

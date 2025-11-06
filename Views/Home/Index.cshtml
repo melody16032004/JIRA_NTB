@@ -279,11 +279,11 @@
                                                                     class="p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg"
                                                                     data-id="@task.IdTask"
                                                                     data-prjid="@project.IdProject"
-                                                                    data-assid="@task.Assignee!.Id"
+                                                                    data-assid="@task.Assignee?.Id"
                                                                     data-name="@task.NameTask"
-                                                                    data-assignee="@task.Assignee!.FullName"
-                                                                    data-departId="@task.Assignee!.Department!.IdDepartment"
-                                                                    data-depart="@task.Assignee!.Department!.DepartmentName"
+                                                                    data-assignee="@task.Assignee?.FullName"
+                                                                    data-departId="@task.Assignee?.Department?.IdDepartment"
+                                                                    data-depart="@task.Assignee?.Department!.DepartmentName"
                                                                     data-desc="@task.Note"
                                                                     data-start="@task.StartDate"
                                                                     data-end="@task.EndDate"
@@ -1195,7 +1195,7 @@
         lucide.createIcons();
         // 🔹 Lấy dữ liệu từ Model C# sang JS
         const projects1 = JSON.parse('@Html.Raw(ViewBag.ProjectsJson)');
-
+        console.log(projects1);
         // 🔹 Biến đếm trạng thái
         let notStarted = 0;
         let inProgress = 0;
@@ -1307,24 +1307,28 @@
 
         projects1.forEach(p => {
             const progress = p.Status.StatusName || 0;
-            const endDate = new Date(p.EndDate);
+            const endDate = new Date(p.EndDay);
+            console.log(p.EndDay);
             const now = new Date();
 
-            if(progress === 1)
-            {
-                countToDo++;
-            } 
-            else if(progress === 2)
-            {
-                countInProgress++;
-            } 
-            else if (progress === 3)
-            {
-                countInDone++;
-            } 
-            else if (progress === 3 && endDate < now)
+            if (endDate < now && progress !== 3)
             {
                 countOverdue++;
+            }
+            else
+            {
+                if(progress === 1)
+                {
+                    countToDo++;
+                }
+                else if(progress === 2)
+                {
+                    countInProgress++;
+                } 
+                else if (progress === 3)
+                {
+                    countInDone++;
+                } 
             }
         });
         const ctx2 = document.getElementById("progressChart").getContext("2d");
@@ -1909,9 +1913,9 @@
                 let status = document.getElementById("taskStatus").value;
                 let prior = document.getElementById("taskPriority").value;
 
-                if(assidT == null || assidT == ""){
+                @* if(assidT == null || assidT == ""){
                     alert("Vui lòng nhập tên đúng thành viên");
-                }
+                } *@
 
                 const t = {
                     id: idT,
