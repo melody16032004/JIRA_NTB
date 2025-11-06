@@ -36,7 +36,7 @@
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto px-3 py-5 space-y-2">
                 <!-- Item -->
-                <a asp-controller="Home" asp-action="Index"
+                <a asp-area="" asp-controller="Home" asp-action="Index"
                    class="flex items-center p-3 border-b-4 border-indigo-500 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="home" class="w-4 h-4"></i>
@@ -44,30 +44,36 @@
                     <span class="ml-3 font-medium">Tổng quan</span>
                 </a>
 
-                <a asp-controller="#" asp-action="Index"
-                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
-                        <i data-lucide="Building" class="w-4 h-4"></i>
-                    </div>
-                    <span class="ml-3 font-medium">Phòng ban</span>
-                </a>
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <a asp-area="Admin" asp-controller="Department" asp-action="Index"
+                       class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                        <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
+                            <i data-lucide="Building" class="w-4 h-4"></i>
+                        </div>
+                        <span class="ml-3 font-medium">Phòng ban</span>
+                    </a>
 
-                <a asp-controller="/" asp-action="Index"
-                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
-                        <i data-lucide="Users" class="w-4 h-4"></i>
-                    </div>
-                    <span class="ml-3 font-medium">Nhân viên</span>
-                </a>
+                    <a asp-area="Admin" asp-controller="Admin" asp-action="Index"
+                       class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                        <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
+                            <i data-lucide="Users" class="w-4 h-4"></i>
+                        </div>
+                        <span class="ml-3 font-medium">Nhân viên</span>
+                    </a>
+                }
 
-                <a asp-controller="Project" asp-action="Index"
-                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
-                    <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
-                        <i data-lucide="folder-git-2" class="w-4 h-4"></i>
-                    </div>
-                    <span class="ml-3 font-medium">Dự án</span>
-                </a>
-
+                @if (User.IsInRole("ADMIN") || User.IsInRole("LEADER"))
+                {
+                    <a asp-area="" asp-controller="Project" asp-action="Index"
+                       class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                        <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
+                            <i data-lucide="folder-git-2" class="w-4 h-4"></i>
+                        </div>
+                        <span class="ml-3 font-medium">Dự án</span>
+                    </a>
+                }
+                
                 <a asp-controller="Task" asp-action="Index"
                    class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
@@ -96,19 +102,11 @@
         <!-- Main Content Area -->
         <main class="main-content flex-1 overflow-y-auto divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
             <!-- Header -->
-            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-30">
-                <div class="px-6 py-4 flex items-center justify-between">
-                    <!-- THAY ĐỔI: Bọc nút toggle và tiêu đề trong 1 div -->
-                    <div class="flex items-center">
-                        <!-- THÊM MỚI: Nút Hamburger (chỉ hiện trên di động) -->
-                        <button id="sidebarToggle" class="lg:hidden p-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mr-3 -ml-2 transition-colors">
-                            <i data-lucide="menu" class="w-6 h-6"></i>
-                        </button>
-
-                        <h2 class="text-2xl font-semibold text-white tracking-wide">
-                            @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
-                        </h2>
-                    </div>
+            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-50">
+                <div class="px-4 py-3 flex items-center justify-between">
+                    <h2 class="text-2xl font-semibold text-white tracking-wide">
+                        @ViewData["Title"]
+                    </h2>
 
                     <!-- Action buttons -->
                     <div class="flex items-center space-x-3 relative">
@@ -243,17 +241,17 @@
                                     <ul class="py-2 text-sm text-gray-200">
                                         <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
-                                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                            <form asp-area="" asp-controller="/" asp-action="" method="post" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">
-                                                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                                                    <i data-lucide="user-circle" class="w-4 h-4 mr-2"></i>
                                                     Thông tin tài khoản
                                                 </button>
                                             </form>
                                         </li>
                                         <li>
-                                            <a asp-controller="Account" asp-action="ChangePassword"
+                                            <a asp-area="" asp-controller="Account" asp-action="ChangePassword"
                                                class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
                                                 <i data-lucide="key-round" class="w-4 h-4 mr-2"></i>
                                                 Đổi mật khẩu
@@ -261,7 +259,7 @@
                                         </li>
                                         <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
-                                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">
@@ -299,7 +297,7 @@
             </header>
 
             <!-- Content -->
-            <div class="p-2 bg-gray-900/60 rounded-b-xl backdrop-blur-md">
+            <div class="p-4 bg-gray-900/60 rounded-b-xl backdrop-blur-md">
                 @RenderBody()
             </div>
         </main>

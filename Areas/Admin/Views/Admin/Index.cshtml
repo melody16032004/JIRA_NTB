@@ -1,0 +1,509 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using JIRA_NTB.Admin.Controllers
+@inject UserManager<JIRA_NTB.Models.UserModel> UserManager
+
+@model PaginatedList<JIRA_NTB.Models.UserModel>
+
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+}
+
+<div class="container mx-auto px-4 py-4">
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+                Danh sách các nhân viên
+            </h1>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-400 text-sm font-medium mb-1">Tổng nhân viên</p>
+                    <h3 class="text-3xl font-bold text-white">@Model.TotalItems</h3>
+                </div>
+                <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-purple-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-400 text-sm font-medium mb-1">Trưởng phòng</p>
+                    <h3 class="text-3xl font-bold text-white">@ViewBag.LeaderCount</h3>
+                </div>
+                <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="briefcase" class="w-6 h-6 text-yellow-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-500/10 to-red-600/10 border border-red-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-400 text-sm font-medium mb-1">Bị khóa</p>
+                    <h3 class="text-3xl font-bold text-white">@Model.Count(u => !u.IsActive)</h3>
+                </div>
+                <div class="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="lock" class="w-6 h-6 text-red-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500/10 to-green-600/10 border border-green-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-400 text-sm font-medium mb-1">Hoạt động</p>
+                    <h3 class="text-3xl font-bold text-white">@Model.Count(u => u.IsActive)</h3>
+                </div>
+                <div class="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-green-400"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hiển thị thông báo lỗi/thành công (nếu có) -->
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-6 bg-red-500/20 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-red-400"></i>
+            <p class="text-red-300 font-medium">@TempData["ErrorMessage"]</p>
+        </div>
+    }
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-6 bg-green-500/20 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
+            <i data-lucide="check-circle" class="w-5 h-5 text-green-400"></i>
+            <p class="text-green-300 font-medium">@TempData["SuccessMessage"]</p>
+        </div>
+    }
+
+    <!-- Table Section -->
+    <div class="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Table Header -->
+        <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-gray-700 px-6 py-4">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="list" class="w-5 h-5"></i>
+                    Danh sách người dùng
+                </h2>
+            </div>
+            
+            <!-- Bộ lọc và Tìm kiếm -->
+            <form method="get" asp-action="Index" class="flex items-center gap-3">
+                <!-- Bộ lọc bên trái -->
+                <div class="flex items-center gap-2">
+                    <i data-lucide="filter" class="w-4 h-4 text-gray-400"></i>
+                    <span class="text-gray-400 text-sm font-medium">Lọc:</span>
+                </div>
+                
+                <!-- Lọc theo phòng ban -->
+                <select name="department" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">Tất cả phòng ban</option>
+                    @if (ViewBag.Departments != null)
+                    {
+                        foreach (var dept in ViewBag.Departments)
+                        {
+                            <option value="@dept" selected="@(dept == ViewBag.CurrentDepartment)">@dept</option>
+                        }
+                    }
+                </select>
+                
+                <!-- Ô tìm kiếm bên phải (dài hơn) -->
+                <div class="relative flex-1 ml-auto" style="max-width: 400px;">
+                    <input type="text" 
+                           name="searchString"
+                           value="@ViewBag.CurrentSearch"
+                           placeholder="Tìm kiếm theo email hoặc tên..." 
+                           class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                </div>
+                
+                <!-- Nút tìm kiếm -->
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    Tìm
+                </button>
+                
+                <!-- Nút reset -->
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors duration-200">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    Reset
+                </a>
+                
+                <!-- Hidden field để giữ pageNumber -->
+                <input type="hidden" name="pageNumber" value="1" />
+            </form>
+        </div>
+
+        <!-- Table Content -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-gray-300" id="userTable">
+                <thead class="bg-gray-900/50 border-b border-gray-700">
+                    <tr>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                Email
+                            </div>
+                        </th>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                Tên đầy đủ
+                            </div>
+                        </th>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="building-2" class="w-4 h-4"></i>
+                                Phòng ban
+                            </div>
+                        </th>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                Trạng thái tài khoản
+                            </div>
+                        </th>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <i data-lucide="shield" class="w-4 h-4"></i>
+                                Quyền hạn
+                            </div>
+                        </th>
+                        <th scope="col" class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-gray-400 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <i data-lucide="settings" class="w-4 h-4"></i>
+                                Hành động
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700/50">
+                    @foreach (var user in Model)
+                    {
+                        <tr class="hover:bg-gray-700/30 transition-colors duration-200 group">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                                        @(user.Email?.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div>
+                                        <p class="text-white font-medium text-sm">@user.Email</p>
+                                        <p class="text-gray-500 text-xs">@user.UserName</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span class="text-gray-200 text-sm">@(user.FullName ?? "Chưa cập nhật")</span>
+                            </td>
+                            <td class="py-4 px-6">
+                                @if (user.Department != null)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-500/30">
+                                        <i data-lucide="building" class="w-3 h-3"></i>
+                                        @user.Department.DepartmentName
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-gray-500 text-sm italic">Chưa phân bổ</span>
+                                }
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <form asp-area="Admin" asp-controller="Admin" asp-action="ToggleUserStatus" method="post" class="inline-block toggle-status-form">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    @Html.AntiForgeryToken()
+                                    @if (user.IsActive)
+                                    {
+                                        <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30 transition-all duration-200 font-semibold text-sm shadow-sm">
+                                            <i data-lucide="unlock" class="w-4 h-4"></i>
+                                            <span>Hoạt động</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="toggle-status-btn inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-all duration-200 font-semibold text-sm shadow-sm">
+                                            <i data-lucide="lock" class="w-4 h-4"></i>
+                                            <span>Bị khóa</span>
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                @{
+                                    var userRoles = await UserManager.GetRolesAsync(user);
+                                }
+                                @if (userRoles.Any())
+                                {
+                                    <div class="flex flex-wrap gap-2 justify-center">
+                                        @foreach (var role in userRoles)
+                                        {
+                                            @if (role == "ADMIN")
+                                            {
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 text-xs font-semibold border border-red-500/30 shadow-sm">
+                                                    <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+                                                    @role
+                                                </span>
+                                            }
+                                            else if (role == "LEADER")
+                                            {
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-yellow-500/20 text-yellow-300 text-xs font-semibold border border-yellow-500/30 shadow-sm">
+                                                    <i data-lucide="briefcase" class="w-3.5 h-3.5"></i>
+                                                    @role
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold border border-blue-500/30 shadow-sm">
+                                                    <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                                                    @role
+                                                </span>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-gray-500 text-sm italic">Chưa có quyền</span>
+                                }
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                @{
+                                    var isAdmin = userRoles.Contains("ADMIN");
+                                }
+                                @if (isAdmin)
+                                {
+                                    <!-- Nếu là ADMIN thì không cho phép thay đổi -->
+                                    <span class="text-gray-500 text-xs italic">Không thể sửa</span>
+                                }
+                                else
+                                {
+                                    <!-- Form gán role cho EMPLOYEE và LEADER -->
+                                    <form asp-area="Admin" asp-controller="Admin" asp-action="SetUserRole" method="post" class="inline-flex items-center gap-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="userId" value="@user.Id" />
+                                        
+                                        <!-- Dropdown chọn role -->
+                                        <select name="roleName" 
+                                                class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                            <option value="EMPLOYEE" selected="@(userRoles.Contains("EMPLOYEE") ? "selected" : null)">Employee</option>
+                                            <option value="LEADER" selected="@(userRoles.Contains("LEADER") ? "selected" : null)">Leader</option>
+                                        </select>
+                                        
+                                        <!-- Nút Lưu (chỉ icon) -->
+                                        <button type="submit" 
+                                                title="Lưu thay đổi"
+                                                class="inline-flex items-center justify-center w-8 h-8 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200">
+                                            <i data-lucide="save" class="w-4 h-4"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Footer - Pagination -->
+        <div class="bg-gray-900/30 border-t border-gray-700 px-6 py-4">
+            @if (Model.TotalPages > 1)
+            {
+                <div class="flex justify-between items-center">
+                    <!-- Thông tin trang -->
+                    <p class="text-gray-400 text-sm">
+                        Hiển thị <span class="text-white font-semibold">@((Model.PageIndex - 1) * 10 + 1)</span> 
+                        - <span class="text-white font-semibold">@(Math.Min(Model.PageIndex * 10, Model.TotalItems))</span> 
+                        trong tổng số <span class="text-white font-semibold">@Model.TotalItems</span> nhân viên
+                    </p>
+
+                    <!-- Nút phân trang -->
+                    <div class="flex items-center gap-2">
+                        <!-- Nút Previous -->
+                        @if (Model.HasPreviousPage)
+                        {
+                            <a asp-action="Index" 
+                               asp-route-pageNumber="@(Model.PageIndex - 1)"
+                               asp-route-searchString="@ViewBag.CurrentSearch"
+                               asp-route-department="@ViewBag.CurrentDepartment"
+                               class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200 flex items-center gap-1">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Trước</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-2 bg-gray-800 text-gray-500 rounded-lg text-sm cursor-not-allowed flex items-center gap-1">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Trước</span>
+                            </span>
+                        }
+
+                        <!-- Số trang -->
+                        @{
+                            int startPage = Math.Max(1, Model.PageIndex - 2);
+                            int endPage = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                            
+                            if (startPage > 1)
+                            {
+                                <a asp-action="Index" 
+                                   asp-route-pageNumber="1"
+                                   asp-route-searchString="@ViewBag.CurrentSearch"
+                                   asp-route-department="@ViewBag.CurrentDepartment"
+                                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                    1
+                                </a>
+                                
+                                if (startPage > 2)
+                                {
+                                    <span class="text-gray-500 px-2">...</span>
+                                }
+                            }
+                            
+                            for (int i = startPage; i <= endPage; i++)
+                            {
+                                if (i == Model.PageIndex)
+                                {
+                                    <span class="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                                        @i
+                                    </span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Index" 
+                                       asp-route-pageNumber="@i"
+                                       asp-route-searchString="@ViewBag.CurrentSearch"
+                                       asp-route-department="@ViewBag.CurrentDepartment"
+                                       class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                        @i
+                                    </a>
+                                }
+                            }
+                            
+                            if (endPage < Model.TotalPages)
+                            {
+                                if (endPage < Model.TotalPages - 1)
+                                {
+                                    <span class="text-gray-500 px-2">...</span>
+                                }
+                                
+                                <a asp-action="Index" 
+                                   asp-route-pageNumber="@Model.TotalPages"
+                                   asp-route-searchString="@ViewBag.CurrentSearch"
+                                   asp-route-department="@ViewBag.CurrentDepartment"
+                                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                    @Model.TotalPages
+                                </a>
+                            }
+                        }
+
+                        <!-- Nút Next -->
+                        @if (Model.HasNextPage)
+                        {
+                            <a asp-action="Index" 
+                               asp-route-pageNumber="@(Model.PageIndex + 1)"
+                               asp-route-searchString="@ViewBag.CurrentSearch"
+                               asp-route-department="@ViewBag.CurrentDepartment"
+                               class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200 flex items-center gap-1">
+                                <span>Sau</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-2 bg-gray-800 text-gray-500 rounded-lg text-sm cursor-not-allowed flex items-center gap-1">
+                                <span>Sau</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-gray-400 text-sm">
+                    Hiển thị <span class="text-white font-semibold">@Model.Count()</span> người dùng
+                </p>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    // Khởi tạo icons khi trang load xong
+    document.addEventListener('DOMContentLoaded', function() {
+        lucide.createIcons();
+    });
+
+    // ===== XỬ LÝ TOGGLE TRẠNG THÁI TÀI KHOẢN =====
+    document.querySelectorAll('.toggle-status-btn').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            const form = this.closest('.toggle-status-form');
+            const userId = form.querySelector('input[name="userId"]').value;
+            const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+            const buttonElement = this;
+            const iconElement = buttonElement.querySelector('[data-lucide]');
+            const textElement = buttonElement.querySelector('span');
+            
+            // Disable button khi đang xử lý
+            buttonElement.disabled = true;
+            buttonElement.style.opacity = '0.6';
+            
+            try {
+                const response = await fetch('/Admin/Admin/ToggleUserStatus', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `userId=${userId}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Cập nhật giao diện nút
+                    if (result.isActive) {
+                        // Chuyển sang trạng thái hoạt động
+                        buttonElement.className = 'toggle-status-btn inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/20 text-green-300 border border-green-500/30 hover:bg-green-500/30 transition-all duration-200 font-semibold text-sm shadow-sm';
+                        iconElement.setAttribute('data-lucide', 'unlock');
+                        textElement.textContent = 'Hoạt động';
+                    } else {
+                        // Chuyển sang trạng thái khóa
+                        buttonElement.className = 'toggle-status-btn inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 transition-all duration-200 font-semibold text-sm shadow-sm';
+                        iconElement.setAttribute('data-lucide', 'lock');
+                        textElement.textContent = 'Bị khóa';
+                    }
+                    
+                    // Recreate icons
+                    lucide.createIcons();
+                    
+                    // Hiển thị thông báo thành công
+                    alert(result.message);
+                    
+                    // Cập nhật số liệu thống kê (reload trang)
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Đã xảy ra lỗi khi cập nhật trạng thái');
+            } finally {
+                buttonElement.disabled = false;
+                buttonElement.style.opacity = '1';
+            }
+        });
+    });
+</script>
