@@ -21,15 +21,68 @@ namespace JIRA_NTB.Admin.Controllers
 			_roleManager = roleManager;
 			_context = context;
 		}
-		public async Task<IActionResult> Index()
+
+		[HttpGet]
+		public async Task<IActionResult> Index(string searchString, string department, int pageNumber = 1)
 		{
+			
+			if (!User.IsInRole("ADMIN"))
+			{
+				return Forbid();
+			}
+
+			int pageSize = 10; // Số mục trên mỗi trang
+
 			// Lấy tất cả user
-			var currentUser = await _userManager.GetUserAsync(User);
-			var users = await _userManager.Users
-				.Where(u => u.Id != currentUser.Id)
+			var users = _userManager.Users
+				.Where(u => u.UserName != User.Identity.Name) // Loại bỏ chính user hiện tại
 				.Include(u => u.Department)
-				.ToListAsync();
-			return View(users);
+				.AsQueryable();
+
+			// Lọc theo chuỗi tìm kiếm (email hoặc tên đầy đủ)
+			if (!string.IsNullOrEmpty(searchString))
+			{
+				users = users.Where(u => u.Email.Contains(searchString) || u.FullName.Contains(searchString));
+			}
+
+			// Lọc theo phòng ban
+			if (!string.IsNullOrEmpty(department))
+			{
+				users = users.Where(u => u.Department != null && u.Department.DepartmentName == department);
+			}
+
+			// Sắp xếp theo tên
+			users = users.OrderBy(u => u.FullName);
+
+			// Tạo danh sách phân trang
+			var paginatedUsers = PaginatedList<UserModel>.Create(users, pageNumber, pageSize);
+			
+			// Lấy danh sách phòng ban để hiển thị trong dropdown filter
+			var departments = await _userManager.Users
+        		.Where(u => u.Department != null)
+        		.Select(u => u.Department!.DepartmentName)
+        		.Distinct()
+        		.OrderBy(d => d)
+        		.ToListAsync();
+
+			ViewBag.Departments = departments;
+			ViewBag.CurrentSearch = searchString;
+			ViewBag.CurrentDepartment = department;
+
+			// Đếm số LEADER (không tính ADMIN)
+			var allUsers = await _userManager.Users.ToListAsync();
+			int leaderCount = 0;
+			foreach (var u in allUsers)
+			{
+				var userRoles = await _userManager.GetRolesAsync(u);
+				if (userRoles.Contains("LEADER") && !userRoles.Contains("ADMIN"))
+				{
+					leaderCount++;
+				}
+			}
+			ViewBag.LeaderCount = leaderCount;
+
+			return View(paginatedUsers);
 		}
 
 		// Hiển thị trang để gán/xóa quyền của 1 user
@@ -160,13 +213,39 @@ namespace JIRA_NTB.Admin.Controllers
 				return RedirectToAction("Index");
 			}
 
-			// 5. Xử lý gán role
-			var currentRoles = await _userManager.GetRolesAsync(user);
+			// 5. Kiểm tra nếu gán LEADER: mỗi phòng ban chỉ có 1 LEADER
+			if (roleName == "LEADER")
+			{
+				// Kiểm tra user có phòng ban chưa
+				if (user.Department == null)
+				{
+					TempData["ErrorMessage"] = "Không thể gán LEADER cho nhân viên chưa có phòng ban.";
+					return RedirectToAction("Index");
+				}
 
-			// Xóa TẤT CẢ role cũ
+				// Tìm LEADER hiện tại của phòng ban này (loại trừ ADMIN)
+				var usersInDepartment = _userManager.Users
+					.Where(u => u.Department != null && u.Department.IdDepartment == user.Department.IdDepartment)
+					.ToList();
+
+				foreach (var deptUser in usersInDepartment)
+				{
+					var roles = await _userManager.GetRolesAsync(deptUser);
+					// Nếu là LEADER và không phải ADMIN
+					if (roles.Contains("LEADER") && !roles.Contains("ADMIN") && deptUser.Id != userId)
+					{
+						// Hạ cấp LEADER cũ xuống EMPLOYEE
+						await _userManager.RemoveFromRoleAsync(deptUser, "LEADER");
+						await _userManager.AddToRoleAsync(deptUser, "EMPLOYEE");
+					}
+				}
+			}
+
+			// 6. Xóa TẤT CẢ role cũ của user hiện tại
+			var currentRoles = await _userManager.GetRolesAsync(user);
 			await _userManager.RemoveFromRolesAsync(user, currentRoles);
 
-			// Thêm role mới
+			// 7. Thêm role mới
 			await _userManager.AddToRoleAsync(user, roleName);
 
 			TempData["SuccessMessage"] = $"Đã gán quyền {roleName} cho {user.Email}";

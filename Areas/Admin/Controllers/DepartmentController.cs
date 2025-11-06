@@ -1,6 +1,7 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,17 +12,49 @@ namespace JIRA_NTB.Admin.Controllers
 	public class DepartmentController : Controller
 	{
 		private readonly AppDbContext _context;
-		public DepartmentController(AppDbContext context)
+		private readonly UserManager<UserModel> _userManager;
+		
+		public DepartmentController(AppDbContext context, UserManager<UserModel> userManager)
 		{
 			_context = context;
+			_userManager = userManager;
 		}
-		public async Task<IActionResult> Index()
+		public async Task<IActionResult> Index(string searchString, int pageNumber = 1)
 		{
-			var departments = await _context.Departments
+			int pageSize = 5; // Số phòng ban trên mỗi trang
+
+			var departments = _context.Departments
 				.Include(d => d.Users) // Load số lượng nhân viên
-				.OrderBy(d => d.DepartmentName)
-				.ToListAsync();
-			return View(departments);
+				.AsQueryable();
+
+			// Lọc theo tìm kiếm
+			if (!string.IsNullOrEmpty(searchString))
+			{
+				departments = departments.Where(d => d.DepartmentName.Contains(searchString));
+			}
+
+			// Sắp xếp theo tên
+			departments = departments.OrderBy(d => d.DepartmentName);
+
+			// Tạo danh sách phân trang
+			var paginatedDepartments = PaginatedList<DepartmentModel>.Create(departments, pageNumber, pageSize);
+
+			ViewBag.CurrentSearch = searchString;
+
+			// Đếm số LEADER (không tính ADMIN)
+			var allUsers = await _userManager.Users.ToListAsync();
+			int leaderCount = 0;
+			foreach (var u in allUsers)
+			{
+				var userRoles = await _userManager.GetRolesAsync(u);
+				if (userRoles.Contains("LEADER") && !userRoles.Contains("ADMIN"))
+				{
+					leaderCount++;
+				}
+			}
+			ViewBag.LeaderCount = leaderCount;
+
+			return View(paginatedDepartments);
 		}
 
 		public IActionResult Create()

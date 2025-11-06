@@ -1,7 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using JIRA_NTB.Admin.Controllers
 @inject UserManager<JIRA_NTB.Models.UserModel> UserManager
 
-@model IEnumerable<JIRA_NTB.Models.UserModel>
+@model PaginatedList<JIRA_NTB.Models.UserModel>
 
 @{
     ViewData["Title"] = "Quản lý nhân viên";
@@ -18,15 +19,27 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-purple-400 text-sm font-medium mb-1">Tổng nhân viên</p>
-                    <h3 class="text-3xl font-bold text-white">@Model.Count()</h3>
+                    <h3 class="text-3xl font-bold text-white">@Model.TotalItems</h3>
                 </div>
                 <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <i data-lucide="check-circle" class="w-6 h-6 text-purple-400"></i>
+                    <i data-lucide="users" class="w-6 h-6 text-purple-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-yellow-400 text-sm font-medium mb-1">Trưởng phòng</p>
+                    <h3 class="text-3xl font-bold text-white">@ViewBag.LeaderCount</h3>
+                </div>
+                <div class="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="briefcase" class="w-6 h-6 text-yellow-400"></i>
                 </div>
             </div>
         </div>
@@ -85,50 +98,50 @@
             </div>
             
             <!-- Bộ lọc và Tìm kiếm -->
-            <div class="flex items-center gap-3">
+            <form method="get" asp-action="Index" class="flex items-center gap-3">
                 <!-- Bộ lọc bên trái -->
                 <div class="flex items-center gap-2">
                     <i data-lucide="filter" class="w-4 h-4 text-gray-400"></i>
                     <span class="text-gray-400 text-sm font-medium">Lọc:</span>
                 </div>
                 
-                <!-- Sắp xếp theo tên -->
-                <select id="sortByName" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <option value="asc">A → Z</option>
-                    <option value="desc">Z → A</option>
-                </select>
-                
                 <!-- Lọc theo phòng ban -->
-                <select id="filterByDepartment" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <select name="department" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
                     <option value="">Tất cả phòng ban</option>
-                    @{
-                        var departments = Model.Where(u => u.Department != null)
-                            .Select(u => u.Department)
-                            .DistinctBy(d => d.IdDepartment)
-                            .OrderBy(d => d.DepartmentName);
-                        
-                        foreach (var dept in departments)
+                    @if (ViewBag.Departments != null)
+                    {
+                        foreach (var dept in ViewBag.Departments)
                         {
-                            <option value="@dept.DepartmentName">@dept.DepartmentName</option>
+                            <option value="@dept" selected="@(dept == ViewBag.CurrentDepartment)">@dept</option>
                         }
                     }
                 </select>
                 
-                <!-- Nút reset -->
-                <button id="resetFilters" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors duration-200">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                    Reset
-                </button>
-                
                 <!-- Ô tìm kiếm bên phải (dài hơn) -->
                 <div class="relative flex-1 ml-auto" style="max-width: 400px;">
                     <input type="text" 
-                           id="searchInput"
-                           placeholder="Tìm kiếm theo email, tên, phòng ban..." 
+                           name="searchString"
+                           value="@ViewBag.CurrentSearch"
+                           placeholder="Tìm kiếm theo email hoặc tên..." 
                            class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                     <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 </div>
-            </div>
+                
+                <!-- Nút tìm kiếm -->
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    Tìm
+                </button>
+                
+                <!-- Nút reset -->
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors duration-200">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    Reset
+                </a>
+                
+                <!-- Hidden field để giữ pageNumber -->
+                <input type="hidden" name="pageNumber" value="1" />
+            </form>
         </div>
 
         <!-- Table Content -->
@@ -299,29 +312,128 @@
                     }
                 </tbody>
             </table>
-            
-            <!-- Thông báo khi không tìm thấy kết quả -->
-            <div id="noResultsMessage" class="hidden py-12 text-center">
-                <i data-lucide="search-x" class="w-16 h-16 text-gray-500 mx-auto mb-4"></i>
-                <p class="text-gray-400 text-lg font-medium">Không có dữ liệu</p>
-                <p class="text-gray-500 text-sm mt-2">Không tìm thấy kết quả phù hợp với từ khóa tìm kiếm</p>
-            </div>
         </div>
 
-        <!-- Table Footer -->
-        <div class="bg-gray-900/30 border-t border-gray-700 px-6 py-4 flex items-center justify-between">
-            <p class="text-gray-400 text-sm">
-                Hiển thị <span class="text-white font-semibold">@Model.Count()</span> người dùng
-            </p>
-            <div class="flex items-center gap-2">
-                <button class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
-                </button>
-                <span class="px-4 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium">1</span>
-                <button class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
-                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                </button>
-            </div>
+        <!-- Table Footer - Pagination -->
+        <div class="bg-gray-900/30 border-t border-gray-700 px-6 py-4">
+            @if (Model.TotalPages > 1)
+            {
+                <div class="flex justify-between items-center">
+                    <!-- Thông tin trang -->
+                    <p class="text-gray-400 text-sm">
+                        Hiển thị <span class="text-white font-semibold">@((Model.PageIndex - 1) * 10 + 1)</span> 
+                        - <span class="text-white font-semibold">@(Math.Min(Model.PageIndex * 10, Model.TotalItems))</span> 
+                        trong tổng số <span class="text-white font-semibold">@Model.TotalItems</span> nhân viên
+                    </p>
+
+                    <!-- Nút phân trang -->
+                    <div class="flex items-center gap-2">
+                        <!-- Nút Previous -->
+                        @if (Model.HasPreviousPage)
+                        {
+                            <a asp-action="Index" 
+                               asp-route-pageNumber="@(Model.PageIndex - 1)"
+                               asp-route-searchString="@ViewBag.CurrentSearch"
+                               asp-route-department="@ViewBag.CurrentDepartment"
+                               class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200 flex items-center gap-1">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Trước</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-2 bg-gray-800 text-gray-500 rounded-lg text-sm cursor-not-allowed flex items-center gap-1">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Trước</span>
+                            </span>
+                        }
+
+                        <!-- Số trang -->
+                        @{
+                            int startPage = Math.Max(1, Model.PageIndex - 2);
+                            int endPage = Math.Min(Model.TotalPages, Model.PageIndex + 2);
+                            
+                            if (startPage > 1)
+                            {
+                                <a asp-action="Index" 
+                                   asp-route-pageNumber="1"
+                                   asp-route-searchString="@ViewBag.CurrentSearch"
+                                   asp-route-department="@ViewBag.CurrentDepartment"
+                                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                    1
+                                </a>
+                                
+                                if (startPage > 2)
+                                {
+                                    <span class="text-gray-500 px-2">...</span>
+                                }
+                            }
+                            
+                            for (int i = startPage; i <= endPage; i++)
+                            {
+                                if (i == Model.PageIndex)
+                                {
+                                    <span class="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                                        @i
+                                    </span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Index" 
+                                       asp-route-pageNumber="@i"
+                                       asp-route-searchString="@ViewBag.CurrentSearch"
+                                       asp-route-department="@ViewBag.CurrentDepartment"
+                                       class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                        @i
+                                    </a>
+                                }
+                            }
+                            
+                            if (endPage < Model.TotalPages)
+                            {
+                                if (endPage < Model.TotalPages - 1)
+                                {
+                                    <span class="text-gray-500 px-2">...</span>
+                                }
+                                
+                                <a asp-action="Index" 
+                                   asp-route-pageNumber="@Model.TotalPages"
+                                   asp-route-searchString="@ViewBag.CurrentSearch"
+                                   asp-route-department="@ViewBag.CurrentDepartment"
+                                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200">
+                                    @Model.TotalPages
+                                </a>
+                            }
+                        }
+
+                        <!-- Nút Next -->
+                        @if (Model.HasNextPage)
+                        {
+                            <a asp-action="Index" 
+                               asp-route-pageNumber="@(Model.PageIndex + 1)"
+                               asp-route-searchString="@ViewBag.CurrentSearch"
+                               asp-route-department="@ViewBag.CurrentDepartment"
+                               class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-sm transition-colors duration-200 flex items-center gap-1">
+                                <span>Sau</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-2 bg-gray-800 text-gray-500 rounded-lg text-sm cursor-not-allowed flex items-center gap-1">
+                                <span>Sau</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-gray-400 text-sm">
+                    Hiển thị <span class="text-white font-semibold">@Model.Count()</span> người dùng
+                </p>
+            }
         </div>
     </div>
 </div>
@@ -329,108 +441,6 @@
 <script>
     // Khởi tạo icons khi trang load xong
     document.addEventListener('DOMContentLoaded', function() {
-        lucide.createIcons();
-    });
-
-    // ===== XỬ LÝ TÌM KIẾM VÀ LỌC =====
-    const searchInput = document.getElementById('searchInput');
-    const userTable = document.getElementById('userTable');
-    const tableBody = userTable.querySelector('tbody');
-    const tableRows = Array.from(userTable.querySelectorAll('tbody tr'));
-    const noResultsMessage = document.getElementById('noResultsMessage');
-    
-    // Bộ lọc
-    const sortByName = document.getElementById('sortByName');
-    const filterByDepartment = document.getElementById('filterByDepartment');
-    const resetFilters = document.getElementById('resetFilters');
-
-    // Hàm áp dụng tất cả các bộ lọc
-    function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const sortOrder = sortByName.value;
-        const departmentFilter = filterByDepartment.value.toLowerCase();
-        
-        let visibleRows = tableRows.filter(row => {
-            // Lấy text từ các cột
-            const email = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
-            const fullName = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
-            const departmentCell = row.querySelector('td:nth-child(3)');
-            
-            // Lấy tên phòng ban
-            let department = '';
-            if (departmentCell) {
-                // Tìm span có class bg-indigo (span chứa tên phòng ban)
-                const deptSpan = departmentCell.querySelector('span.bg-indigo-500\\/20');
-                if (deptSpan) {
-                    // Lấy text và loại bỏ icon
-                    department = deptSpan.textContent.trim().toLowerCase();
-                } else {
-                    // Chưa phân bổ
-                    const noDeptSpan = departmentCell.querySelector('span.text-gray-500');
-                    if (noDeptSpan) {
-                        department = noDeptSpan.textContent.trim().toLowerCase();
-                    }
-                }
-            }
-            
-            // Kiểm tra tìm kiếm
-            const matchesSearch = searchTerm === '' || 
-                                 email.includes(searchTerm) || 
-                                 fullName.includes(searchTerm) || 
-                                 department.includes(searchTerm);
-            
-            // Kiểm tra lọc phòng ban (so sánh chính xác)
-            const matchesDepartment = departmentFilter === '' || department === departmentFilter;
-            
-            return matchesSearch && matchesDepartment;
-        });
-        
-        // Sắp xếp theo tên
-        if (sortOrder === 'asc') {
-            visibleRows.sort((a, b) => {
-                const nameA = a.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-                const nameB = b.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-                return nameA.localeCompare(nameB, 'vi');
-            });
-        } else if (sortOrder === 'desc') {
-            visibleRows.sort((a, b) => {
-                const nameA = a.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-                const nameB = b.querySelector('td:nth-child(2)')?.textContent.trim() || '';
-                return nameB.localeCompare(nameA, 'vi');
-            });
-        }
-        
-        // Ẩn tất cả các dòng
-        tableRows.forEach(row => row.style.display = 'none');
-        
-        // Hiển thị các dòng phù hợp và sắp xếp lại trong DOM
-        if (visibleRows.length > 0) {
-            visibleRows.forEach(row => {
-                row.style.display = '';
-                tableBody.appendChild(row); // Thêm lại vào tbody theo thứ tự mới
-            });
-            userTable.style.display = '';
-            noResultsMessage.classList.add('hidden');
-        } else {
-            userTable.style.display = 'none';
-            noResultsMessage.classList.remove('hidden');
-            lucide.createIcons();
-        }
-        
-        console.log(`Hiển thị ${visibleRows.length}/${tableRows.length} người dùng`);
-    }
-
-    // Lắng nghe sự kiện
-    searchInput.addEventListener('input', applyFilters);
-    sortByName.addEventListener('change', applyFilters);
-    filterByDepartment.addEventListener('change', applyFilters);
-    
-    // Reset filters
-    resetFilters.addEventListener('click', function() {
-        searchInput.value = '';
-        sortByName.value = '';
-        filterByDepartment.value = '';
-        applyFilters();
         lucide.createIcons();
     });
 

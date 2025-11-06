@@ -1,5 +1,5 @@
 ﻿using JIRA_NTB.Models;
-using JIRA_NTB.Utilities;
+using JIRA_NTB.Admin.Controllers;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace JIRA_NTB.Areas.Admin.ViewModels
