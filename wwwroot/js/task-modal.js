@@ -212,7 +212,11 @@ if (btnSaveTask) {
         // Validation ngày
         const startDate = document.getElementById('taskStartDate').value;
         const endDate = document.getElementById('taskDeadline').value;
-
+        const nameTask = document.getElementById('taskName').value;
+        if (nameTask.length > 200) {
+            alert('Tên dự án không vượt quá 200 ký tự');
+            return;
+        }
         if (startDate) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -233,7 +237,7 @@ if (btnSaveTask) {
                 return;
             }
         }
-
+        
         // Tạo FormData
         const formData = new FormData();
 

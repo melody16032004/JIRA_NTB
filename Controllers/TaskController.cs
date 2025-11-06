@@ -118,6 +118,7 @@ namespace JIRA_NTB.Controllers
             var task = taskBoard.TodoTasks
                 .Concat(taskBoard.InProgressTasks)
                 .Concat(taskBoard.DoneTasks)
+                .Concat(taskBoard.OverdueTasks)
                 .FirstOrDefault(t => t.IdTask == taskId);
 
             if (task == null)

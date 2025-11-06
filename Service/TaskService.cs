@@ -44,7 +44,7 @@ namespace JIRA_NTB.Service
                     .ToViewModelList(),
 
                 OverdueTasks = tasks
-                    .Where(t => t.Overdue && t.Status?.StatusName != TaskStatusModel.Done)
+                    .Where(t => t.Overdue && t.Status?.StatusName != TaskStatusModel.Done && t.Status?.StatusName != TaskStatusModel.Deleted)
                     .ToViewModelList(),
                 Projects = projects,
                 Statuses = statuses
@@ -167,8 +167,11 @@ namespace JIRA_NTB.Service
             TaskStatusModel newStatus, bool isOverdue)
         {
             // Done không thể chuyển sang status khác (chỉ có thể undo)
-         
-            if(newStatus != TaskStatusModel.Done && isOverdue)
+            if (newStatus == TaskStatusModel.Deleted)
+            {
+                return (true, "OK");
+            }
+            if (newStatus != TaskStatusModel.Done && isOverdue)
             {
                 return (false, "Task đã quá hạn chỉ có thể hoàn thành");
             }
