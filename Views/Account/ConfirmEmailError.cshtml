@@ -1,0 +1,90 @@
+@{
+    ViewData["Title"] = "Lỗi xác nhận email";
+}
+
+<div class="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+    <div class="w-full max-w-md">
+        <div class="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-red-600 to-pink-600 p-8 text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <i data-lucide="x-circle" class="w-12 h-12 text-white"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Xác nhận thất bại</h2>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 space-y-6">
+                <div class="text-center space-y-3">
+                    <p class="text-gray-300 text-lg">
+                        Không thể xác nhận email của bạn
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                        Link xác nhận có thể đã hết hạn hoặc không hợp lệ.
+                    </p>
+                </div>
+
+                <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-4 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"></i>
+                        <div class="text-red-400 text-sm space-y-2">
+                            <p><strong>Nguyên nhân có thể:</strong></p>
+                            <ul class="list-disc list-inside space-y-1 ml-2">
+                                <li>Link xác nhận đã hết hạn (quá 60 giây)</li>
+                                <li>Link xác nhận không đúng hoặc bị lỗi</li>
+                                <li>Tài khoản đã bị xóa do không xác nhận kịp thời</li>
+                                <li>Email đã được xác nhận trước đó</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-blue-400 text-sm">
+                            <strong>Giải pháp:</strong> Vui lòng đăng ký lại tài khoản mới và nhớ xác nhận email trong vòng 60 giây.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Register Again Button -->
+                <a asp-action="Register" 
+                   class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    Đăng ký lại
+                </a>
+
+                <div class="text-center space-y-2">
+                    <a asp-action="Login" 
+                       class="inline-flex items-center gap-2 text-gray-400 hover:text-gray-300 text-sm transition-colors">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        Đăng nhập (nếu đã có tài khoản)
+                    </a>
+                    <br>
+                    <a asp-controller="Home" asp-action="Index" 
+                       class="inline-flex items-center gap-2 text-gray-400 hover:text-gray-300 text-sm transition-colors">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        Về trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="text-center mt-6 text-gray-400 text-xs">
+            <p>© 2025 JIRA NTB. Hệ thống quản lý dự án chuyên nghiệp.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

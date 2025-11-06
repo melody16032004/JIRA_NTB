@@ -1,65 +1,23 @@
-﻿/* Scrollbar cho main */
-/*.main-content::-webkit-scrollbar {
-    width: 6px;
-    mảnh hơn
-}
-
-.main-content::-webkit-scrollbar-track {
-    background: #1f2937;*/ /*màu track */
-    /*border-radius: 3px;
-}
-
-.main-content::-webkit-scrollbar-thumb {
-    background-color: #4f46e5;*/ /*màu thumb*/
-    /*border-radius: 3px;
-    border: 1px solid #1f2937;*/ /*khoảng cách xung quanh thumb*/
-/*}*/
-
-/* Firefox */
-/*.main-content {
+﻿body{
+    scroll-behavior: smooth;
     scrollbar-width: thin;
-    scrollbar-color: #4f46e5 #1f2937;
-}*/
-/* Custom Scrollbar */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+}
+#progressText{
+    user-select: none;
+}
+#previewContainerEdit{
+    box-sizing: border-box;
+}
+.task-card {
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(31, 41, 55, 0.3); /* bg-gray-800 với độ mờ */
-    border-radius: 10px;
+.hidden-task {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
 }
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(107, 114, 128, 0.5); /* bg-gray-500 với độ mờ */
-    border-radius: 10px;
-}
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(107, 114, 128, 0.7); /* bg-gray-500 đậm hơn khi hover */
-    }
-
-/* Line clamp utility (hỗ trợ cho Tailwind) */
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-#notifyDropdown{
+#notifyDropdown {
     user-select: none;
 }
     /* Làm đẹp thanh cuộn trong dropdown */
@@ -80,7 +38,68 @@
     background-color: rgba(79, 70, 229, 0.15); /* Indigo-600 mờ */
 }
 
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 
+.custom-scroll::-webkit-scrollbar {
+    width: 6px; /* thin */
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent; /* màu nền thanh cuộn */
+    border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: gray; /* màu mặc định */
+    border-radius: 10px;
+    transition: background 0.2s ease; /* mượt hơn khi hover */
+}
+
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #6366f1; /* indigo-500 */
+    }
+
+/* ✅ Select sổ lên trên */
+.custom-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,<svg fill='white' height='10' width='10' xmlns='http://www.w3.org/2000/svg'><path d='M0 10 L5 0 L10 10 Z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 10px;
+}
+
+    /* Khi mở dropdown sổ lên trên */
+    .custom-select:focus {
+        position: relative;
+        z-index: 50;
+    }
+
+    .custom-select option {
+        background-color: #1f2937;
+        color: white;
+    }
+
+    .custom-select::-ms-expand {
+        display: none;
+    }
+
+/* Trick: ép dropdown hiển thị lên trên */
+.custom-select {
+    transform-origin: bottom center;
+}
+
+    .custom-select:focus {
+        transform: translateY(-4px);
+    }
+
+#previewContainerEdit{
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+}
 /*==================================================*/
 @keyframes cardFadeIn {
     from {
@@ -122,4 +141,20 @@
 
 .shake {
     animation: shake 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.25s ease-out;
 }

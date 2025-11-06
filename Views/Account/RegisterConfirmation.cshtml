@@ -1,0 +1,99 @@
+@{
+    ViewData["Title"] = "Đăng ký thành công";
+}
+
+<div class="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+    <div class="w-full max-w-2xl">
+        <div class="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-8 text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm animate-pulse">
+                        <i data-lucide="mail-check" class="w-10 h-10 text-white"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Kiểm tra email của bạn!</h2>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 space-y-6">
+                <div class="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-6">
+                    <div class="flex items-start gap-4">
+                        <i data-lucide="clock" class="w-6 h-6 text-yellow-400 flex-shrink-0 mt-1"></i>
+                        <div>
+                            <h3 class="text-yellow-400 font-bold text-lg mb-2">⚠️ LƯU Ý QUAN TRỌNG</h3>
+                            <p class="text-gray-300 text-base leading-relaxed">
+                                Email xác nhận đã được gửi đến địa chỉ email của bạn. 
+                                <span class="text-red-400 font-bold">Link xác nhận chỉ có hiệu lực trong vòng 10 phút!</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-purple-400 font-bold">1</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">Mở email của bạn</h4>
+                            <p class="text-gray-400 text-sm">Kiểm tra hộp thư đến (và cả thư mục spam nếu cần)</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-purple-400 font-bold">2</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">Nhấn vào link xác nhận</h4>
+                            <p class="text-gray-400 text-sm">Click vào nút "Xác nhận Email" trong email</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-purple-600/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-purple-400 font-bold">3</span>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-semibold mb-1">Hoàn tất đăng ký</h4>
+                            <p class="text-gray-400 text-sm">Sau khi xác nhận, bạn có thể đăng nhập vào hệ thống</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"></i>
+                        <p class="text-red-400 text-sm">
+                            <strong>Chú ý:</strong> Nếu không xác nhận email trong vòng 60 giây, 
+                            tài khoản của bạn sẽ tự động bị xóa và bạn cần đăng ký lại.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="pt-4 text-center">
+                    <a asp-action="Login" 
+                       class="inline-flex items-center gap-2 text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Quay lại trang đăng nhập
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="text-center mt-6 text-gray-400 text-xs">
+            <p>© 2025 JIRA NTB. Hệ thống quản lý dự án chuyên nghiệp.</p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
+    </script>
+}

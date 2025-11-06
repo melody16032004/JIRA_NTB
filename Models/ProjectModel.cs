@@ -6,7 +6,7 @@ namespace JIRA_NTB.Models
     public class ProjectModel
     {
         [Key]
-        public required string IdProject { get; set; }
+        public required string IdProject { get; set; }= Guid.NewGuid().ToString();
 
         [Required, MaxLength(200)]
         public required string ProjectName { get; set; }
