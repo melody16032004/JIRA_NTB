@@ -1,0 +1,192 @@
+﻿@model JIRA_NTB.ViewModels.ProjectDetailViewModel
+
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Bảng công việc</h3>
+        <span class="text-xs text-gray-500 dark:text-gray-400">@Model.Tasks.Count nhiệm vụ</span>
+    </div>
+
+    <!-- Kanban Board Container -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="kanbanBoard">
+
+        <!-- Cột 1: Kế hoạch -->
+        <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Kế hoạch</h4>
+                </div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
+                      data-column="todo">0</span>
+            </div>
+            <div class="space-y-3 overflow-y-auto flex-1" data-status="Lên kế hoạch">
+                <!-- Tasks sẽ được render ở đây -->
+            </div>
+        </div>
+
+        <!-- Cột 2: Đang thực hiện -->
+        <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Đang thực hiện</h4>
+                </div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
+                      data-column="inprogress">0</span>
+            </div>
+            <div class="space-y-3 overflow-y-auto flex-1" data-status="Đang thực hiện">
+                <!-- Tasks sẽ được render ở đây -->
+            </div>
+        </div>
+
+        <!-- Cột 3: Hoàn thành -->
+        <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Hoàn thành</h4>
+                </div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
+                      data-column="done">0</span>
+            </div>
+            <div class="space-y-3 overflow-y-auto flex-1" data-status="Hoàn thành">
+                <!-- Tasks sẽ được render ở đây -->
+            </div>
+        </div>
+
+        <!-- Cột 4: Trễ hạn -->
+        <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                    <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Trễ hạn</h4>
+                </div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
+                      data-column="overdue">0</span>
+            </div>
+            <div class="space-y-3 overflow-y-auto flex-1" data-status="overdue">
+                <!-- Tasks sẽ được render ở đây -->
+            </div>
+        </div>
+
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        console.log("KANBAN: script start");
+
+        const timelineData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TaskTimelineData));
+        console.log("KANBAN: timelineData raw:", timelineData);
+
+        if (!timelineData || timelineData.length === 0) {
+            console.warn("KANBAN: timelineData empty");
+            return;
+        }
+
+        function normalize(str) {
+            if (!str && str !== "") return "";
+            try {
+                return str.toString().normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+            } catch (e) {
+                return (str || "").toString().trim().toLowerCase();
+            }
+        }
+
+        const domStatusContainers = {};
+        document.querySelectorAll('[data-status]').forEach(el => {
+            const raw = el.getAttribute('data-status') ?? '';
+            const key = normalize(raw);
+            domStatusContainers[key] = el;
+        });
+        console.log("KANBAN: DOM status containers:", Object.keys(domStatusContainers));
+
+        const columns = {
+            'Lên kế hoạch': [],
+            'Đang thực hiện': [],
+            'Hoàn thành': [],
+            'overdue': []
+        };
+
+        const now = Date.now();
+
+        timelineData.forEach((task, idx) => {
+            const rawStatus = task.Status ?? '';
+            const statusNorm = normalize(rawStatus);
+
+            console.log(`KANBAN: task[${idx}] "${task.Name}" rawStatus="${rawStatus}" normalized="${statusNorm}"`);
+
+            // Bỏ qua nếu đã hoàn thành
+            if (statusNorm === normalize('Hoàn thành')) {
+               columns['Hoàn thành'].push(task);
+                return;
+            }
+
+            // Nếu trễ hạn
+            if (task.End < now && statusNorm !== normalize('Hoàn thành')) {
+                columns['overdue'].push(task);
+                console.log(`KANBAN: -> classified as overdue`);
+                return;
+            }
+
+            if (statusNorm === normalize('Lên kế hoạch')) {
+                columns['Lên kế hoạch'].push(task);
+                return;
+            }
+            if (statusNorm === normalize('Đang thực hiện')) {
+                columns['Đang thực hiện'].push(task);
+                return;
+            }
+
+            // fallback
+            columns['Lên kế hoạch'].push(task);
+            console.warn(`KANBAN: WARNING - status not matched for "${task.Name}".`);
+        });
+
+        function formatDate(ts) {
+            const d = new Date(ts);
+            return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+        }
+
+        function createCardHtml(task) {
+            const overdueBadge = (task.Overdue) ? '<span class="inline-block text-xs text-red-600">⚠️ Trễ hạn</span>' : '';
+            return `<div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 mb-3">
+                <h5 class="text-sm font-medium dark:text-white mb-2">${task.Name}</h5>
+                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">${task.Priority} ${overdueBadge}</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">👤 ${task.Assignee || 'Chưa phân công'}</div>
+                <div class="text-xs text-gray-500 mt-2">${formatDate(task.Start)} → ${formatDate(task.End)}</div>
+            </div>`;
+        }
+
+        Object.keys(columns).forEach(colLabel => {
+            const normalizedLabel = normalize(colLabel);
+            let container = domStatusContainers[normalizedLabel];
+
+            if (!container) {
+                document.querySelectorAll('[data-status]').forEach(el => {
+                    if (normalize(el.getAttribute('data-status') || '') === normalizedLabel) container = el;
+                });
+            }
+
+            if (!container) return;
+
+            const tasks = columns[colLabel];
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Không có nhiệm vụ</p>';
+            } else {
+                container.innerHTML = tasks.map(createCardHtml).join('');
+            }
+
+            let badgeKey = (colLabel === 'Lên kế hoạch') ? 'todo'
+                : (colLabel === 'Đang thực hiện') ? 'inprogress'
+                : (colLabel === 'Hoàn thành') ? 'done'
+                : 'overdue';
+            const badgeEl = document.querySelector(`[data-column="${badgeKey}"]`);
+            if (badgeEl) badgeEl.textContent = tasks.length;
+        });
+
+        console.log("KANBAN: render finished");
+    });
+</script>
+
+
+

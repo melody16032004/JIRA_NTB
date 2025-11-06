@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using JIRA_NTB.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace JIRA_NTB.Models
@@ -25,7 +26,6 @@ namespace JIRA_NTB.Models
         public DateTime? EndDate { get; set; }
 
         // Foreign Keys
-        //[Required]
         public string? Assignee_Id { get; set; }
 
         [ForeignKey("Assignee_Id")]
