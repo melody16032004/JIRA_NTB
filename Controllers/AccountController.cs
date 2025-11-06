@@ -37,9 +37,9 @@ namespace JIRA_NTB.Controllers
 		public IActionResult Login()
 		{
 			if (User.Identity.IsAuthenticated)
-    		{
-        		return RedirectToAction("Index", "Home");
-    		}
+			{
+				return RedirectToAction("Index", "Home");
+			}
 			return View();
 		}
 
@@ -214,7 +214,7 @@ namespace JIRA_NTB.Controllers
 					ModelState.AddModelError(string.Empty, error.Description);
 				}
 			}
-			
+
 			// Reload lại danh sách phòng ban trước khi trả về View
 			model.DepartmentList = _context.Departments
 				.Select(d => new SelectListItem
@@ -286,7 +286,145 @@ namespace JIRA_NTB.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
 		{
+			if (ModelState.IsValid)
+			{
+				var user = await _userManager.FindByEmailAsync(model.Email);
+
+				if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+				{
+					// Để tránh lộ thông tin, luôn hiển thị trang xác nhận
+					return RedirectToAction("ForgotPasswordConfirmation");
+				}
+
+				// Nếu user tồn tại VÀ đã xác nhận email, thì tạo token
+				var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+				var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+				var callbackUrl = Url.Action(
+					"ResetPassword",    // Tên Action (Hàm 4)
+					"Account",         // Tên Controller
+					new { userId = user.Id, token = encodedToken }, // Tham số
+					protocol: Request.Scheme // http hoặc https
+				);
+
+				// Gửi email (sao chép phong cách từ hàm Register của bạn)
+				await _emailSender.SendEmailAsync(
+					model.Email,
+					"Yêu cầu đặt lại mật khẩu JIRA NTB",
+					$@"
+						<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+							<h2 style='color: #9333ea;'>Yêu cầu đặt lại mật khẩu</h2>
+							<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản <strong>{user.Email}</strong> của bạn.</p>
+							<p>Vui lòng bấm vào nút bên dưới để đặt lại mật khẩu:</p>
+							<p style='margin: 30px 0;'>
+								<a href='{callbackUrl}' 
+								   style='background: linear-gradient(to right, #9333ea, #ec4899); 
+										  color: white; 
+										  padding: 12px 30px; 
+										  text-decoration: none; 
+										  border-radius: 8px; 
+										  display: inline-block;
+										  font-weight: bold;'>
+									Đặt lại mật khẩu
+								</a>
+							</p>
+							<p style='color: #dc2626; font-weight: bold;'>⚠️ LƯU Ý: Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
+							<p style='color: #6b7280; font-size: 14px;'>Nếu bạn không thể bấm vào nút, hãy sao chép link sau vào trình duyệt:</p>
+							<p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
+							<hr style='border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;'>
+						</div>"
+				);
+				// Chuyển hướng đến trang thông báo
+				return RedirectToAction("ForgotPasswordConfirmation");
+			}
 			return View();
+		}
+
+		// ------ 3. Hiển thị trang thông báo đã gửi link ------
+		[HttpGet]
+		public IActionResult ForgotPasswordConfirmation()
+		{
+			return View();
+		}
+
+		// ------ 4. Hiển thị trang NHẬP MẬT KHẨU MỚI (khi user bấm link) ------
+		[HttpGet]
+		public IActionResult ResetPassword(string userId, string token)
+		{
+			if (userId == null || token == null)
+			{
+				ModelState.AddModelError(string.Empty, "Link đặt lại mật khẩu không hợp lệ.");
+				return RedirectToAction("Login");
+			}
+
+			try
+			{
+				// Giải mã token
+				var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+			}
+			catch (Exception)
+			{
+				ModelState.AddModelError(string.Empty, "Token không hợp lệ.");
+				return View("Error");
+			}
+			var model = new ResetPasswordViewModel 
+			{
+				UserId = userId,
+				Token = token
+			};
+			return View(model);
+		}
+
+		// ------ 5. Xử lý việc ĐẶT LẠI MẬT KHẨU MỚI (khi user submit form) ------
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return View(model); // Trả về View với lỗi
+			}
+
+			var user = await _userManager.FindByIdAsync(model.UserId);
+			if (user == null)
+			{
+				// Không tiết lộ rằng user không tồn tại
+				TempData["SuccessMessage"] = "Mật khẩu của bạn đã được đặt lại thành công. Vui lòng đăng nhập.";
+				return RedirectToAction("Login");
+			}
+
+			// Giải mã token trước khi sử dụng
+			string decodedToken;
+			try
+			{
+				decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
+			}
+			catch (Exception)
+			{
+				ModelState.AddModelError(string.Empty, "Token không hợp lệ.");
+				return View(model);
+			}
+
+			var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+
+			if (result.Succeeded)
+			{
+				// Tùy chọn: Nếu tài khoản bị khóa, hãy mở lại
+				if (await _userManager.IsLockedOutAsync(user))
+				{
+					await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow);
+				}
+
+				TempData["SuccessMessage"] = "Mật khẩu của bạn đã được đặt lại thành công. Vui lòng đăng nhập.";
+				return RedirectToAction("Login");
+			}
+
+			// Nếu thất bại (vd: token hết hạn, mật khẩu không đủ mạnh...)
+			foreach (var error in result.Errors)
+			{
+				ModelState.AddModelError(string.Empty, error.Description);
+			}
+			return View(model);
 		}
 	}
 }

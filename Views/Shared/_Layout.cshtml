@@ -259,13 +259,6 @@
                                             </form>
                                         </li>
                                         <li>
-                                            <a asp-area="" asp-controller="Account" asp-action="ChangePassword"
-                                               class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
-                                                <i data-lucide="key-round" class="w-4 h-4 mr-2"></i>
-                                                Đổi mật khẩu
-                                            </a>
-                                        </li>
-                                        <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
                                             <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                                                 @Html.AntiForgeryToken()
