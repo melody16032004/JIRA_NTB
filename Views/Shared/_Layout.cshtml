@@ -17,11 +17,20 @@
 <body class="bg-gray-100 ">
     <div class="flex h-screen overflow-hidden ">
         <!-- Sidebar -->
-        <aside class="w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-gray-200 flex flex-col shadow-2xl side-bar min-h-screen shadow-[0_5px_20px_rgba(255,255,255,0.8)]">
+        <aside id="sidebar"
+            class="w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-gray-200 flex flex-col shadow-2xl side-bar min-h-screen
+                    fixed lg:static top-0 left-0 h-full z-50
+                    transform -translate-x-full lg:translate-x-0
+                    transition-transform duration-300 ease-in-out">
             <!-- Header / Logo -->
-            <div class="p-5 bg-gray-950 flex items-center justify-center border-b border-gray-700">
+            <div class="p-5 bg-gray-950 flex items-center justify-center border-b border-gray-700 relative">
                 <img src="/assets/project.png" class="w-11 h-11 mr-3"/>
                 <h1 class="text-lg font-bold tracking-wide text-white uppercase">Quản Lý Dự Án</h1>
+
+                <!-- THÊM MỚI: Nút đóng sidebar (chỉ hiện trên di động) -->
+                @* <button id="sidebarClose" class="lg:hidden absolute top-3.5 right-3 p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button> *@
             </div>
 
             <!-- Navigation -->
@@ -36,7 +45,7 @@
                 </a>
 
                 <a asp-controller="#" asp-action="Index"
-                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="Building" class="w-4 h-4"></i>
                     </div>
@@ -52,7 +61,7 @@
                 </a>
 
                 <a asp-controller="Project" asp-action="Index"
-                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3  rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="folder-git-2" class="w-4 h-4"></i>
                     </div>
@@ -81,16 +90,25 @@
                 © 2025 Quản Lý Pro
             </div>
         </aside>
-
+        <!-- Lớp phủ mờ (chỉ hiện khi mở sidebar trên di động) -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
 
         <!-- Main Content Area -->
         <main class="main-content flex-1 overflow-y-auto divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
             <!-- Header -->
-            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-0">
+            <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-30">
                 <div class="px-6 py-4 flex items-center justify-between">
-                    <h2 class="text-2xl font-semibold text-white tracking-wide">
-                        @ViewData["Title"]
-                    </h2>
+                    <!-- THAY ĐỔI: Bọc nút toggle và tiêu đề trong 1 div -->
+                    <div class="flex items-center">
+                        <!-- THÊM MỚI: Nút Hamburger (chỉ hiện trên di động) -->
+                        <button id="sidebarToggle" class="lg:hidden p-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mr-3 -ml-2 transition-colors">
+                            <i data-lucide="menu" class="w-6 h-6"></i>
+                        </button>
+
+                        <h2 class="text-2xl font-semibold text-white tracking-wide">
+                            @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
+                        </h2>
+                    </div>
 
                     <!-- Action buttons -->
                     <div class="flex items-center space-x-3 relative">
@@ -281,14 +299,28 @@
             </header>
 
             <!-- Content -->
-            <div class="p-4 bg-gray-900/60 rounded-b-xl backdrop-blur-md">
+            <div class="p-2 bg-gray-900/60 rounded-b-xl backdrop-blur-md">
                 @RenderBody()
             </div>
         </main>
     </div>
-    <!-- Global Modals nằm ngoài layout -->
     @RenderSection("GlobalModals", required: false)
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const menuItems = document.querySelectorAll("#sidebarMenu .sidebar-item");
+
+            menuItems.forEach(item => {
+                item.addEventListener("click", function() {
+                    // Xóa border của tất cả các item
+                    menuItems.forEach(i => i.classList.remove("border-l-4", "border-indigo-500"));
+
+                    // Thêm border cho item được chọn
+                    this.classList.add("border-l-4", "border-indigo-500");
+                });
+            });
+        });
+    </script>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>lucide.createIcons();</script>
