@@ -1,5 +1,6 @@
 using JIRA_NTB.Data;
 using JIRA_NTB.Models;
+using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Models.Test;
 using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -24,44 +25,130 @@ namespace JIRA_NTB.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        [HttpGet("api/projects")]
+        public async Task<IActionResult> GetProjects()
         {
             var projects = await _context.Projects
-                                         .Include(p => p.Status)
-                                         .Include(p => p.Manager)
-                                         .Include(p => p.Tasks!)
-                                         .ThenInclude(s => s.Status)
-                                         .Include(p => p.ProjectManagers!)
-                                         .ThenInclude(u => u.User)
-                                         .ToListAsync();
-            var department = await _context.Departments
-                                      .Include(d => d.Users)
-                                      .ToListAsync();
+                .Select(p => new
+                {
+                    p.IdProject,
+                    p.ProjectName,
+                    p.StartDay,
+                    p.EndDay,
+                    Status = p.Status.StatusName,
+                    FileNote = p.FileNote,
+                    note = p.Note,
+                    Manager = p.Manager.FullName,
+                    TotalTasks = p.Tasks.Count(),
+                    CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
+                    InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
+                    TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
+                    OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
+                })
+                .ToListAsync();
 
-            var vm = new DashboardViewModel
-            {
-                Projects = projects,
-                Departments = department
-            };
-
-            ViewBag.ProjectsJson = JsonConvert.SerializeObject(projects, new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            });
-            ViewBag.DepartmentsJson = JsonConvert.SerializeObject(department, new JsonSerializerSettings
-            {
-                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-            });
-
-            if (projects != null)
-            {
-                 return View(vm);
-            }
-            else
-            {
-                return View();
-            }
+            return Ok(projects);
         }
+
+        [HttpGet("api/projects/{idProject}/members")]
+        public async Task<IActionResult> GetMembersByProject(string idProject)
+        {
+            var members = await _context.ProjectManagers
+                .Where(m => m.ProjectId == idProject)
+                .Select(m => new
+                {
+                    m.ProjectId,
+                    Id = m.User.Id,
+                    Fullname = m.User.FullName
+                })
+                .ToListAsync();
+            return Ok(members);
+        }
+
+        [HttpGet("api/tasks")]
+        public async Task<IActionResult> GetTasks()
+        {
+            var tasks = await _context.Tasks
+                .Select(t => new
+                {
+                    t.IdTask,
+                    t.NameTask,
+                    t.Priority,
+                    t.Overdue,
+                    t.FileNote,
+                    t.Note,
+                    t.StartDate,
+                    t.EndDate,
+                    t.Assignee_Id,
+                    t.ProjectId,
+                    t.Project.ProjectName,
+                    t.Status.StatusName,
+                    NameAssignee = t.Assignee.FullName,
+
+                })
+                .ToListAsync();
+
+            return Ok(tasks);
+        }
+
+        [HttpGet("api/departments")]
+        public async Task<IActionResult> GetDepartments()
+        {
+            var departments = await _context.Departments
+                .Select(d => new
+                {
+                    d.IdDepartment,
+                    d.DepartmentName,
+                    Users = d.Users.Select(u => new { u.Id, u.FullName }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(departments);
+        }
+
+        //public async Task<IActionResult> Index()
+        //{
+        //    var projects = await _context.Projects
+        //                                 .Include(p => p.Status)
+        //                                 .Include(p => p.Manager)
+        //                                 .Include(p => p.Tasks!)
+        //                                 .ThenInclude(s => s.Status)
+        //                                 .Include(p => p.ProjectManagers!)
+        //                                 .ThenInclude(u => u.User)
+        //                                 .ToListAsync();
+        //    var department = await _context.Departments
+        //                              .Include(d => d.Users)
+        //                              .ToListAsync();
+
+        //    var vm = new DashboardViewModel
+        //    {
+        //        Projects = projects,
+        //        Departments = department
+        //    };
+
+        //    ViewBag.ProjectsJson = JsonConvert.SerializeObject(projects, new JsonSerializerSettings
+        //    {
+        //        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        //    });
+        //    ViewBag.DepartmentsJson = JsonConvert.SerializeObject(department, new JsonSerializerSettings
+        //    {
+        //        ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+        //    });
+
+        //    if (projects != null)
+        //    {
+        //         return View(vm);
+        //    }
+        //    else
+        //    {
+        //        return View();
+        //    }
+        //}
 
         // ==================== API: Thêm hoặc Cập nhật Task ====================
         [HttpPost]
@@ -98,11 +185,11 @@ namespace JIRA_NTB.Controllers
                     // --- Thêm mới ---
                     var newTask = new TaskItemModel
                     {
-                        IdTask = Guid.NewGuid().ToString(),
+                        IdTask = model.Id,
                         Note = model.Desc,
                         EndDate = DateTime.ParseExact(model.End, "yyyy-MM-dd", CultureInfo.InvariantCulture),
                         FileNote = model.File,
-                        Assignee_Id = model.IdAss,
+                        Assignee_Id = model.IdAss ?? null,
                         ProjectId = model.IdPrj,
                         NameTask = model.Name,
                         Priority = model.Prior,
@@ -146,18 +233,6 @@ namespace JIRA_NTB.Controllers
             {
                 return StatusCode(500, new { success = false, message = $"Lỗi khi xóa: {ex.Message}" });
             }
-        }
-
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }
