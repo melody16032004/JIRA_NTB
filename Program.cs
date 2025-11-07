@@ -1,15 +1,20 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
-using JIRA_NTB.Service;
 using JIRA_NTB.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -62,7 +67,7 @@ using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
 
-    string email = "testuser@example.com";
+    string email = "testuser2@example.com";
     string password = "Test@123";
 
     var existingUser = await userManager.FindByEmailAsync(email);
