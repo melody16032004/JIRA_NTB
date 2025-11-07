@@ -37,7 +37,10 @@
 .unread {
     background-color: rgba(79, 70, 229, 0.15); /* Indigo-600 mờ */
 }
-
+input:invalid, select:invalid {
+    border-color: #ef4444; /* đỏ */
+    box-shadow: 0 0 0 1px #ef4444;
+}
 button:disabled,
 #departmentDisplay:disabled,
 #taskAssignee:disabled {
