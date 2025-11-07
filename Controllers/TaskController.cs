@@ -181,22 +181,24 @@ namespace JIRA_NTB.Controllers
                 previousStatusId = result.PreviousStatusId // để client dùng undo
             });
         }
-        [HttpGet]
-        public async Task<IActionResult> GetTasksByProjectId(string projectId)
-        {
-            if (string.IsNullOrEmpty(projectId))
-                return BadRequest("ProjectId không hợp lệ.");
+        //[HttpGet]
+        //public async Task<IActionResult> GetTasksByProjectId(string projectId)
+        //{
+        //    if (string.IsNullOrEmpty(projectId))
+        //        return BadRequest("ProjectId không hợp lệ.");
 
-            var tasks = await taskService.GetTasksByProjectIdAsync(projectId);
-            return Ok(tasks);
-        }
+        //    var tasks = await taskService.GetTasksByProjectIdAsync(projectId);
+        //    return Ok(tasks);
+        //}
         [HttpGet]
         public async Task<IActionResult> GetTaskCardsByProjectId(string projectId)
         {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
             if (string.IsNullOrEmpty(projectId))
                 return BadRequest("ProjectId không hợp lệ.");
 
-            var tasks = await taskService.GetTasksByProjectIdAsync(projectId);
+            var tasks = await taskService.GetTasksByProjectIdAsync(projectId, user, roles);
 
             // Hàm tính logic hiển thị
             var mapTasks = (IEnumerable<TaskItemModel> taskList) => taskList.Select(t =>
