@@ -74,7 +74,7 @@
                     </a>
                 }
                 
-                <a asp-controller="Task" asp-action="Index"
+                <a asp-area="" asp-controller="Task" asp-action="Index"
                    class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="clipboard-list" class="w-4 h-4"></i>
@@ -249,7 +249,7 @@
                                     <ul class="py-2 text-sm text-gray-200">
                                         <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
-                                            <form asp-area="" asp-controller="/" asp-action="" method="post" class="m-0">
+                                            <form asp-area="" asp-controller="Account" asp-action="Profile" method="get" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">

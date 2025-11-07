@@ -2,6 +2,7 @@
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.ViewModels;
 using JIRA_NTB.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -424,6 +425,90 @@ namespace JIRA_NTB.Controllers
 			{
 				ModelState.AddModelError(string.Empty, error.Description);
 			}
+			return View(model);
+		}
+
+		[Authorize] // Yêu cầu phải đăng nhập
+		[HttpGet]
+		public async Task<IActionResult> Profile()
+		{
+			// Lấy thông tin user đang đăng nhập
+			var user = await _userManager.GetUserAsync(User);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			// Lấy thông tin phòng ban
+			string departmentName = "Chưa phân bổ";
+			if (!string.IsNullOrEmpty(user.IdDepartment))
+			{
+				var department = await _context.Departments.FindAsync(user.IdDepartment);
+				if (department != null)
+				{
+					departmentName = department.DepartmentName;
+				}
+			}
+
+			// Ánh xạ dữ liệu từ UserModel sang ProfileViewModel
+			var model = new ProfileViewModel
+			{
+				Email = user.Email,
+				DepartmentName = user.Department?.DepartmentName ?? "Chưa phân bổ",
+				FullName = user.FullName,
+				Dob = user.Dob,
+				Gender = user.Gender,
+				CurrentAvatarPath = user.Avt
+			};
+
+			return View(model);
+		}
+
+		[Authorize]
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Profile(ProfileViewModel model)
+		{
+			var user = await _userManager.GetUserAsync(User);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			// Nếu model không hợp lệ (ví dụ: FullName bị để trống)
+			if (!ModelState.IsValid)
+			{
+				// Phải load lại thông tin không cho sửa trước khi trả về View
+				var department = await _context.Departments.FindAsync(user.IdDepartment);
+				model.Email = user.Email;
+				model.DepartmentName = department?.DepartmentName ?? "Chưa có";
+				return View(model); // Trả về view với thông báo lỗi
+			}
+
+			// Cập nhật thông tin từ ViewModel vào UserModel
+			user.FullName = model.FullName;
+			user.Dob = model.Dob;
+			user.Gender = model.Gender;
+
+			// Lưu thay đổi vào Database (Cách trực tiếp)
+			try
+			{
+				_context.Users.Update(user);
+				await _context.SaveChangesAsync();
+
+				// Thông báo thành công và TẢI LẠI TRANG
+				TempData["SuccessMessage"] = "Cập nhật thông tin thành công!";
+				return RedirectToAction("Profile");
+			}
+			catch (Exception ex)
+			{
+				ModelState.AddModelError(string.Empty, "Lỗi khi lưu vào database: " + ex.Message);
+			}
+
+			// Load lại thông tin không cho sửa
+			var dept = await _context.Departments.FindAsync(user.IdDepartment);
+			model.Email = user.Email;
+			model.DepartmentName = dept?.DepartmentName ?? "Chưa có";
 			return View(model);
 		}
 	}
