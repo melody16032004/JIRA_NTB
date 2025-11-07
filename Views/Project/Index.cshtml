@@ -4,157 +4,155 @@
     [x-cloak] {
         display: none !important;
     }
+
+    /* === FIX: Màu sắc Input cho Dark Mode === */
+    .dark .bg-gray-50 {
+        background-color: #374151 !important; /* Gray-700 */
+        border-color: #4b5563 !important; /* Gray-600 */
+        color: #f9fafb !important; /* Gray-50 */
+    }
+
+    .dark .placeholder\:text-gray-400::placeholder {
+        color: #9ca3af !important; /* Gray-400 */
+    }
+
+    /* === FIX: Thanh cuộn tùy chỉnh cho Modal === */
+    /* Webkit browsers (Chrome, Safari, Edge) */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #d1d5db; /* Gray-300 */
+        border-radius: 20px;
+        border: 3px solid transparent;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #4b5563; /* Gray-600 for dark mode */
+    }
 </style>
 
-<div x-data="{ isModalOpen: false }">
-    <!-- Filter and Search Section -->
+<div x-data="{ isModalOpen: false }"
+     x-init="$watch('isModalOpen', value => {
+        if (!value) {
+           $('form[asp-action=Create]')[0].reset();
+           $('#projectMembers').val('');
+        }
+     })">
     <form id="filter-form" asp-action="Index" method="get" class="mb-5">
         <div class="flex items-center gap-3">
-            <!-- Search Input -->
             <div class="flex-1 relative">
                 <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                <input type="text"
-                       name="searchQuery"
-                       value="@Model.SearchQuery"
-                       placeholder="Tìm kiếm dự án..."
+                <input type="text" name="searchQuery" value="@Model.SearchQuery" placeholder="Tìm kiếm dự án..."
                        class="w-full pl-9 pr-4 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder:text-gray-400">
             </div>
-
-            <!-- Status Filter -->
             <div class="relative">
-                <select name="filterStatusId"
-                        class="appearance-none pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                    <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">
-                        Tất cả trạng thái
-                    </option>
-                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo)"
-                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo).ToString())">
-                        Lên kế hoạch
-                    </option>
-                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress)"
-                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress).ToString())">
-                        Đang thực hiện
-                    </option>
-                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done)"
-                            selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done).ToString())">
-                        Hoàn thành
-                    </option>
+                <select name="filterStatusId" class="appearance-none pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.FilterStatusId))">Tất cả trạng thái</option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo)" selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Todo).ToString())">Lên kế hoạch</option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress)" selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.InProgress).ToString())">Đang thực hiện</option>
+                    <option value="@((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done)" selected="@(Model.FilterStatusId == ((int)JIRA_NTB.Models.Enums.TaskStatusModel.Done).ToString())">Hoàn thành</option>
                 </select>
                 <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
             </div>
-
-            <!-- Create Button -->
-            <button type="button"
-                    @@click ="isModalOpen = true"
-                    class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
+            <button type="button" @@click="isModalOpen = true" class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>Tạo mới</span>
             </button>
         </div>
     </form>
 
-    <!-- Project List -->
     <div id="project-list">
         @await Html.PartialAsync("~/Views/Project/Partial/_ProjectListPartial.cshtml", Model)
     </div>
+
     <template x-teleport="body">
-    <!-- Modal -->
-    <div x-show="isModalOpen"
-         x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-75">
-        <div @@click.outside="isModalOpen = false"
-             class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
-             x-show="isModalOpen"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform scale-90"
-             x-transition:enter-end="opacity-100 transform scale-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform scale-100"
-             x-transition:leave-end="opacity-0 transform scale-90">
+        <div x-show="isModalOpen" x-cloak
+             x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-75">
 
-            <div class="flex items-center justify-between p-4 border-b dark:border-gray-700">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Tạo dự án mới
-                </h3>
-                <button type="button"
-                        @@click ="isModalOpen = false"
-                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                    <span class="sr-only">Đóng modal</span>
-                </button>
+            <div @@click.outside="isModalOpen = false"
+                 class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
+                 x-show="isModalOpen"
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-90" x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-90">
+
+                <div class="flex items-center justify-between p-4 border-b dark:border-gray-700 flex-shrink-0">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tạo dự án mới</h3>
+                    <button type="button" @@click="isModalOpen = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                        <span class="sr-only">Đóng modal</span>
+                    </button>
+                </div>
+
+                <form asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1 overflow-hidden">
+                    <div class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                        <div>
+                            <label asp-for="NewProject.ProjectName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tên dự án</label>
+                            <input asp-for="NewProject.ProjectName" type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Nhập tên dự án" required>
+                            <span asp-validation-for="NewProject.ProjectName" class="text-red-500 text-sm mt-1"></span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label asp-for="NewProject.StartDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày bắt đầu</label>
+                                <input asp-for="NewProject.StartDay" type="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                            <div>
+                                <label asp-for="NewProject.EndDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày kết thúc</label>
+                                <input asp-for="NewProject.EndDay" type="date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Phòng ban</label>
+                            <select id="departmentSelect" name="NewProject.DepartmentId" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">-- Chọn phòng ban --</option>
+                                @foreach (var d in Model.AvailableDepartments)
+                                {
+                                    <option value="@d.Value">@d.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Người quản lý (Leader)</label>
+                            <select id="leaderSelect" name="NewProject.UserId" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="">-- Chọn người quản lý --</option>
+                                @foreach (var l in Model.AvailableLeaders)
+                                {
+                                    <option value="@l.Value">@l.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Thành viên nhóm</label>
+                            <textarea id="projectMembers" name="NewProject.MembersInput" rows="2" placeholder="Gõ #username để thêm thành viên" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+                            <small class="text-gray-500 text-xs">Gõ <strong>#</strong> để mở gợi ý thành viên, có thể chọn nhiều người.</small>
+                        </div>
+                        <div>
+                            <label asp-for="NewProject.StatusId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
+                            <select asp-for="NewProject.StatusId" asp-items="@Model.AvailableStatuses" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                                <option value="">-- Chọn trạng thái --</option>
+                            </select>
+                            <span asp-validation-for="NewProject.StatusId" class="text-red-500 text-sm mt-1"></span>
+                        </div>
+                        <div>
+                            <label asp-for="NewProject.Note" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ghi chú</label>
+                            <textarea asp-for="NewProject.Note" rows="3" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Thêm ghi chú cho dự án..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600 flex-shrink-0 bg-white dark:bg-gray-800 z-10">
+                        <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">Tạo dự án</button>
+                        <button type="button" @@click="isModalOpen = false" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">Hủy</button>
+                    </div>
+                </form>
             </div>
-
-            <form asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1">
-                <div class="p-6 space-y-4 overflow-y-auto flex-1">
-                    <div>
-                        <label asp-for="NewProject.ProjectName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tên dự án</label>
-                        <input asp-for="NewProject.ProjectName"
-                               type="text"
-                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                               placeholder="Nhập tên dự án" required>
-                        <span asp-validation-for="NewProject.ProjectName" class="text-red-500 text-sm mt-1"></span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label asp-for="NewProject.StartDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày bắt đầu</label>
-                            <input asp-for="NewProject.StartDay"
-                                   type="date"
-                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label asp-for="NewProject.EndDay" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ngày kết thúc</label>
-                            <input asp-for="NewProject.EndDay"
-                                   type="date"
-                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label asp-for="NewProject.UserId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Người quản lý</label>
-                        <select asp-for="NewProject.UserId"
-                                asp-items="@Model.AvailableUsers"
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="">-- Chọn người quản lý --</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label asp-for="NewProject.StatusId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
-                        <select asp-for="NewProject.StatusId"
-                                asp-items="@Model.AvailableStatuses"
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-                            <option value="">-- Chọn trạng thái --</option>
-                        </select>
-                        <span asp-validation-for="NewProject.StatusId" class="text-red-500 text-sm mt-1"></span>
-                    </div>
-
-                    <div>
-                        <label asp-for="NewProject.Note" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ghi chú</label>
-                        <textarea asp-for="NewProject.Note"
-                                  rows="3"
-                                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                  placeholder="Thêm ghi chú cho dự án..."></textarea>
-                    </div>
-                </div>
-
-                <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
-                    <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">
-                        Tạo dự án
-                    </button>
-                    <button type="button" @@click ="isModalOpen = false" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">
-                        Hủy
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
     </template>
 </div>
 
@@ -162,18 +160,117 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
-        // Initialize Lucide icons
         lucide.createIcons();
-
-        // Auto-submit form on filter change
         $(function () {
             $("#filter-form").on("change", "select, input[type='text']", function () {
                 setTimeout(function () {
                     $.get("/Project/Index", $("#filter-form").serialize(), function (data) {
                         $("#project-list").html(data);
-                        lucide.createIcons(); // Reinitialize icons
+                        lucide.createIcons();
                     });
                 }, 500);
+            });
+        });
+
+        // --- Script xử lý Gợi ý thành viên (@@mention / #mention) ---
+        $(function () {
+            let suggestionUsers = [];
+
+            // Load user khi chọn Leader
+            $('#leaderSelect').on('change', function () {
+                const leaderId = $(this).val();
+                if (!leaderId) return;
+                $.get('/Project/GetUsersByLeader', { leaderId }, function (res) {
+                    suggestionUsers = res.success ? res.users : [];
+                });
+            });
+
+            // Tạo popup gợi ý (ẩn mặc định)
+            const $textarea = $('#projectMembers');
+            const $box = $('<div id="mentionSuggestions"></div>').css({
+                position: 'absolute', display: 'none', zIndex: 9999,
+                background: 'white', border: '1px solid #ddd', borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto', fontSize: '14px',
+                width: 'auto', minWidth: '200px', maxWidth: '300px', // Giới hạn kích thước
+                whiteSpace: 'nowrap', overflowX: 'hidden', textOverflow: 'ellipsis' // Xử lý tràn text
+            }).appendTo('body');
+
+            function hideBox() { $box.hide(); }
+
+            // === FIX: Hợp nhất hàm showBox vào đúng scope và thêm logic chống tràn màn hình ===
+            function showBox(html, left, top, width) {
+                const screenWidth = $(window).width();
+                // Nếu mép phải của box tràn ra ngoài màn hình, dịch chuyển nó sang trái
+                if (left + 300 > screenWidth) { // Giả sử max-width là 300
+                     left = screenWidth - 310;
+                }
+                $box.html(html).css({ left, top, width: 'auto' }).show();
+            }
+
+            // Xử lý sự kiện gõ phím để hiện gợi ý
+            $textarea.on('keyup click', function (e) {
+                const ta = this;
+                const caret = ta.selectionStart;
+                const textBefore = ta.value.substring(0, caret);
+                const atPos = textBefore.lastIndexOf('#');
+
+                if (atPos === -1) { hideBox(); return; }
+
+                const query = textBefore.substring(atPos + 1).trim().toLowerCase();
+                // Cho phép tìm kiếm rỗng (vừa gõ # xong) hoặc khi query chưa có dấu cách
+                if (query.length === 0 && !textBefore.endsWith('#')) { hideBox(); return; }
+
+                const matches = suggestionUsers.filter(u =>
+                    (u.userName && u.userName.toLowerCase().includes(query)) ||
+                    (u.fullName && u.fullName.toLowerCase().includes(query))
+                );
+
+                if (matches.length === 0) { hideBox(); return; }
+
+                const html = matches.map(u => `
+                    <div class="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 transition-colors duration-150" data-username="${u.userName}">
+                        <img src="${u.avatar || '/images/default-avatar.png'}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+                        <div class="flex flex-col overflow-hidden">
+                            <span class="font-medium text-gray-900 truncate">${u.fullName || u.userName}</span>
+                            <span class="text-gray-500 text-xs truncate">#${u.userName}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                const rect = ta.getBoundingClientRect();
+                const left = rect.left + window.scrollX;
+                const top = rect.bottom + window.scrollY + 5; // +5px margin top
+
+                showBox(html, left, top, $textarea.outerWidth());
+            });
+
+            // Xử lý chọn user từ popup
+            $box.on('click', '[data-username]', function (e) {
+                e.preventDefault(); e.stopPropagation(); // Ngăn chặn đóng modal cha
+
+                const username = $(this).data('username');
+                const ta = $textarea[0];
+                const caret = ta.selectionStart;
+                const textBefore = ta.value.substring(0, caret);
+                const atPos = textBefore.lastIndexOf('#');
+
+                if (atPos === -1) return false;
+
+                const before = ta.value.substring(0, atPos + 1);
+                const after = ta.value.substring(caret);
+
+                // Chèn username và thêm dấu # mới để tiếp tục chọn
+                ta.value = before + username + ' #' + after;
+
+                ta.focus();
+                $textarea.trigger('keyup'); // Kích hoạt lại gợi ý ngay lập tức
+
+                return false;
+            });
+
+            // Ẩn popup khi click ra ngoài
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#mentionSuggestions, #projectMembers').length) hideBox();
             });
         });
     </script>
