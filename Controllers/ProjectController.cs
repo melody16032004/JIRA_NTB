@@ -5,11 +5,13 @@ using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Text.RegularExpressions;
 
 namespace JIRA_NTB.Controllers
 {
@@ -128,7 +130,23 @@ namespace JIRA_NTB.Controllers
                     Text = s.StatusName.ToString() // Hiển thị tên trạng thái
                 })
                 .ToList();
+            // 4. Tải danh sách Departments cho filter
+            viewModel.AvailableDepartments = await _context.Departments
+                .OrderBy(d => d.DepartmentName)
+                .Select(d => new SelectListItem { Value = d.IdDepartment, Text = d.DepartmentName })
+                .ToListAsync();
 
+            // load leaders for initial dropdown (all leaders)
+            var leaderRole = await _context.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "LEADER" || r.Name == "Leader");
+            if (leaderRole != null)
+            {
+                var leaderUserIds = await _context.UserRoles.Where(ur => ur.RoleId == leaderRole.Id).Select(ur => ur.UserId).ToListAsync();
+                viewModel.AvailableLeaders = await _context.Users
+                    .Where(u => leaderUserIds.Contains(u.Id))
+                    .OrderBy(u => u.FullName)
+                    .Select(u => new SelectListItem { Value = u.Id, Text = (u.FullName ?? u.UserName) + (u.IdDepartment != null ? $" ({u.IdDepartment})" : "") })
+                    .ToListAsync();
+            }
 
 
             return View(viewModel);
@@ -309,7 +327,7 @@ namespace JIRA_NTB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProjectModel NewProject)
         {
-            // Xóa validate không cần thiết
+            // Bỏ qua các validate không cần
             ModelState.Remove("IdProject");
             ModelState.Remove("Manager");
             ModelState.Remove("Status");
@@ -332,94 +350,54 @@ namespace JIRA_NTB.Controllers
 
             try
             {
+                // Bước 1: lưu Project trước để có IdProject
                 _context.Projects.Add(NewProject);
                 await _context.SaveChangesAsync();
-                Console.WriteLine("Project saved successfully!");
+                Console.WriteLine("Project saved successfully: " + NewProject.IdProject);
+
+                // Bước 2: nếu có MembersInput → tách @username
+                if (!string.IsNullOrWhiteSpace(NewProject.MembersInput))
+                {
+
+                    var matches = Regex.Matches(NewProject.MembersInput, @"#([A-Za-z0-9_.-@]+)");
+                    var usernames = matches
+                        .Select(m => m.Groups[1].Value)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (usernames.Any())
+                    {
+                        // Lấy userId tương ứng
+                        var users = await _context.Users
+                            .Where(u => usernames.Contains(u.UserName))
+                            .ToListAsync();
+
+                        foreach (var u in users)
+                        {
+                            var pm = new ProjectManagerModel
+                            {
+                                ProjectId = NewProject.IdProject,
+                                UserId = u.Id
+                            };
+                            _context.ProjectManagers.Add(pm);
+                            Console.WriteLine($"➕ Added member {u.UserName} to Project {NewProject.IdProject}");
+                        }
+
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                Console.WriteLine("🎯 Project and members saved successfully!");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Save error: " + ex.Message);
+                Console.WriteLine("❌ Save error: " + ex.Message);
             }
 
             return RedirectToAction(nameof(Index));
         }
 
 
-        // GET: Project/Edit/5
-        public async Task<IActionResult> Edit(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound();
-            }
-
-            var project = await _context.Projects.FindAsync(id);
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            ViewBag.Statuses = await _context.Statuses.ToListAsync();
-            ViewBag.Users = await _context.Users.ToListAsync();
-            return View(project);
-        }
-
-        // POST: Project/Edit/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(string id, ProjectModel project)
-        {
-            if (id != project.IdProject)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(project);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ProjectExists(project.IdProject))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-
-            ViewBag.Statuses = await _context.Statuses.ToListAsync();
-            ViewBag.Users = await _context.Users.ToListAsync();
-            return View(project);
-        }
-
-        // GET: Project/Delete/5
-        public async Task<IActionResult> Delete(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return NotFound();
-            }
-
-            var project = await _context.Projects
-                .Include(p => p.Status)
-                .Include(p => p.Manager)
-                .FirstOrDefaultAsync(m => m.IdProject == id);
-
-            if (project == null)
-            {
-                return NotFound();
-            }
-
-            return View(project);
-        }
 
         // POST: Project/Delete/5
         [HttpPost, ActionName("Delete")]
@@ -482,6 +460,62 @@ namespace JIRA_NTB.Controllers
             }
 
             return 0;
+        }
+        //-----------------------------------------------
+        // GET: /Project/GetLeaders
+        [HttpGet]
+        public async Task<IActionResult> GetLeaders()
+        {
+            // Lấy role id của "Leader" (tùy DB của bạn, Name có thể "LEADER" hoặc "Leader")
+            var leaderRole = await _context.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "LEADER" || r.Name == "Leader");
+            if (leaderRole == null) return Json(new List<object>());
+
+            var leaders = await _context.UserRoles
+                .Where(ur => ur.RoleId == leaderRole.Id)
+                .Join(_context.Users, ur => ur.UserId, u => u.Id, (ur, u) => new { u.Id, u.UserName, u.FullName, u.IdDepartment, u.Avt })
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
+
+            var result = leaders.Select(u => new { value = u.Id, text = (u.FullName ?? u.UserName) + (u.IdDepartment != null ? $" ({u.IdDepartment})" : ""), userName = u.UserName }).ToList();
+            return Json(result);
+        }
+
+        // GET: /Project/GetUsersByLeader?leaderId=...
+        [HttpGet]
+        public async Task<IActionResult> GetUsersByLeader(string leaderId)
+        {
+            if (string.IsNullOrEmpty(leaderId)) return Json(new { success = false, users = new object[0] });
+
+            var leader = await _context.Users.FirstOrDefaultAsync(u => u.Id == leaderId);
+            if (leader == null) return Json(new { success = false, users = new object[0] });
+
+            var users = await _context.Users
+                .Where(u => u.IdDepartment == leader.IdDepartment)
+                .OrderBy(u => u.FullName)
+                .Select(u => new { u.Id, u.UserName, u.FullName, avatar = u.Avt })
+                .ToListAsync();
+
+            return Json(new { success = true, users });
+        }
+
+        // GET: /Project/SearchUsersByDepartment?leaderId=...&keyword=...
+        [HttpGet]
+        public async Task<IActionResult> SearchUsersByDepartment(string leaderId, string keyword)
+        {
+            if (string.IsNullOrEmpty(leaderId)) return Json(new { success = false, users = new object[0] });
+            var leader = await _context.Users.FirstOrDefaultAsync(u => u.Id == leaderId);
+            if (leader == null) return Json(new { success = false, users = new object[0] });
+
+            var q = (keyword ?? string.Empty).Trim().ToLower();
+            var users = await _context.Users
+                .Where(u => u.IdDepartment == leader.IdDepartment &&
+                       (u.UserName.ToLower().Contains(q) || (u.FullName != null && u.FullName.ToLower().Contains(q))))
+                .OrderBy(u => u.FullName)
+                .Select(u => new { u.Id, u.UserName, u.FullName, avatar = u.Avt })
+                .Take(10)
+                .ToListAsync();
+
+            return Json(new { success = true, users });
         }
     }
 }

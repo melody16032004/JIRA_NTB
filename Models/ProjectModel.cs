@@ -31,5 +31,8 @@ namespace JIRA_NTB.Models
 
         public ICollection<TaskItemModel>? Tasks { get; set; }
         public ICollection<ProjectManagerModel>? ProjectManagers { get; set; }
+
+        [NotMapped]
+        public string? MembersInput { get; set; }
     }
 }
