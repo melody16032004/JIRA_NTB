@@ -56,7 +56,8 @@
                 </div>
 
                 @await Component.InvokeAsync("ProjectSelect", new { id = "headerProjectFilter", selectedId = "" })
-
+                @if (User.IsInRole("ADMIN") || User.IsInRole("LEADER"))
+                {
                 <div class="relative group inline-block">
                     <button id="btnCreateTask"
                             class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
@@ -67,6 +68,7 @@
                         Tạo nhiệm vụ
                     </span>
                 </div>
+                }
             </div>
         </div>
     </div>

@@ -1,7 +1,7 @@
 ﻿using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 
-namespace JIRA_NTB.Service
+namespace JIRA_NTB.Services
 {
     public class Helper
     {

@@ -1,0 +1,33 @@
+﻿@model JIRA_NTB.Models.DepartmentModel
+
+@{
+    ViewData["Title"] = "Xác nhận xóa";
+}
+
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-red-400 mb-4">Xác nhận xóa</h1>
+    <p class="text-gray-300 mb-6">Bạn có chắc chắn muốn xóa phòng ban này không? Hành động này không thể hoàn tác.</p>
+
+    <form asp-action="Delete" method="post">
+
+        <input type="hidden" asp-for="IdDepartment" />
+
+        <div class="bg-gray-800/50 border border-gray-700 rounded-lg shadow-lg">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-white">@Model.DepartmentName</h3>
+                <p class="text-gray-400">ID: @Model.IdDepartment</p>
+            </div>
+
+            <div class="p-6 bg-gray-900/50 border-t border-gray-700 flex justify-end space-x-4">
+                <a asp-action="Index"
+                   class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                    Hủy
+                </a>
+                <button type="submit"
+                        class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
+                    Xóa
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

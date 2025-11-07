@@ -1,10 +1,10 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
-using JIRA_NTB.Service;
 using JIRA_NTB.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,11 +46,22 @@ builder.Services.Configure<IdentityOptions>(options =>
 	options.Tokens.EmailConfirmationTokenProvider = "EmailConfirmationTokenProvider";
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.SlidingExpiration = true;
+	options.LoginPath = "/Account/Login";
+});
+
 builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 
 // Đăng ký background service để tự động xóa tài khoản chưa xác nhận
 builder.Services.AddHostedService<UnconfirmedAccountCleanupService>();
-
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
@@ -139,7 +150,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
+	name: "areas",
+	pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Task}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

@@ -4,7 +4,7 @@ using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
-namespace JIRA_NTB.Service
+namespace JIRA_NTB.Services
 {
     public class TaskService : ITaskService
     {
@@ -21,13 +21,13 @@ namespace JIRA_NTB.Service
             _userRepo = userRepo;
         }
 
-        public async Task<TaskBoardViewModel> GetTaskBoardAsync()
+        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles)
         {
             // ✅ Tách riêng logic cập nhật
             await _taskRepository.RefreshOverdueStatusAsync();
 
-            var tasks = await _taskRepository.GetAllAsync();
-            var projects = await _projectRepository.GetAllAsync();
+            var tasks = await _taskRepository.GetAllFilteredAsync(user, roles);
+            var projects = await _projectRepository.GetAllFilteredAsync(user, roles);
             var statuses = await _statusRepository.GetAllAsync();
             var viewModel = new TaskBoardViewModel
             {
@@ -52,6 +52,10 @@ namespace JIRA_NTB.Service
             };
 
             return viewModel;
+        }
+        public async Task<TaskItemModel?> GetTaskByIdAsync(string taskId, UserModel user, IList<string> roles)
+        {
+            return await _taskRepository.GetByIdFilteredAsync(taskId, user, roles);
         }
         public async Task<TaskStatusChangeResult> UpdateTaskStatusAsync(string taskId, string newStatusId)
         {
@@ -290,8 +294,8 @@ namespace JIRA_NTB.Service
                 if (!string.IsNullOrEmpty(task.FileNote))
                 {
                     var oldPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", task.FileNote.TrimStart('/'));
-                    if (System.IO.File.Exists(oldPath))
-                        System.IO.File.Delete(oldPath);
+                    if (File.Exists(oldPath))
+                        File.Delete(oldPath);
                 }
 
                 // Upload file mới
@@ -326,12 +330,19 @@ namespace JIRA_NTB.Service
             if (!string.IsNullOrEmpty(task.FileNote))
             {
                 var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", task.FileNote.TrimStart('/'));
-                if (System.IO.File.Exists(filePath))
-                    System.IO.File.Delete(filePath);
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
             }
 
             await _taskRepository.DeleteAsync(taskId);
             return (true, "Xóa nhiệm vụ thành công!");
+        }
+        public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId)
+        {
+            if (string.IsNullOrEmpty(projectId))
+                return new List<TaskItemModel>();
+
+            return await _taskRepository.GetByProjectIdAsync(projectId);
         }
     }
 }

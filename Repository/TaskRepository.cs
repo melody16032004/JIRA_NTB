@@ -1,7 +1,6 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
-using JIRA_NTB.Service;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,7 +23,26 @@ namespace JIRA_NTB.Repository
                 .Include(t => t.Assignee)
                 .ToListAsync();
         }
+        public async Task<List<TaskItemModel>> GetAllFilteredAsync(UserModel user, IList<string> roles)
+        {
+            IQueryable<TaskItemModel> query = _context.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.Status)
+                .Include(t => t.Assignee);
 
+            // 🎯 Phân quyền lọc task
+            if (roles.Contains("LEADER"))
+            {
+                // Leader -> task trong các project mà mình quản lý
+                query = query.Where(t => t.Project.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                // Employee -> chỉ task mình được assign
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+            return await query.ToListAsync();
+        }
         public async Task<TaskItemModel?> GetByIdAsync(string id)
         {
             return await _context.Tasks
@@ -32,6 +50,26 @@ namespace JIRA_NTB.Repository
                 .Include(t => t.Status)
                 .Include(t => t.Assignee)
                 .FirstOrDefaultAsync(t => t.IdTask == id);
+        }
+
+        public async Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, UserModel user, IList<string> roles)
+        {
+            var query = _context.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.Status)
+                .Include(t => t.Assignee)
+                .AsQueryable();
+
+            if (roles.Contains("LEADER"))
+            {
+                query = query.Where(t => t.Project.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            return await query.FirstOrDefaultAsync(t => t.IdTask == taskId);
         }
 
         public async Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId)

@@ -3,73 +3,70 @@
 
 @{
     ViewData["Title"] = "Đăng ký";
+    Layout = "~/Views/Shared/_LayoutRegister.cshtml";
 }
 
 <!-- Register Card with modern design -->
-<div class="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
+<div class="flex items-center justify-center min-h-screen py-4">
     <div class="w-full max-w-md">
         <!-- Card Container -->
         <div class="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
             
             <!-- Header with gradient -->
-            <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-8 text-center">
-                <div class="flex justify-center mb-4">
-                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <i data-lucide="user-plus" class="w-8 h-8 text-white"></i>
-                    </div>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-2">Tạo tài khoản mới</h2>
-                <p class="text-purple-100 text-sm">Tham gia hệ thống quản lý dự án ngay hôm nay</p>
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-3 text-center">
+                <h2 class="text-2xl font-bold text-white">Tạo tài khoản mới</h2>
             </div>
 
             <!-- Form Body -->
-            <div class="p-8">
-                <!-- Email Verification Notice -->
-                <div class="mb-6 bg-blue-500/10 border border-blue-500/50 rounded-lg p-4">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="info" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5"></i>
-                        <div class="text-blue-400 text-sm">
-                            <p class="font-semibold mb-1">📧 Xác thực email bắt buộc</p>
-                            <p>Sau khi đăng ký, bạn sẽ nhận được email xác nhận. 
-                            <span class="text-yellow-400 font-bold">Vui lòng xác nhận trong vòng 10 phút</span>, 
-                            nếu không tài khoản sẽ tự động bị xóa.</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="p-4">
 
-                <form asp-action="Register" method="post" class="space-y-6">
+                <form asp-action="Register" method="post" class="space-y-4">
                     
                     <!-- Validation Summary -->
-                    <div asp-validation-summary="ModelOnly" class="bg-red-500/10 border border-red-500/50 rounded-lg p-4 text-red-400 text-sm"></div>
+                    <div asp-validation-summary="ModelOnly" class="bg-red-500/10 border border-red-500/50 rounded-lg p-3 text-red-400 text-sm"></div>
+
+                    <!-- Department Dropdown -->
+                    <div class="space-y-1">
+                        <label asp-for="DepartmentId" class="block text-sm font-medium text-gray-200">
+                            <i data-lucide="building-2" class="w-4 h-4 inline mr-2"></i>Phòng ban
+                        </label>
+                        <select asp-for="DepartmentId"
+                                asp-items="Model.DepartmentList"
+                                class="w-full px-3 py-1.5 pr-10 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 appearance-none bg-no-repeat bg-right"
+                                style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-position: right 0.75rem center; background-size: 1.25rem;">
+                            <option value="" class="bg-gray-900">-- Chọn phòng ban --</option>
+                        </select>
+                        <span asp-validation-for="DepartmentId" class="text-red-400 text-xs mt-1 block"></span>
+                    </div>
 
                     <!-- FullName Input -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <label asp-for="FullName" class="block text-sm font-medium text-gray-200">
-                            <i data-lucide="name" class="w-4 h-4 inline mr-2"></i>Full Name
+                            <i data-lucide="user" class="w-4 h-4 inline mr-2"></i>Họ tên
                         </label>
                         <input asp-for="FullName"
                                type="name"
-                               class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                               class="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                placeholder="Nguyễn Văn A"
-                               autocomplete="name" />
+                               autocomplete="user" />
                         <span asp-validation-for="FullName" class="text-red-400 text-xs mt-1 block"></span>
                     </div>
 
                     <!-- Email Input -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <label asp-for="Email" class="block text-sm font-medium text-gray-200">
                             <i data-lucide="mail" class="w-4 h-4 inline mr-2"></i>Email
                         </label>
                         <input asp-for="Email" 
                                type="email"
-                               class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                               class="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                placeholder="example@email.com" 
                                autocomplete="email" />
                         <span asp-validation-for="Email" class="text-red-400 text-xs mt-1 block"></span>
                     </div>
 
                     <!-- Password Input -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <label asp-for="Password" class="block text-sm font-medium text-gray-200">
                             <i data-lucide="key" class="w-4 h-4 inline mr-2"></i>Mật khẩu
                         </label>
@@ -77,36 +74,37 @@
                             <input asp-for="Password" 
                                    type="password"
                                    id="passwordInput"
-                                   class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                   class="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                    placeholder="••••••••" 
                                    autocomplete="new-password" />
                             <button type="button" 
                                     onclick="togglePassword('passwordInput', 'eyeIcon1')"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
-                                <i data-lucide="eye" id="eyeIcon1" class="w-5 h-5"></i>
+                                    tabindex="-1"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
+                                <i data-lucide="eye" id="eyeIcon1" class="w-4 h-4"></i>
                             </button>
                         </div>
                         <span asp-validation-for="Password" class="text-red-400 text-xs mt-1 block"></span>
                         
                         <!-- Password Requirements -->
-                        <div class="mt-2 space-y-1 text-xs text-gray-400">
-                            <p class="flex items-center gap-1">
-                                <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                        <div class="mt-1 space-y-0.5 text-xs">
+                            <p id="req-length" class="flex items-center gap-1 text-gray-400 transition-colors duration-200">
+                                <i id="icon-length" data-lucide="circle" class="w-3 h-3"></i>
                                 Tối thiểu 8 ký tự
                             </p>
-                            <p class="flex items-center gap-1">
-                                <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                            <p id="req-case" class="flex items-center gap-1 text-gray-400 transition-colors duration-200">
+                                <i id="icon-case" data-lucide="circle" class="w-3 h-3"></i>
                                 Có chữ hoa và chữ thường
                             </p>
-                            <p class="flex items-center gap-1">
-                                <i data-lucide="check-circle-2" class="w-3 h-3"></i>
+                            <p id="req-number" class="flex items-center gap-1 text-gray-400 transition-colors duration-200">
+                                <i id="icon-number" data-lucide="circle" class="w-3 h-3"></i>
                                 Có ít nhất 1 chữ số
                             </p>
                         </div>
                     </div>
 
                     <!-- Confirm Password Input -->
-                    <div class="space-y-2">
+                    <div class="space-y-1">
                         <label asp-for="ConfirmPassword" class="block text-sm font-medium text-gray-200">
                             <i data-lucide="shield-check" class="w-4 h-4 inline mr-2"></i>Xác nhận mật khẩu
                         </label>
@@ -114,44 +112,30 @@
                             <input asp-for="ConfirmPassword" 
                                    type="password"
                                    id="confirmPasswordInput"
-                                   class="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                   class="w-full px-3 py-1.5 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                    placeholder="••••••••" 
                                    autocomplete="new-password" />
                             <button type="button" 
                                     onclick="togglePassword('confirmPasswordInput', 'eyeIcon2')"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
-                                <i data-lucide="eye" id="eyeIcon2" class="w-5 h-5"></i>
+                                    tabindex="-1"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors">
+                                <i data-lucide="eye" id="eyeIcon2" class="w-4 h-4"></i>
                             </button>
                         </div>
                         <span asp-validation-for="ConfirmPassword" class="text-red-400 text-xs mt-1 block"></span>
                     </div>
 
-                    <!-- Terms & Conditions -->
-                    <div class="flex items-start">
-                        <div class="flex items-center h-5">
-                            <input type="checkbox" 
-                                   id="terms"
-                                   required
-                                   class="w-4 h-4 bg-gray-900/50 border-gray-600 rounded text-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-0 cursor-pointer" />
-                        </div>
-                        <label for="terms" class="ml-2 text-sm text-gray-300 cursor-pointer">
-                            Tôi đồng ý với 
-                            <a href="#" class="text-purple-400 hover:text-purple-300 underline">Điều khoản dịch vụ</a> 
-                            và 
-                            <a href="#" class="text-purple-400 hover:text-purple-300 underline">Chính sách bảo mật</a>
-                        </label>
-                    </div>
-
                     <!-- Submit Button -->
                     <button type="submit" 
-                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                            tabindex="-1">
                         <i data-lucide="user-check" class="w-5 h-5"></i>
                         Đăng ký tài khoản
                     </button>
                 </form>
 
                 <!-- Divider -->
-                <div class="relative my-6">
+                <div class="relative my-4">
                     <div class="absolute inset-0 flex items-center">
                         <div class="w-full border-t border-gray-700"></div>
                     </div>
@@ -162,9 +146,9 @@
 
                 <!-- Login Link -->
                 <div class="text-center">
-                    <p class="text-gray-400 text-sm">
+                    <p class="text-gray-400 text-xs">
                         Đã có tài khoản? 
-                        <a asp-action="Login" class="text-purple-400 hover:text-purple-300 font-medium transition-colors ml-1">
+                        <a asp-action="Login" class="text-purple-400 hover:text-purple-300 font-medium transition-colors ml-1" tabindex="-1">
                             Đăng nhập ngay
                             <i data-lucide="arrow-right" class="w-4 h-4 inline ml-1"></i>
                         </a>
@@ -174,7 +158,7 @@
         </div>
 
         <!-- Footer Info -->
-        <div class="text-center mt-6 text-gray-400 text-xs">
+        <div class="text-center mt-3 text-gray-400 text-xs">
             <p>© 2025 JIRA NTB. Hệ thống quản lý dự án chuyên nghiệp.</p>
         </div>
     </div>
@@ -186,6 +170,66 @@
     }
     
     <script>
+        // Hàm trợ giúp để cập nhật GIAO DIỆN của một yêu cầu
+        function updateRequirement(textId, iconId, isValid)
+        {
+            const element = document.getElementById(textId);
+            const iconElement = document.getElementById(iconId);
+            
+            if (!element || !iconElement) return;
+            
+            let newIconName = 'circle';
+            let newColor = '#9ca3af'; // gray-400 - Mặc định: Xám
+
+            if (isValid === true) 
+            {
+                // Hợp lệ: Xanh lá
+                newColor = '#22c55e'; // text-green-500
+                newIconName = 'check-circle-2';
+            }
+            else if (isValid === false)
+            {
+                // Không hợp lệ: Đỏ
+                newColor = '#ef4444'; // text-red-500
+                newIconName = 'x-circle';
+            }
+            // isValid === null sẽ giữ nguyên màu xám và icon circle
+            
+            element.style.color = newColor;
+            iconElement.setAttribute('data-lucide', newIconName);
+        }
+
+        // Password validation
+        function validatePassword() {
+            // Lấy giá trị trực tiếp từ ô input
+            const password = document.getElementById('passwordInput').value;
+
+            // Nếu ô input rỗng, reset tất cả về Xám (trạng thái null)
+            if (password.length === 0) 
+            {
+                updateRequirement('req-length', 'icon-length', null);
+                updateRequirement('req-case', 'icon-case', null);
+                updateRequirement('req-number', 'icon-number', null);
+            } 
+            else 
+            {
+                // Nếu có nhập, thì mới bắt đầu kiểm tra Đỏ/Xanh (true/false)
+
+                // 1. Kiểm tra độ dài
+                updateRequirement('req-length', 'icon-length', password.length >= 8);
+
+                // 2. Kiểm tra chữ hoa/thường
+                const caseRegex = /(?=.*[a-z])(?=.*[A-Z])/;
+                updateRequirement('req-case', 'icon-case', caseRegex.test(password));
+
+                // 3. Kiểm tra số
+                const numberRegex = /\d/;
+                updateRequirement('req-number', 'icon-number', numberRegex.test(password));
+            }
+            // Vẽ lại icon
+            lucide.createIcons();
+        }
+
         // Toggle password visibility
         function togglePassword(inputId, iconId) {
             const passwordInput = document.getElementById(inputId);
@@ -205,6 +249,13 @@
         // Reinitialize Lucide icons after page load
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
+            
+            // Thêm event listener cho password input để validate realtime
+            const passwordInput = document.getElementById('passwordInput');
+            if (passwordInput) {
+                passwordInput.addEventListener('input', validatePassword);
+                passwordInput.addEventListener('keyup', validatePassword);
+            }
         });
     </script>
 }

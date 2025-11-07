@@ -13,7 +13,7 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
 
     <!-- Card 1 -->
-    <div class="bg-gray-900 border-t-4 border-indigo-500 rounded-xl shadow-md p-3 hover:shadow-indigo-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[25ms]">
+    <div class="bg-gray-900 border-t-4 border-indigo-500 rounded-xl shadow-md p-3 opacity-0 animate-cardFadeIn delay-[25ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-indigo-600/20 text-indigo-400">
                 <i data-lucide="folder-open-dot" class="w-4 h-4"></i>
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Card 2 -->
-    <div class="bg-gray-900 border-t-4 border-green-500 rounded-xl shadow-md p-3 hover:shadow-green-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[50ms]">
+    <div class="bg-gray-900 border-t-4 border-green-500 rounded-xl shadow-md p-3 opacity-0 animate-cardFadeIn delay-[50ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-green-600/20 text-green-400">
                 <i data-lucide="list-checks" class="w-4 h-4"></i>
@@ -43,7 +43,7 @@
     </div>
 
     <!-- Card 3 -->
-    <div class="bg-gray-900 border-t-4 border-yellow-400 rounded-xl shadow-md p-3 hover:shadow-yellow-400/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[75ms]">
+    <div class="bg-gray-900 border-t-4 border-yellow-400 rounded-xl shadow-md p-3 opacity-0 animate-cardFadeIn delay-[75ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-yellow-500/20 text-yellow-400">
                 <i data-lucide="hourglass" class="w-4 h-4"></i>
@@ -58,7 +58,7 @@
     </div>
 
     <!-- Card 4 -->
-    <div class="bg-gray-900 border-t-4 border-red-500 rounded-xl shadow-md p-3 hover:shadow-red-500/30 transition transform hover:-translate-y-0.5 duration-300 opacity-0 animate-cardFadeIn delay-[100ms]">
+    <div class="bg-gray-900 border-t-4 border-red-500 rounded-xl shadow-md p-3 opacity-0 animate-cardFadeIn delay-[100ms]">
         <div class="flex items-center justify-between">
             <div class="p-2.5 rounded-full bg-red-600/20 text-red-400">
                 <i data-lucide="alert-triangle" class="w-4 h-4"></i>
@@ -282,7 +282,7 @@
                                                                     data-assid="@task.Assignee?.Id"
                                                                     data-name="@task.NameTask"
                                                                     data-assignee="@task.Assignee?.FullName"
-                                                                    data-departId="@task.Assignee?.Department!.IdDepartment"
+                                                                    data-departId="@task.Assignee?.Department?.IdDepartment"
                                                                     data-depart="@task.Assignee?.Department!.DepartmentName"
                                                                     data-desc="@task.Note"
                                                                     data-start="@task.StartDate"
@@ -1195,7 +1195,7 @@
         lucide.createIcons();
         // 🔹 Lấy dữ liệu từ Model C# sang JS
         const projects1 = JSON.parse('@Html.Raw(ViewBag.ProjectsJson)');
-
+        console.log(projects1);
         // 🔹 Biến đếm trạng thái
         let notStarted = 0;
         let inProgress = 0;
@@ -1307,24 +1307,28 @@
 
         projects1.forEach(p => {
             const progress = p.Status.StatusName || 0;
-            const endDate = new Date(p.EndDate);
+            const endDate = new Date(p.EndDay);
+            console.log(p.EndDay);
             const now = new Date();
 
-            if(progress === 1)
-            {
-                countToDo++;
-            } 
-            else if(progress === 2)
-            {
-                countInProgress++;
-            } 
-            else if (progress === 3)
-            {
-                countInDone++;
-            } 
-            else if (progress === 3 && endDate < now)
+            if (endDate < now && progress !== 3)
             {
                 countOverdue++;
+            }
+            else
+            {
+                if(progress === 1)
+                {
+                    countToDo++;
+                }
+                else if(progress === 2)
+                {
+                    countInProgress++;
+                } 
+                else if (progress === 3)
+                {
+                    countInDone++;
+                } 
             }
         });
         const ctx2 = document.getElementById("progressChart").getContext("2d");
@@ -1909,9 +1913,9 @@
                 let status = document.getElementById("taskStatus").value;
                 let prior = document.getElementById("taskPriority").value;
 
-                if(assidT == null || assidT == ""){
+                @* if(assidT == null || assidT == ""){
                     alert("Vui lòng nhập tên đúng thành viên");
-                }
+                } *@
 
                 const t = {
                     id: idT,
