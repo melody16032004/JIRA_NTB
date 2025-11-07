@@ -3,7 +3,7 @@ using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
 
-namespace JIRA_NTB.Service
+namespace JIRA_NTB.Services
 {
     public static class TaskMapper
     {
