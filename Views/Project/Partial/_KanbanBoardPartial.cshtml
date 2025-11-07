@@ -115,7 +115,7 @@
 
             console.log(`KANBAN: task[${idx}] "${task.Name}" rawStatus="${rawStatus}" normalized="${statusNorm}"`);
 
-            // Bỏ qua nếu đã hoàn thành
+            // nếu đã hoàn thành
             if (statusNorm === normalize('Hoàn thành')) {
                columns['Hoàn thành'].push(task);
                 return;

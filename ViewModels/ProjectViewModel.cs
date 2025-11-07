@@ -20,7 +20,8 @@ namespace JIRA_NTB.ViewModels
         };
         public IEnumerable<SelectListItem> AvailableUsers { get; set; } = new List<SelectListItem>();
         public IEnumerable<SelectListItem> AvailableStatuses { get; set; } = new List<SelectListItem>();
-
+        public IEnumerable<SelectListItem> AvailableDepartments { get; set; } = new List<SelectListItem>();
+        public IEnumerable<SelectListItem> AvailableLeaders { get; set; } = new List<SelectListItem>();
 
         public ProjectListViewModel()
         {
