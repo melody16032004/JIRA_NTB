@@ -46,6 +46,12 @@ builder.Services.Configure<IdentityOptions>(options =>
 	options.Tokens.EmailConfirmationTokenProvider = "EmailConfirmationTokenProvider";
 });
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.SlidingExpiration = true;
+	options.LoginPath = "/Account/Login";
+});
+
 builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 
 // Đăng ký background service để tự động xóa tài khoản chưa xác nhận
@@ -139,7 +145,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
+	name: "areas",
+	pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();
