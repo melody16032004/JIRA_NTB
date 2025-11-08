@@ -155,7 +155,7 @@
 }
 
     /* Khi drag over: chỉ hiển border, không đổi layout */
-    .task-column.drag-over {
+    [data-status].drag-over {
         border: 2px dashed rgba(99, 102, 241, 0.6);
         border-radius: 0.75rem;
         background: none; /* ❌ bỏ background làm mờ */

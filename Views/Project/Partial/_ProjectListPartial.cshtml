@@ -34,14 +34,20 @@
                                     x-transition.origin.top.right
                                     class="absolute right-0 mt-1 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 text-sm">
                                     <li>
-                                        <a asp-action="Details" asp-route-id="@project.IdProject" class="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Xem chi tiết</a>
-                                    </li>
-                                    <li>
-                                        <a asp-action="Edit" asp-route-id="@project.IdProject" class="block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">Chỉnh sửa</a>
+                                        <button type="button"
+                                                class="edit-project-btn w-full text-left block px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                data-id="@project.IdProject">
+                                            Chỉnh sửa
+                                        </button>
                                     </li>
                                     <li><hr class="border-gray-200 dark:border-gray-700 my-1" /></li>
                                     <li>
-                                        <a asp-action="Delete" asp-route-id="@project.IdProject" class="block px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700">Xóa</a>
+                                        <button type="button"
+                                                class="delete-project-btn w-full text-left block px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700"
+                                                data-id="@project.IdProject"
+                                                data-name="@project.ProjectName">
+                                            Xóa dự án
+                                        </button>
                                     </li>
                                 </ul>
                             </div>

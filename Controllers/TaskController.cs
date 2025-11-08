@@ -2,9 +2,11 @@
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
-using JIRA_NTB.Service;
+using JIRA_NTB.Services;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,14 +15,19 @@ namespace JIRA_NTB.Controllers
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
+        private readonly UserManager<UserModel> _userManager;
 
-        public TaskController(ITaskService taskService)
+
+        public TaskController(ITaskService taskService, UserManager<UserModel> userManager)
         {
             this.taskService = taskService;
+            _userManager = userManager;
         }
         public async Task<IActionResult> Index()
         {
-            var viewModel = await taskService.GetTaskBoardAsync();
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+            var viewModel = await taskService.GetTaskBoardAsync(user, roles);
             return View(viewModel);
         }
         [HttpPost]
@@ -114,11 +121,10 @@ namespace JIRA_NTB.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTaskById(string taskId)
         {
-            var taskBoard = await taskService.GetTaskBoardAsync();
-            var task = taskBoard.TodoTasks
-                .Concat(taskBoard.InProgressTasks)
-                .Concat(taskBoard.DoneTasks)
-                .FirstOrDefault(t => t.IdTask == taskId);
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var task = await taskService.GetTaskByIdAsync(taskId, user, roles);
 
             if (task == null)
                 return NotFound(new { success = false, message = "Không tìm thấy nhiệm vụ" });
@@ -132,10 +138,11 @@ namespace JIRA_NTB.Controllers
                 task.StartDate,
                 task.EndDate,
                 task.ProjectId,
-                task.Assignee?.Id
+                AssigneeId = task.Assignee?.Id,
+                AssigneeName = task.Assignee?.FullName
             });
         }
-
+        [Authorize(Roles = "ADMIN,LEADER")]
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromForm] CreateTaskRequest request)
         {
@@ -173,6 +180,82 @@ namespace JIRA_NTB.Controllers
                 message = result.Message,
                 previousStatusId = result.PreviousStatusId // để client dùng undo
             });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetTasksByProjectId(string projectId)
+        {
+            if (string.IsNullOrEmpty(projectId))
+                return BadRequest("ProjectId không hợp lệ.");
+
+            var tasks = await taskService.GetTasksByProjectIdAsync(projectId);
+            return Ok(tasks);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetTaskCardsByProjectId(string projectId)
+        {
+            if (string.IsNullOrEmpty(projectId))
+                return BadRequest("ProjectId không hợp lệ.");
+
+            var tasks = await taskService.GetTasksByProjectIdAsync(projectId);
+
+            // Hàm tính logic hiển thị
+            var mapTasks = (IEnumerable<TaskItemModel> taskList) => taskList.Select(t =>
+            {
+                bool isCompleted = t.Status?.StatusName == TaskStatusModel.Done;
+                bool isOverdue = t.EndDate.HasValue && t.EndDate.Value < DateTime.Now && !isCompleted;
+                bool isDoneLate = t.EndDate.HasValue && t.CompletedDate.HasValue && t.CompletedDate.Value > t.EndDate.Value;
+                bool isDoneOnTime = t.EndDate.HasValue && t.CompletedDate.HasValue && t.CompletedDate.Value <= t.EndDate.Value;
+                int daysRemaining = t.EndDate.HasValue ? (int)Math.Ceiling((t.EndDate.Value - DateTime.Now).TotalDays) : 0;
+                int daysLate = isDoneLate ? (t.CompletedDate!.Value - t.EndDate!.Value).Days : 0;
+
+                return new
+                {
+                    idTask = t.IdTask,
+                    nameTask = t.NameTask,
+                    priority = t.Priority,
+                    note = t.Note,
+                    startDate = t.StartDate,
+                    endDate = t.EndDate,
+                    completedDate = t.CompletedDate,
+                    isCompleted,
+                    isOverdue,
+                    isDoneLate,
+                    isDoneOnTime,
+                    daysRemaining,
+                    daysLate,
+                    fileNote = t.FileNote,
+                    assignee = t.Assignee != null ? new
+                    {
+                        id = t.Assignee.Id,
+                        fullName = t.Assignee.FullName
+                    } : null,
+                    project = t.Project != null ? new
+                    {
+                        projectId = t.Project.IdProject,
+                        projectName = t.Project.ProjectName
+                    } : null,
+                    status = t.Status != null ? new
+                    {
+                        statusId = t.Status.StatusId,
+                        statusName = t.Status.StatusName
+                    } : null
+                };
+            });
+
+            // 🗂 Phân loại nhiệm vụ
+            var result = new
+            {
+                todoTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.Todo)),
+                inProgressTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.InProgress)),
+                doneTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.Done)),
+                overdueTasks = mapTasks(tasks.Where(t =>
+                    t.EndDate.HasValue &&
+                    t.EndDate.Value < DateTime.Now &&
+                    (t.Status?.StatusName != TaskStatusModel.Done &&
+                     t.Status?.StatusName != TaskStatusModel.Deleted)))
+            };
+
+            return Json(result);
         }
     }
 }
