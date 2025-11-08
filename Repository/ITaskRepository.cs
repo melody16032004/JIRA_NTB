@@ -8,7 +8,7 @@ namespace JIRA_NTB.Repository
         Task<List<TaskItemModel>> GetAllFilteredAsync(UserModel user, IList<string> roles);
         Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, UserModel user, IList<string> roles);
         Task<TaskItemModel?> GetByIdAsync(string id);
-        Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId);
+        Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, UserModel user, IList<string> roles);
         Task<List<TaskItemModel>> GetByAssigneeIdAsync(string userId);
         Task UpdateAsync(TaskItemModel task);
         Task RefreshOverdueStatusAsync();

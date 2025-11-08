@@ -29,15 +29,15 @@ namespace JIRA_NTB.ViewModels
 
         //Task hoàn thành trễ
         public bool IsDoneLate =>
-            EndDate.HasValue &&
-            CompletedDate.HasValue &&
-            CompletedDate.Value > EndDate.Value;
+           EndDate.HasValue &&
+           CompletedDate.HasValue &&
+           CompletedDate.Value.Date > EndDate.Value.Date;
 
         //Task hoàn thành đúng hạn
         public bool IsDoneOnTime =>
             EndDate.HasValue &&
             CompletedDate.HasValue &&
-            CompletedDate.Value <= EndDate.Value;
+            CompletedDate.Value.Date <= EndDate.Value.Date;
 
         //Số ngày còn lại (âm nếu trễ)
         public int DaysRemaining =>

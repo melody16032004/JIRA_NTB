@@ -1,5 +1,20 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+﻿document.addEventListener("DOMContentLoaded",async () => {
+    const [meRes] = await Promise.all([
+        fetch("/api/user/me")
+    ]);
+    const [me] = await Promise.all([
+        meRes.json(),
+    ]);
+    console.log(me);
+
+    const meCur = document.getElementById("me");
+    meCur.innerHTML += `${me.fullName}`;
+
+    // ⚙️ Sau khi thêm icon mới, phải render lại Lucide icons
     lucide.createIcons();
+
+    // const cur = User
+
 
     /* ===== SIDEBAR TOGGLE ===== */
     const sidebar = document.getElementById("sidebar");
