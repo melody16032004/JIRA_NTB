@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
 {
+    [Authorize]
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
@@ -163,13 +164,14 @@ namespace JIRA_NTB.Controllers
                 taskId = result.taskId
             });
         }
+        [Authorize(Roles = "ADMIN,LEADER")]
         [HttpPost]
         public async Task<IActionResult> UpdateTask(TaskViewModel model, List<IFormFile> Files)
         {
             var result = await taskService.UpdateTaskAsync(model, Files);
             return Json(new { success = result.success, message = result.message });
         }
-
+        [Authorize(Roles = "ADMIN,LEADER")]
         [HttpPost]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
@@ -247,8 +249,8 @@ namespace JIRA_NTB.Controllers
             // 🗂 Phân loại nhiệm vụ
             var result = new
             {
-                todoTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.Todo)),
-                inProgressTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.InProgress)),
+                todoTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.Todo && !t.Overdue)),
+                inProgressTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.InProgress && !t.Overdue)),
                 doneTasks = mapTasks(tasks.Where(t => t.Status?.StatusName == TaskStatusModel.Done)),
                 overdueTasks = mapTasks(tasks.Where(t =>
                     t.EndDate.HasValue &&
