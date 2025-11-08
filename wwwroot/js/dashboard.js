@@ -1,34 +1,38 @@
-﻿const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
-const loading = `
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
-        <div class="flex flex-col items-center">
-            <!-- Vòng xoay -->
-            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <!-- Chữ -->
-            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
-                Đang xử lý, vui lòng chờ...
-            </p>
-        </div>
-    </div>
-`;
+﻿//const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
+//const loading = `
+//    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
+//        <div class="flex flex-col items-center">
+//            <!-- Vòng xoay -->
+//            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+//            <!-- Chữ -->
+//            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
+//                Đang xử lý, vui lòng chờ...
+//            </p>
+//        </div>
+//    </div>
+//`;
 document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("projectContainer");
-
+    var role = container.dataset.role;
+    console.log(role);
     // --- Gọi API ---
-    const [projectRes, deptRes, taskRes/*, memberRes*/] = await Promise.all([
+    const [meRes, projectRes, deptRes, taskRes/*, memberRes*/] = await Promise.all([
+        fetch("/api/user/me"),
         fetch("/api/projects"),
         fetch("/api/departments"),
         fetch("/api/tasks"),
         //fetch("/api/members"),
     ]);
-    const [projects, departments, tasks/*, members*/] = await Promise.all([
+    const [me, projects, departments, tasks/*, members*/] = await Promise.all([
+        meRes.json(),
         projectRes.json(),
         deptRes.json(),
         taskRes.json(),
         //memberRes.json(),
     ]);
-
-    console.log(projects, departments, tasks/*, members*/);
+    //const meCur = document.getElementById("me");
+    //meCur.textContent = me.fullName;
+    console.log(me, projects, departments, tasks/*, members*/);
 
 
     /*
@@ -186,21 +190,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
     `;
     const viewTaskNull = `
-        <div class="flex flex-col items-center justify-center py-12 bg-gradient-to-b from-gray-800/60 to-gray-900/80 border border-gray-700/40 rounded-2xl shadow-lg text-gray-300">
-            <div class="p-4 rounded-full bg-gray-700/50 border border-gray-600/40">
-                <i data-lucide="folder-x" class="w-12 h-12 text-gray-400"></i>
-            </div>
-            <p class="mt-4 text-base font-medium tracking-wide">Chưa có nhiệm vụ nào</p>
-            <p class="text-sm text-gray-500">Hãy thêm nhiệm vụ mới để bắt đầu công việc 🎯</p>
+      <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
+        <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
+          <i data-lucide="folder-x" class="w-5 h-5 text-indigo-500"></i>
         </div>
+        <span class="text-xs text-gray-400">Không có nhiệm vụ nào!</span>
+      </div>
     `;
+
 
     let viewProject = ``;
     let projectCover = ``;
     projects.forEach(p => {
         projectCover = `
             <div class="flex justify-between items-center p-4 gap-[20px] cursor-pointer hover:bg-gray-700 transition"
-                             data-toggle="project#${p.idProject}">
+                data-toggle="project#${p.idProject}">
                 <div class="w-full">
                     <div class="flex items-center justify-between w-full gap-[20px]">
                         <div class="flex items-center gap-[5px]">
@@ -208,6 +212,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <h3 class="font-semibold text-md text-white">
                                 ${p.projectName}
                             </h3>
+                        </div>
+                        <div class="${p.status === 3 ? "" : "hidden"}">
+                            <i data-lucide="circle-check-big" class="w-9 h-9" style="color: #00ff88;"></i>
+                        </div>
+                        <div class="${p.status !== 3 && p.todoTasks !== 0 ? "" : "hidden"}">
+                            <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                         </div>
                     </div>
                     <div class="mt-5 flex align-items-center gap-3">
@@ -384,9 +394,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         viewProject += `
             <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
                 ${projectCover}
-                <div id="project#${p.idProject}" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
+                <div id="project#${p.idProject}" class="overflow-hidden transition-all duration-500 ease-in-out">
                     <div class="p-4 border-t border-gray-700 bg-gray-900/60">
-                        <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
+                        <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 /*border border-indigo-500/30*/">
                             <div class="flex items-center justify-between mb-1">
                                 <h4 class="text-white text-sm font-semibold flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
@@ -412,7 +422,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                         : ""
                                     }
                                     
-                                    <button id="addFileBtn#${p.idProject}" data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
+                                    <button id="addFileBtn#${p.idProject}" disabled data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
                                         <i data-lucide='plus' class='w-3 h-3'></i>
                                         Thêm file
                                     </button>
@@ -451,10 +461,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <i data-lucide="search"
                            class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                     </div>
-                    <button id="openUpdateProjectBtnAdd#${y}#${y}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    <button id="openUpdateProjectBtnAdd#${y}#${y}" class="${role == "ADMIN" ? "" : "hidden"} bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
-                    <button id="openUpdateTaskBtn#${x}#${x}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    
+                    <button id="openUpdateTaskBtn#${x}#${x}" class="${role != "EMPLOYEE" ? "" : "hidden"} bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
                     </button>
                 </div>
@@ -465,6 +476,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             <!-- Danh sách Dự án -->
             <div class="space-y-4">
                 ${controllButton}
+            </div>
+            <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
                 ${viewProjectContainer}
             </div>
         </div>
@@ -619,8 +632,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     container.innerHTML = `
-        ${loading}
-        ${overlay}
         <!-- Dashboard Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
             ${card1}
@@ -661,7 +672,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     //--------------------------------------------
 
     // Toggle Project
-    toggleProject();
+    toggleProject(projects);
 
     // Filter High Priority
     filterHighPrior();
@@ -727,8 +738,7 @@ function formTask(task = null, projects = [], members = []) {
     const assigneeDisabled = task === null ? "disabled" : "";
 
     return (`
-        ${loading}
-        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-40 overflow-hidden">
+        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-51 overflow-hidden">
             <div class="bg-gray-900 w-[700px] rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-gray-700 relative animate-fadeIn max-h-[83vh] flex flex-col">
                 <!-- Header cố định -->
                 <div class="sticky top-0 bg-gray-900 z-10 px-8 pt-6 pb-4 border-b border-gray-800 flex justify-between items-center rounded-tl-2xl rounded-tr-2xl">
@@ -1195,21 +1205,36 @@ function renderLabel(status, isOverdue) {
         <span class="px-4 inline-flex items-center rounded-full border text-[10px] ${statusClass}">${statusText}</span>
     `;
 }
-function toggleProject() {
-    // 🔹 Chờ Razor render xong rồi mới gắn event
+function toggleProject(projects) {
     setTimeout(() => {
         const toggleButtons = document.querySelectorAll("[data-toggle]");
+        const toggleAllBtn = document.getElementById("toggleAllBtn");
+        let allOpen = true;
 
+        // 🔹 Khởi tạo trạng thái ban đầu cho từng project
         toggleButtons.forEach(btn => {
             const targetId = btn.getAttribute("data-toggle");
             const content = document.getElementById(targetId);
             const icon = btn.querySelector("svg");
 
-            // Mặc định mở tất cả
-            content.classList.remove("max-h-0");
-            content.classList.add("max-h-[1000px]");
-            btn.classList.add("open");
+            // Tìm project tương ứng qua id
+            const project = projects.find(p => `project#${p.idProject}` === targetId);
+            if (!project || !content) return;
 
+            // 🔹 Nếu Done hoặc không có task → thu gọn
+            if (project.status == 3 || project.todoTasks == 0) {
+                content.classList.remove("max-h-[1000px]");
+                content.classList.add("max-h-0");
+                btn.classList.remove("open");
+                if (icon) icon.style.transform = "rotate(-90deg)";
+            } else {
+                content.classList.remove("max-h-0");
+                content.classList.add("max-h-[1000px]");
+                btn.classList.add("open");
+                if (icon) icon.style.transform = "rotate(0deg)";
+            }
+
+            // 🔹 Gắn sự kiện toggle từng project
             btn.addEventListener("click", () => {
                 const isOpen = btn.classList.contains("open");
 
@@ -1217,51 +1242,54 @@ function toggleProject() {
                     content.classList.remove("max-h-[1000px]");
                     content.classList.add("max-h-0");
                     btn.classList.remove("open");
+                    if (icon) icon.style.transform = "rotate(-90deg)";
                 } else {
                     content.classList.remove("max-h-0");
                     content.classList.add("max-h-[1000px]");
                     btn.classList.add("open");
+                    if (icon) icon.style.transform = "rotate(0deg)";
                 }
 
-                if (icon) {
-                    icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-                    icon.style.transition = "transform 0.3s ease";
-                }
+                icon?.style.setProperty("transition", "transform 0.3s ease");
             });
         });
 
-        // 🔹 Nút "Thu gọn / Mở tất cả"
-        const toggleAllBtn = document.getElementById("toggleAllBtn");
-        let allOpen = true;
-
+        // 🔹 Nút “Thu gọn / Mở tất cả”
         toggleAllBtn.addEventListener("click", () => {
             toggleButtons.forEach(btn => {
                 const targetId = btn.getAttribute("data-toggle");
                 const content = document.getElementById(targetId);
                 const icon = btn.querySelector("svg");
 
+                if (!content) return;
+
                 if (allOpen) {
+                    // Thu lại tất cả
                     content.classList.remove("max-h-[1000px]");
                     content.classList.add("max-h-0");
                     btn.classList.remove("open");
-                    if (icon) icon.style.transform = "rotate(0deg)";
+                    if (icon) icon.style.transform = "rotate(-90deg)";
                 } else {
+                    // Mở tất cả
                     content.classList.remove("max-h-0");
                     content.classList.add("max-h-[1000px]");
                     btn.classList.add("open");
-                    if (icon) icon.style.transform = "rotate(180deg)";
+                    if (icon) icon.style.transform = "rotate(0deg)";
                 }
             });
 
             allOpen = !allOpen;
+
+            // Cập nhật icon + text cho nút tổng
             toggleAllBtn.innerHTML = allOpen
                 ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> <span class="text-xs">Thu gọn tất cả</span>`
                 : `<i data-lucide="chevron-down" class="w-4 h-4"></i> <span class="text-xs">Mở tất cả</span>`;
 
             lucide.createIcons();
         });
-    }, 100); // ⏳ chờ DOM của Razor render xong
+    }, 100);
 }
+
 function filterHighPrior() {
     const checkbox = document.getElementById("priorityHigh");
     const taskCards = document.querySelectorAll(".task-card");
@@ -1345,4 +1373,42 @@ function handleDelete(taskId) {
             console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
         }
     });
+}
+
+function viewFile(fileUrl) {
+    if (!fileUrl || fileUrl.trim() === "") {
+        alert("Không có tệp để xem!");
+        return;
+    }
+
+    // Nếu fileUrl là đường dẫn tương đối -> thêm base URL
+    if (!fileUrl.startsWith("http")) {
+        fileUrl = `${window.location.origin}/${fileUrl}`;
+    }
+
+    window.open(fileUrl, "_blank"); // mở tab mới
+}
+
+function downloadFile(fileUrl) {
+    if (!fileUrl || fileUrl.trim() === "") {
+        alert("Không có tệp để tải xuống!");
+        return;
+    }
+
+    // Nếu đường dẫn tương đối -> thêm base URL
+    if (!fileUrl.startsWith("http")) {
+        fileUrl = `${window.location.origin}/${fileUrl}`;
+    }
+
+    // Tạo a tag tạm để download
+    const link = document.createElement("a");
+    link.href = fileUrl;
+
+    // Lấy tên file từ URL
+    const fileName = fileUrl.split("/").pop();
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

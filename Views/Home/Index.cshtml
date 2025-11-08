@@ -1,17 +1,29 @@
-﻿@* @using JIRA_NTB.Models.Test
-@model List<JIRA_NTB.Models.Test.Project> *@
-@using Newtonsoft.Json
-@* @model List<JIRA_NTB.Models.ProjectModel> *@
-@model JIRA_NTB.ViewModels.DashboardViewModel
-
+﻿@model string
 @{
     ViewData["Title"] = "Tổng quan";
+    var role = ViewBag.Role ?? "UNKNOWN";
 }
 
-<div id="projectContainer"></div>
+<div id="projectContainer" data-role="@role"></div>
+
+@section GlobalModals {
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
+        <div class="flex flex-col items-center">
+            <!-- Vòng xoay -->
+            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <!-- Chữ -->
+            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
+                Đang xử lý, vui lòng chờ...
+            </p>
+        </div>
+    </div>
+
+    <div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-50"></div>
+}
 
 @section Scripts{
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    @* <script src="/js/home.js"></script> *@
     <script src="/js/dashboard.js"></script>
 }
