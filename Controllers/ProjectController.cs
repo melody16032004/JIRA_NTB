@@ -35,12 +35,13 @@ namespace JIRA_NTB.Controllers
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Status)
                 .AsQueryable();
-
+            query = query.Where(p => p.StatusId != "Deleted");
             // Tìm kiếm theo tên
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
                 query = query.Where(p => p.ProjectName.Contains(searchQuery));
             }
+
 
             var projects = await query
                 .OrderByDescending(p => p.StartDay)
@@ -399,20 +400,20 @@ namespace JIRA_NTB.Controllers
 
 
 
-        // POST: Project/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(string id)
-        {
-            var project = await _context.Projects.FindAsync(id);
-            if (project != null)
-            {
-                _context.Projects.Remove(project);
-                await _context.SaveChangesAsync();
-            }
+        //// POST: Project/Delete/5
+        //[HttpPost, ActionName("Delete")]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> DeleteConfirmed(string id)
+        //{
+        //    var project = await _context.Projects.FindAsync(id);
+        //    if (project != null)
+        //    {
+        //        _context.Projects.Remove(project);
+        //        await _context.SaveChangesAsync();
+        //    }
 
-            return RedirectToAction(nameof(Index));
-        }
+        //    return RedirectToAction(nameof(Index));
+        //}
 
         private bool ProjectExists(string id)
         {
@@ -516,6 +517,172 @@ namespace JIRA_NTB.Controllers
                 .ToListAsync();
 
             return Json(new { success = true, users });
+        }
+        //CRUD
+
+        [HttpGet]
+        public async Task<IActionResult> GetProjectForEdit(string id)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ProjectManagers) // Lấy danh sách thành viên
+                .FirstOrDefaultAsync(p => p.IdProject == id);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            // Lấy danh sách usernames của thành viên
+            var memberUsernames = await _context.ProjectManagers
+                .Where(pm => pm.ProjectId == id)
+                .Include(pm => pm.User)
+                .Select(pm => pm.User.UserName)
+                .ToListAsync();
+
+            // Ghép lại thành chuỗi #user1 #user2 để fill vào textarea
+            string membersInput = string.Join(" ", memberUsernames.Select(u => $"#{u}"));
+
+            // Tạo một object để trả về (chỉ chứa các trường cần thiết)
+            var projectData = new
+            {
+                idProject = project.IdProject,
+                projectName = project.ProjectName,
+                // Format ngày tháng sang yyyy-MM-dd cho <input type="date">
+                startDay = project.StartDay?.ToString("yyyy-MM-dd"),
+                endDay = project.EndDay?.ToString("yyyy-MM-dd"),
+                userId = project.UserId, // Đây là Leader ID
+                statusId = project.StatusId,
+                note = project.Note,
+                membersInput = membersInput
+            };
+
+            return Json(projectData);
+        }
+
+        // [POST] /Project/Edit
+        // Xử lý việc Sửa dự án
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(ProjectModel EditProject) // Model binding từ form Sửa
+        {
+            // Bỏ qua các validate không cần
+            ModelState.Remove("Manager");
+            ModelState.Remove("Status");
+            // ... (bỏ các validate khác nếu cần)
+
+            if (string.IsNullOrEmpty(EditProject.IdProject))
+            {
+                return BadRequest("Project ID is missing.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Nếu có lỗi, bạn nên trả về lỗi thay vì Redirect
+                // (Phần này có thể làm phức tạp, tạm thời cứ Redirect)
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                var projectToUpdate = await _context.Projects
+                    .Include(p => p.ProjectManagers) // Lấy các thành viên CŨ
+                    .FirstOrDefaultAsync(p => p.IdProject == EditProject.IdProject);
+
+                if (projectToUpdate == null)
+                {
+                    return NotFound();
+                }
+
+                // Cập nhật các trường cơ bản
+                projectToUpdate.ProjectName = EditProject.ProjectName;
+                projectToUpdate.StartDay = EditProject.StartDay;
+                projectToUpdate.EndDay = EditProject.EndDay;
+                projectToUpdate.UserId = EditProject.UserId; // Leader
+                projectToUpdate.StatusId = EditProject.StatusId;
+                projectToUpdate.Note = EditProject.Note;
+
+                // --- Xử lý Thành viên (Quan trọng) ---
+                // 1. Xóa tất cả thành viên CŨ
+                _context.ProjectManagers.RemoveRange(projectToUpdate.ProjectManagers);
+
+                // 2. Thêm lại thành viên MỚI từ MembersInput
+                if (!string.IsNullOrWhiteSpace(EditProject.MembersInput))
+                {
+                    // DÙNG REGEX #... (Đã sửa từ payload của bạn)
+                    var matches = Regex.Matches(EditProject.MembersInput, @"#([A-Za-z0-9_.-@]+)");
+                    var usernames = matches
+                        .Select(m => m.Groups[1].Value)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (usernames.Any())
+                    {
+                        var users = await _context.Users
+                            .Where(u => usernames.Contains(u.UserName))
+                            .ToListAsync();
+
+                        foreach (var u in users)
+                        {
+                            _context.ProjectManagers.Add(new ProjectManagerModel
+                            {
+                                ProjectId = projectToUpdate.IdProject,
+                                UserId = u.Id
+                            });
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi
+                Console.WriteLine("❌ Edit error: " + ex.Message);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
+        // [POST] /Project/Delete
+        // Sửa lại action này để trả về JSON cho AJAX
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(string id) // Lấy ID từ URL
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return Json(new { success = false, message = "ID không hợp lệ." });
+            }
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy dự án." });
+            }
+
+            try
+            {
+               project.StatusId = "Deleted"; // Giả sử "status-deleted" là ID của trạng thái Đã Xóa
+                _context.Projects.Update(project);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Dự án đã được chuyển vào thùng rác." });
+            }
+            catch (Exception ex)
+            {
+                // Lấy lỗi gốc từ bên trong (thường chứa thông tin từ SQL)
+                var innerMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+
+                Console.WriteLine("❌ FULL ERROR: " + ex.ToString()); // Xem trong cửa sổ Output của Visual Studio
+
+                return Json(new
+                {
+                    success = false,
+                    // Trả về lỗi chi tiết để hiện lên alert
+                    message = "Lỗi chi tiết: " + innerMessage
+                });
+            }
         }
     }
 }
