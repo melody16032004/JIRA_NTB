@@ -38,7 +38,7 @@ namespace JIRA_NTB.Controllers
 		{
 			if (User.Identity.IsAuthenticated)
     		{
-        		return RedirectToAction("Index", "Home");
+        		return RedirectToAction("Index", "Project");
     		}
 			return View();
 		}
