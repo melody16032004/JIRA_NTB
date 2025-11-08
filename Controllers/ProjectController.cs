@@ -388,11 +388,11 @@ namespace JIRA_NTB.Controllers
                     }
                 }
 
-                Console.WriteLine("🎯 Project and members saved successfully!");
+                Console.WriteLine(" Project and members saved successfully!");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Save error: " + ex.Message);
+                Console.WriteLine(" Save error: " + ex.Message);
             }
 
             return RedirectToAction(nameof(Index));
@@ -421,46 +421,59 @@ namespace JIRA_NTB.Controllers
         }
 
         // Helper method to calculate progress
+        //private int CalculateProgress(ProjectModel project)
+        //{
+        //    // Nếu đã hoàn thành
+        //    if (project.CompletedDate.HasValue)
+        //        return 100;
+
+        //    // Tính toán dựa trên số tasks đã hoàn thành
+        //    // (Đảm bảo action Index đã .Include(p => p.Tasks).ThenInclude(t => t.Status))
+        //    if (project.Tasks != null && project.Tasks.Any())
+        //    {
+        //        var totalTasks = project.Tasks.Count;
+        //        if (totalTasks == 0) return 0;
+
+        //        // === ĐÂY LÀ PHẦN SỬA LỖI ===
+        //        // So sánh t.Status.StatusName (là INT) 
+        //        // với (int)TaskStatusModel.Done (cũng là INT, giá trị là 3)
+        //        var completedTasks = project.Tasks.Count(t =>
+        //            t.Status != null &&
+        //            t.Status.StatusName == JIRA_NTB.Models.Enums.TaskStatusModel.Done); 
+        //        // ============================
+
+        //        return (int)((double)completedTasks / totalTasks * 100);
+        //    }
+
+        //    // Nếu chưa bắt đầu
+        //    if (!project.StartDay.HasValue || project.StartDay > DateTime.Now)
+        //        return 0;
+
+        //    // Tính toán dựa trên thời gian nếu không có tasks
+        //    if (project.StartDay.HasValue && project.EndDay.HasValue)
+        //    {
+        //        var totalDays = (project.EndDay.Value - project.StartDay.Value).TotalDays;
+        //        if (totalDays <= 0) return 0; // Tránh chia cho 0
+
+        //        var elapsedDays = (DateTime.Now - project.StartDay.Value).TotalDays;
+        //        var progress = (int)((elapsedDays / totalDays) * 100);
+        //        return Math.Min(Math.Max(progress, 0), 99); // Giới hạn từ 0-99%
+        //    }
+
+        //    return 0;
+        //}
         private int CalculateProgress(ProjectModel project)
         {
-            // Nếu đã hoàn thành
-            if (project.CompletedDate.HasValue)
-                return 100;
-
-            // Tính toán dựa trên số tasks đã hoàn thành
-            // (Đảm bảo action Index đã .Include(p => p.Tasks).ThenInclude(t => t.Status))
-            if (project.Tasks != null && project.Tasks.Any())
-            {
-                var totalTasks = project.Tasks.Count;
-                if (totalTasks == 0) return 0;
-
-                // === ĐÂY LÀ PHẦN SỬA LỖI ===
-                // So sánh t.Status.StatusName (là INT) 
-                // với (int)TaskStatusModel.Done (cũng là INT, giá trị là 3)
-                var completedTasks = project.Tasks.Count(t =>
-                    t.Status != null &&
-                    t.Status.StatusName == JIRA_NTB.Models.Enums.TaskStatusModel.Done); 
-                // ============================
-
-                return (int)((double)completedTasks / totalTasks * 100);
-            }
-
-            // Nếu chưa bắt đầu
-            if (!project.StartDay.HasValue || project.StartDay > DateTime.Now)
+            // Nếu chưa có task, trả về 0%
+            if (project.Tasks == null || !project.Tasks.Any())
                 return 0;
 
-            // Tính toán dựa trên thời gian nếu không có tasks
-            if (project.StartDay.HasValue && project.EndDay.HasValue)
-            {
-                var totalDays = (project.EndDay.Value - project.StartDay.Value).TotalDays;
-                if (totalDays <= 0) return 0; // Tránh chia cho 0
+            var totalTasks = project.Tasks.Count;
+            var completedTasks = project.Tasks.Count(t =>
+                t.Status != null &&
+                t.Status.StatusName == JIRA_NTB.Models.Enums.TaskStatusModel.Done);
 
-                var elapsedDays = (DateTime.Now - project.StartDay.Value).TotalDays;
-                var progress = (int)((elapsedDays / totalDays) * 100);
-                return Math.Min(Math.Max(progress, 0), 99); // Giới hạn từ 0-99%
-            }
-
-            return 0;
+            return (int)((double)completedTasks / totalTasks * 100);
         }
         //-----------------------------------------------
         // GET: /Project/GetLeaders
@@ -682,6 +695,45 @@ namespace JIRA_NTB.Controllers
                     // Trả về lỗi chi tiết để hiện lên alert
                     message = "Lỗi chi tiết: " + innerMessage
                 });
+            }
+        }
+        //-------------------updatet status by ajax------------------------
+        [HttpPost]
+        public async Task<IActionResult> UpdateStatus(string id, string statusId)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.IdProject == id);
+            if (project == null)
+                return Json(new { success = false, message = "Không tìm thấy dự án." });
+
+            // ✅ Gán đúng khóa Status
+            project.StatusId = statusId;
+            project.CompletedDate = DateTime.Now;
+
+            try
+            {
+                _context.Projects.Update(project);
+                await _context.SaveChangesAsync();
+
+                // ✅ Dùng switch theo chuỗi
+                var (name, icon, badgeColor) = statusId switch
+                {
+                    "status-todo" => ("Lên kế hoạch", "clock", "bg-gray-100 text-gray-700"),
+                    "status-inprogress" => ("Đang thực hiện", "loader", "bg-yellow-100 text-yellow-700"),
+                    "status-done" => ("Hoàn thành", "check-circle", "bg-green-100 text-green-700"),
+                    _ => ("Không xác định", "alert-circle", "bg-gray-100 text-gray-700")
+                };
+
+                return Json(new
+                {
+                    success = true,
+                    statusName = name,
+                    icon,
+                    badgeColor
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi khi cập nhật: " + ex.Message });
             }
         }
     }

@@ -305,5 +305,27 @@
                 }
             });
         });
+        //call update status
+        function updateProjectStatus(projectId, newStatus) {
+            $.ajax({
+                url: '/Project/UpdateStatus',
+                type: 'POST',
+                data: {
+                    id: projectId,
+                    statusId: newStatus,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').first().val()
+                },
+                success: function (res) {
+                    if (res.success) {
+                        lucide.createIcons();
+                    } else {
+                        alert(res.message || 'Không thể cập nhật trạng thái');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi khi cập nhật trạng thái!');
+                }
+            });
+        }
     </script>
 }
