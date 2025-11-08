@@ -20,6 +20,25 @@ namespace JIRA_NTB.Repository
                 .Include(p => p.Manager)
                 .ToListAsync();
         }
+        public async Task<List<ProjectModel>> GetAllFilteredAsync(UserModel user, IList<string> roles)
+        {
+            IQueryable<ProjectModel> query = _context.Projects
+                .Include(p => p.Status)
+                .Include(p => p.Manager);
+            if (roles.Contains("LEADER"))
+            {
+                // Leader -> chỉ project mà mình quản lý
+                query = query.Where(p => p.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                // Employee -> chỉ project mình đang tham gia
+                query = query.Where(p => _context.ProjectManagers
+                    .Any(up => up.ProjectId == p.IdProject && up.UserId == user.Id));
+            }
+
+            return await query.ToListAsync();
+        }
 
         public async Task<ProjectModel?> GetByIdAsync(string id)
         {

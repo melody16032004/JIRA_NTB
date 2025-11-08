@@ -111,16 +111,33 @@ const TaskUtils = {
             loader.remove();
 
             if (result.success) {
-                // Xóa task hiện tại khỏi cột mới (tránh trùng)
+                // Lưu lại column nguồn (nơi task đang ở) trước khi xóa
                 const existingCard = document.querySelector(`.task-card[data-task-id="${undoData.taskId}"]`);
+                const sourceColumn = existingCard?.closest('.task-column');
+
+                // Xóa task hiện tại khỏi cột nguồn
                 if (existingCard) {
                     existingCard.remove();
                 }
+
                 // Tìm column đích để khôi phục task
                 const targetColumn = this.findTargetColumn(undoData);
 
                 if (targetColumn && undoData.originalHTML) {
                     await this.restoreTaskCard(targetColumn, undoData.originalHTML);
+
+                    // ✅ Xóa empty state ở cột đích (vì đã có task)
+                    const targetTaskContainer = targetColumn.querySelector('[data-status]');
+                    this.removeEmptyState(targetTaskContainer);
+
+                    // ✅ Thêm empty state vào cột nguồn nếu không còn task
+                    if (sourceColumn) {
+                        this.checkAndAddEmptyState(sourceColumn);
+                    }
+
+                    // ✅ Cập nhật task count
+                    this.updateTaskCounts();
+
                     this.showSimpleToast('✅ Đã hoàn tác thành công', 'success');
                 } else {
                     // Fallback: reload trang
@@ -157,8 +174,7 @@ const TaskUtils = {
         const taskContainer = targetColumn.querySelector('[data-status]');
         if (!taskContainer) return;
 
-        // Xóa empty state nếu có
-        this.removeEmptyState(targetColumn);
+        // ❌ KHÔNG xóa empty state ở đây nữa - để handleUndo xử lý
 
         // Khôi phục task card
         const temp = document.createElement('div');
@@ -177,8 +193,7 @@ const TaskUtils = {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }, 10);
 
-        // Cập nhật task count
-        this.updateTaskCounts();
+        // ❌ KHÔNG cập nhật task count ở đây - để handleUndo xử lý
 
         // Nếu có drag-drop instance, refresh listeners
         if (window.taskDragDrop) {
