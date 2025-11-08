@@ -5,21 +5,18 @@ namespace JIRA_NTB.Models.ViewModels
 	public class ResetPasswordViewModel
 	{
 		[Required]
-		[EmailAddress]
-		public string Email { get; set; }
+		public string UserId { get; set; } // Sẽ dùng hidden field
 
 		[Required]
-		public string Token { get; set; }
+		public string Token { get; set; } // Sẽ dùng hidden field
 
 		[Required(ErrorMessage = "Vui lòng nhập mật khẩu mới")]
+		[StringLength(100, ErrorMessage = "{0} phải có ít nhất {2} và tối đa {1} ký tự.", MinimumLength = 6)]
 		[DataType(DataType.Password)]
-		[Display(Name = "Mật khẩu mới")]
-		[StringLength(100, ErrorMessage = "{0} phải có ít nhất {2} ký tự.", MinimumLength = 6)]
-		public string Password { get; set; }
+		public string NewPassword { get; set; }
 
 		[DataType(DataType.Password)]
-		[Display(Name = "Xác nhận mật khẩu")]
-		[Compare("Password", ErrorMessage = "Mật khẩu và mật khẩu xác nhận không khớp.")]
+		[Compare("NewPassword", ErrorMessage = "Mật khẩu và mật khẩu xác nhận không khớp.")]
 		public string ConfirmPassword { get; set; }
 	}
 }

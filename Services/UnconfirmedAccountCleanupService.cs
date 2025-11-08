@@ -37,18 +37,26 @@ namespace JIRA_NTB.Services
 						var now = DateTime.UtcNow;
 						var accountsToRemove = new List<string>();
 
+						// Xử lý các account trong pending list (mới đăng ký)
 						foreach (var account in _pendingAccounts)
 						{
 							var elapsedTime = now - account.Value;
 
-							// Nếu đã hơn 10 phút và chưa xác nhận email
-							if (elapsedTime.TotalMinutes > 11)
+							// Nếu đã hơn 15 phút và chưa xác nhận email
+							if (elapsedTime.TotalMinutes > 15)
 							{
 								var user = await userManager.FindByIdAsync(account.Key);
 								if (user != null && !user.EmailConfirmed)
 								{
+									// Xóa tất cả session/token của user trước khi xóa tài khoản
+									await userManager.UpdateSecurityStampAsync(user);
+									
 									// Xóa tài khoản
-									await userManager.DeleteAsync(user);
+									var result = await userManager.DeleteAsync(user);
+									if (result.Succeeded)
+									{
+										Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Deleted unconfirmed account: {user.Email} (registered {elapsedTime.TotalMinutes:F1} minutes ago)");
+									}
 									accountsToRemove.Add(account.Key);
 								}
 								else if (user != null && user.EmailConfirmed)
@@ -74,11 +82,11 @@ namespace JIRA_NTB.Services
 				catch (Exception ex)
 				{
 					// Log lỗi nếu cần
-					Console.WriteLine($"Error in UnconfirmedAccountCleanupService: {ex.Message}");
+					Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Error in UnconfirmedAccountCleanupService: {ex.Message}");
 				}
 
-				// Kiểm tra mỗi 5 giây
-				await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+				// Kiểm tra mỗi 30 giây
+				await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 			}
 		}
 	}

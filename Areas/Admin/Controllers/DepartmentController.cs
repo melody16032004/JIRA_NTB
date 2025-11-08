@@ -65,22 +65,45 @@ namespace JIRA_NTB.Admin.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create(DepartmentModel department)
 		{
+			// Tự động tạo ID cho phòng ban
+			if (string.IsNullOrEmpty(department.IdDepartment))
+			{
+				// Lấy phòng ban cuối cùng để tạo ID mới
+				var lastDepartment = await _context.Departments
+					.OrderByDescending(d => d.IdDepartment)
+					.FirstOrDefaultAsync();
+				
+				if (lastDepartment != null && lastDepartment.IdDepartment.StartsWith("PB"))
+				{
+					// Lấy số cuối cùng và tăng lên 1
+					var lastNumber = int.Parse(lastDepartment.IdDepartment.Substring(2));
+					department.IdDepartment = $"PB{(lastNumber + 1).ToString("D3")}";
+				}
+				else
+				{
+					// Nếu chưa có phòng ban nào, bắt đầu từ PB001
+					department.IdDepartment = "PB001";
+				}
+			}
+			
 			if (ModelState.IsValid)
 			{
 				_context.Departments.Add(department);
 				await _context.SaveChangesAsync();
 				return RedirectToAction(nameof(Index));
 			}
-			return View(department);
+			return RedirectToAction(nameof(Index));
 		}
 
-		public async Task<IActionResult> Edit(string id)
+		[HttpGet]
+		public async Task<IActionResult> GetDepartment(string id)
 		{
 			if (id == null) return NotFound();
 			var department = await _context.Departments.FindAsync(id);
 			if (department == null) return NotFound();
-			return View(department);
+			return Json(department);
 		}
+
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Edit(string id, DepartmentModel department)
