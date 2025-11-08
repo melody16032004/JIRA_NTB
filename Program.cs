@@ -1,4 +1,5 @@
 ﻿using JIRA_NTB.Data;
+using JIRA_NTB.Middleware;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
 using JIRA_NTB.Services;
@@ -147,6 +148,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthentication();
+
+// Middleware kiểm tra user còn tồn tại trong database
+app.UseMiddleware<ValidateUserExistsMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllerRoute(

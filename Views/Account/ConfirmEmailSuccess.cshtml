@@ -1,44 +1,45 @@
 @{
     ViewData["Title"] = "Xác nhận email thành công";
+    Layout = "~/Views/Shared/_LayoutLogin.cshtml";
 }
 
-<div class="flex items-center justify-center min-h-[calc(100vh-200px)] py-8">
-    <div class="w-full max-w-md">
-        <div class="bg-gray-800/50 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
+<div class="flex items-center justify-center min-h-screen py-8">
+    <div class="w-full max-w-md px-4">
+        <div class="bg-gray-800/50 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700/50 overflow-hidden">
             
             <!-- Header -->
-            <div class="bg-gradient-to-r from-green-600 to-emerald-600 p-8 text-center">
-                <div class="flex justify-center mb-4">
-                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                        <i data-lucide="check-circle" class="w-12 h-12 text-white"></i>
+            <div class="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-center">
+                <div class="flex justify-center mb-3">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                        <i data-lucide="check-circle" class="w-10 h-10 text-white"></i>
                     </div>
                 </div>
-                <h2 class="text-3xl font-bold text-white mb-2">Thành công! 🎉</h2>
+                <h2 class="text-2xl font-bold text-white">Thành công! 🎉</h2>
             </div>
 
             <!-- Content -->
-            <div class="p-8 space-y-6">
-                <div class="text-center space-y-3">
-                    <p class="text-gray-300 text-lg">
+            <div class="p-6 space-y-4">
+                <div class="text-center space-y-2">
+                    <p class="text-gray-300 text-base">
                         Email của bạn đã được xác nhận thành công!
                     </p>
                     <p class="text-gray-400 text-sm">
-                        Bây giờ bạn có thể đăng nhập vào hệ thống với tài khoản của mình.
+                        Bây giờ bạn có thể đăng nhập vào hệ thống.
                     </p>
                 </div>
 
-                <div class="bg-green-500/10 border border-green-500/50 rounded-lg p-4">
-                    <div class="flex items-center gap-3">
+                <div class="bg-green-500/10 border border-green-500/50 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
                         <i data-lucide="shield-check" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
                         <p class="text-green-400 text-sm">
-                            Tài khoản của bạn đã được kích hoạt và sẵn sàng sử dụng!
+                            Tài khoản đã được kích hoạt!
                         </p>
                     </div>
                 </div>
 
                 <!-- Login Button -->
                 <a asp-action="Login" 
-                   class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                   class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
                     <i data-lucide="log-in" class="w-5 h-5"></i>
                     Đăng nhập ngay
                 </a>
@@ -51,11 +52,6 @@
                     </a>
                 </div>
             </div>
-        </div>
-
-        <!-- Footer Info -->
-        <div class="text-center mt-6 text-gray-400 text-xs">
-            <p>© 2025 JIRA NTB. Hệ thống quản lý dự án chuyên nghiệp.</p>
         </div>
     </div>
 </div>
