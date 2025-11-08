@@ -70,8 +70,14 @@ namespace JIRA_NTB.Admin.Controllers
 			ViewBag.CurrentDepartment = department;
 
 			// Đếm số LEADER (không tính ADMIN)
-			var allUsers = await _userManager.Users.ToListAsync();
+			var allUsers = await _userManager.Users
+				.Where(u => u.UserName != User.Identity.Name)
+				.ToListAsync();
+			
 			int leaderCount = 0;
+			int lockedCount = 0;
+			int activeCount = 0;
+			
 			foreach (var u in allUsers)
 			{
 				var userRoles = await _userManager.GetRolesAsync(u);
@@ -79,8 +85,21 @@ namespace JIRA_NTB.Admin.Controllers
 				{
 					leaderCount++;
 				}
+				
+				// Đếm số user bị khóa và đang hoạt động
+				if (!u.IsActive)
+				{
+					lockedCount++;
+				}
+				else
+				{
+					activeCount++;
+				}
 			}
+			
 			ViewBag.LeaderCount = leaderCount;
+			ViewBag.LockedCount = lockedCount;
+			ViewBag.ActiveCount = activeCount;
 
 			return View(paginatedUsers);
 		}
@@ -191,7 +210,11 @@ namespace JIRA_NTB.Admin.Controllers
 				return RedirectToAction("Index");
 			}
 
-			var user = await _userManager.FindByIdAsync(userId);
+			// Tìm user và Include Department
+			var user = await _context.Users
+				.Include(u => u.Department)
+				.FirstOrDefaultAsync(u => u.Id == userId);
+			
 			if (user == null)
 			{
 				return NotFound();
@@ -199,7 +222,7 @@ namespace JIRA_NTB.Admin.Controllers
 
 			// 3. Ngăn Admin tự thay đổi role của chính mình
 			var currentUser = await _userManager.GetUserAsync(User);
-			if (user.Id == currentUser.Id)
+			if (currentUser != null && user.Id == currentUser.Id)
 			{
 				// Thêm lỗi vào TempData để hiển thị
 				TempData["ErrorMessage"] = "Bạn không thể thay đổi vai trò của chính mình.";
@@ -217,16 +240,17 @@ namespace JIRA_NTB.Admin.Controllers
 			if (roleName == "LEADER")
 			{
 				// Kiểm tra user có phòng ban chưa
-				if (user.Department == null)
+				if (user.Department == null || string.IsNullOrEmpty(user.Department.IdDepartment))
 				{
-					TempData["ErrorMessage"] = "Không thể gán LEADER cho nhân viên chưa có phòng ban.";
+					TempData["ErrorMessage"] = $"Không thể gán LEADER cho {user.Email}. Vui lòng phân bổ phòng ban trước.";
 					return RedirectToAction("Index");
 				}
 
 				// Tìm LEADER hiện tại của phòng ban này (loại trừ ADMIN)
-				var usersInDepartment = _userManager.Users
+				var usersInDepartment = await _userManager.Users
+					.Include(u => u.Department)
 					.Where(u => u.Department != null && u.Department.IdDepartment == user.Department.IdDepartment)
-					.ToList();
+					.ToListAsync();
 
 				foreach (var deptUser in usersInDepartment)
 				{
@@ -248,7 +272,7 @@ namespace JIRA_NTB.Admin.Controllers
 			// 7. Thêm role mới
 			await _userManager.AddToRoleAsync(user, roleName);
 
-			TempData["SuccessMessage"] = $"Đã gán quyền {roleName} cho {user.Email}";
+			TempData["AdminSuccessMessage"] = $"Đã gán quyền {roleName} cho {user.Email}";
 			return RedirectToAction("Index");
 		}
 	}

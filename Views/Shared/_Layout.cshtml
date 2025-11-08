@@ -37,7 +37,7 @@
             <nav class="flex-1 overflow-y-auto px-3 py-5 space-y-2">
                 <!-- Item -->
                 <a asp-area="" asp-controller="Home" asp-action="Index"
-                   class="flex items-center p-3 border-b-4 border-indigo-500 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="home" class="w-4 h-4"></i>
                     </div>
@@ -74,7 +74,7 @@
                     </a>
                 }
                 
-                <a asp-controller="Task" asp-action="Index"
+                <a asp-area="" asp-controller="Task" asp-action="Index"
                    class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="clipboard-list" class="w-4 h-4"></i>
@@ -111,9 +111,26 @@
                             <i data-lucide="menu" class="w-6 h-6"></i>
                         </button>
 
-                        <h2 class="text-2xl font-semibold text-white tracking-wide">
-                            @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
-                        </h2>
+                        <div class="flex flex-col align-items-center">
+                            <h2 class="text-2xl font-semibold text-white tracking-wide">
+                                @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
+                            </h2>
+                            <div class="flex items-center gap-[5px]">
+                                <span class="text-xs text-gray-400">Xin chào,</span>
+                                <span id="me" class="text-xs text-gray-200 bg-indigo-800 rounded-full px-3 py-[2px] inline-flex items-center justify-center">
+                                    @if (User.IsInRole("ADMIN"))
+                                    {
+                                        <i data-lucide="crown" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }else if (User.IsInRole("LEADER"))
+                                    {
+                                        <i data-lucide="briefcase" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }else if (User.IsInRole("EMPLOYEE"))
+                                    {
+                                        <i data-lucide="user" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Action buttons -->
@@ -249,7 +266,7 @@
                                     <ul class="py-2 text-sm text-gray-200">
                                         <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
-                                            <form asp-area="" asp-controller="/" asp-action="" method="post" class="m-0">
+                                            <form asp-area="" asp-controller="Account" asp-action="Profile" method="get" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
                                                         class="w-full text-left flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition bg-transparent border-0">
@@ -257,13 +274,6 @@
                                                     Thông tin tài khoản
                                                 </button>
                                             </form>
-                                        </li>
-                                        <li>
-                                            <a asp-area="" asp-controller="Account" asp-action="ChangePassword"
-                                               class="flex items-center px-4 py-2 hover:bg-indigo-600 hover:text-white transition">
-                                                <i data-lucide="key-round" class="w-4 h-4 mr-2"></i>
-                                                Đổi mật khẩu
-                                            </a>
                                         </li>
                                         <li>
                                             <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->

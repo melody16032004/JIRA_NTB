@@ -1,23 +1,23 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Dự án";
+}
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     [x-cloak] {
         display: none !important;
     }
 
-    /* === FIX: Màu sắc Input cho Dark Mode === */
     .dark .bg-gray-50 {
-        background-color: #374151 !important; /* Gray-700 */
-        border-color: #4b5563 !important; /* Gray-600 */
-        color: #f9fafb !important; /* Gray-50 */
+        background-color: #374151 !important;
+        border-color: #4b5563 !important;
+        color: #f9fafb !important;
     }
 
     .dark .placeholder\:text-gray-400::placeholder {
-        color: #9ca3af !important; /* Gray-400 */
+        color: #9ca3af !important;
     }
 
-    /* === FIX: Thanh cuộn tùy chỉnh cho Modal === */
-    /* Webkit browsers (Chrome, Safari, Edge) */
     .custom-scrollbar::-webkit-scrollbar {
         width: 8px;
     }
@@ -27,17 +27,18 @@
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #d1d5db; /* Gray-300 */
+        background-color: #d1d5db;
         border-radius: 20px;
         border: 3px solid transparent;
     }
 
     .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #4b5563; /* Gray-600 for dark mode */
+        background-color: #4b5563;
     }
 </style>
 
-<div x-data="{ isModalOpen: false }"
+<div id="main-project-app"
+     x-data="{ isModalOpen: false, isEditModalOpen: false }"
      x-init="$watch('isModalOpen', value => {
         if (!value) {
            $('form[asp-action=Create]')[0].reset();
@@ -60,7 +61,7 @@
                 </select>
                 <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
             </div>
-            <button type="button" @@click="isModalOpen = true" class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
+            <button type="button" @@click ="isModalOpen = true" class="ml-auto inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer">
                 <i data-lucide="plus" class="w-4 h-4"></i>
                 <span>Tạo mới</span>
             </button>
@@ -76,21 +77,17 @@
              x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
              x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
              class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-75">
-
-            <div @@click.outside="isModalOpen = false"
+            <div @@click.outside ="isModalOpen = false"
                  class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
                  x-show="isModalOpen"
                  x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-90" x-transition:enter-end="opacity-100 transform scale-100"
                  x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-90">
-
                 <div class="flex items-center justify-between p-4 border-b dark:border-gray-700 flex-shrink-0">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tạo dự án mới</h3>
-                    <button type="button" @@click="isModalOpen = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                    <button type="button" @@click ="isModalOpen = false" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
                         <i data-lucide="x" class="w-5 h-5"></i>
-                        <span class="sr-only">Đóng modal</span>
                     </button>
                 </div>
-
                 <form asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1 overflow-hidden">
                     <div class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                         <div>
@@ -131,7 +128,7 @@
                         <div>
                             <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Thành viên nhóm</label>
                             <textarea id="projectMembers" name="NewProject.MembersInput" rows="2" placeholder="Gõ #username để thêm thành viên" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
-                            <small class="text-gray-500 text-xs">Gõ <strong>#</strong> để mở gợi ý thành viên, có thể chọn nhiều người.</small>
+                            <small class="text-gray-500 text-xs">Gõ <strong>#</strong> để mở gợi ý thành viên.</small>
                         </div>
                         <div>
                             <label asp-for="NewProject.StatusId" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Trạng thái</label>
@@ -142,17 +139,20 @@
                         </div>
                         <div>
                             <label asp-for="NewProject.Note" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Ghi chú</label>
-                            <textarea asp-for="NewProject.Note" rows="3" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Thêm ghi chú cho dự án..."></textarea>
+                            <textarea asp-for="NewProject.Note" rows="3" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Thêm ghi chú..."></textarea>
                         </div>
                     </div>
-
                     <div class="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600 flex-shrink-0 bg-white dark:bg-gray-800 z-10">
                         <button type="submit" class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">Tạo dự án</button>
-                        <button type="button" @@click="isModalOpen = false" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">Hủy</button>
+                        <button type="button" @@click ="isModalOpen = false" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600">Hủy</button>
                     </div>
                 </form>
             </div>
         </div>
+    </template>
+
+    <template x-teleport="body">
+        @await Html.PartialAsync("~/Views/Project/Partial/_EditProjectModal.cshtml", Model)
     </template>
 </div>
 
@@ -161,6 +161,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         lucide.createIcons();
+
+        // === 1. LOGIC LỌC DỰ ÁN ===
         $(function () {
             $("#filter-form").on("change", "select, input[type='text']", function () {
                 setTimeout(function () {
@@ -172,105 +174,138 @@
             });
         });
 
-        // --- Script xử lý Gợi ý thành viên (@@mention / #mention) ---
+        // === 2. LOGIC GỢI Ý THÀNH VIÊN (#MENTION) ===
         $(function () {
             let suggestionUsers = [];
 
-            // Load user khi chọn Leader
-            $('#leaderSelect').on('change', function () {
-                const leaderId = $(this).val();
-                if (!leaderId) return;
-                $.get('/Project/GetUsersByLeader', { leaderId }, function (res) {
-                    suggestionUsers = res.success ? res.users : [];
-                });
-            });
-
-            // Tạo popup gợi ý (ẩn mặc định)
-            const $textarea = $('#projectMembers');
-            const $box = $('<div id="mentionSuggestions"></div>').css({
-                position: 'absolute', display: 'none', zIndex: 9999,
-                background: 'white', border: '1px solid #ddd', borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto', fontSize: '14px',
-                width: 'auto', minWidth: '200px', maxWidth: '300px', // Giới hạn kích thước
-                whiteSpace: 'nowrap', overflowX: 'hidden', textOverflow: 'ellipsis' // Xử lý tràn text
-            }).appendTo('body');
-
-            function hideBox() { $box.hide(); }
-
-            // === FIX: Hợp nhất hàm showBox vào đúng scope và thêm logic chống tràn màn hình ===
-            function showBox(html, left, top, width) {
-                const screenWidth = $(window).width();
-                // Nếu mép phải của box tràn ra ngoài màn hình, dịch chuyển nó sang trái
-                if (left + 300 > screenWidth) { // Giả sử max-width là 300
-                     left = screenWidth - 310;
+            function initializeMentionHandler(leaderSelectId, textareaId, mentionBoxId) {
+                // Chỉ tạo box nếu chưa có (tránh trùng lặp)
+                if ($(`#${mentionBoxId}`).length === 0) {
+                    $('<div id="' + mentionBoxId + '"></div>').css({
+                        position: 'absolute', display: 'none', zIndex: 9999,
+                        background: 'white', border: '1px solid #ddd', borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)', maxHeight: '220px', overflowY: 'auto',
+                        minWidth: '250px', maxWidth: '300px', whiteSpace: 'nowrap', overflowX: 'hidden', textOverflow: 'ellipsis'
+                    }).appendTo('body');
                 }
-                $box.html(html).css({ left, top, width: 'auto' }).show();
+                const $box = $(`#${mentionBoxId}`);
+
+                function hideBox() { $box.hide(); }
+                function showBox(html, left, top, width) {
+                    const screenWidth = $(window).width();
+                    if (left + 300 > screenWidth) left = screenWidth - 310;
+                    $box.html(html).css({ left, top, width: 'auto' }).show();
+                }
+
+                $('body').on('change', leaderSelectId, function () {
+                    const leaderId = $(this).val();
+                    if (!leaderId) { suggestionUsers = []; return; }
+                    $.get('/Project/GetUsersByLeader', { leaderId }, function (res) {
+                        suggestionUsers = res.success ? res.users : [];
+                    });
+                });
+
+                $('body').on('keyup click', textareaId, function () {
+                    const ta = this;
+                    const textBefore = ta.value.substring(0, ta.selectionStart);
+                    const atPos = textBefore.lastIndexOf('#');
+                    if (atPos === -1) { hideBox(); return; }
+                    const query = textBefore.substring(atPos + 1).trim().toLowerCase();
+                    if (query.length === 0 && !textBefore.endsWith('#')) { hideBox(); return; }
+
+                    const matches = suggestionUsers.filter(u =>
+                        (u.userName && u.userName.toLowerCase().includes(query)) ||
+                        (u.fullName && u.fullName.toLowerCase().includes(query))
+                    );
+
+                    if (matches.length === 0) { hideBox(); return; }
+
+                    const html = matches.map(u => `
+                        <div class="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 transition-colors duration-150" data-username="${u.userName}">
+                            <img src="${u.avatar || '/images/default-avatar.png'}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+                            <div class="flex flex-col overflow-hidden">
+                                <span class="font-medium text-gray-900 truncate">${u.fullName || u.userName}</span>
+                                <span class="text-gray-500 text-xs truncate">#${u.userName}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    const rect = ta.getBoundingClientRect();
+                    showBox(html, rect.left + window.scrollX, rect.bottom + window.scrollY + 5);
+                });
+
+                $box.on('click', '[data-username]', function (e) {
+                    e.preventDefault(); e.stopPropagation();
+                    const username = $(this).data('username');
+                    const ta = $(textareaId)[0];
+                    const textBefore = ta.value.substring(0, ta.selectionStart);
+                    const atPos = textBefore.lastIndexOf('#');
+                    ta.value = textBefore.substring(0, atPos + 1) + username + ' #' + ta.value.substring(ta.selectionStart);
+                    ta.focus();
+                    $(textareaId).trigger('keyup');
+                    return false;
+                });
+
+                $(document).on('click', function (e) {
+                    if (!$(e.target).closest(`#${mentionBoxId}, ${textareaId}`).length) hideBox();
+                });
             }
 
-            // Xử lý sự kiện gõ phím để hiện gợi ý
-            $textarea.on('keyup click', function (e) {
-                const ta = this;
-                const caret = ta.selectionStart;
-                const textBefore = ta.value.substring(0, caret);
-                const atPos = textBefore.lastIndexOf('#');
+            // Khởi tạo cho cả 2 modal
+            initializeMentionHandler("#leaderSelect", "#projectMembers", "createMentionBox");
+            initializeMentionHandler("#edit_leaderSelect", "#edit_projectMembers", "editMentionBox");
+        });
 
-                if (atPos === -1) { hideBox(); return; }
+        // === 3. LOGIC MỞ MODAL SỬA & XÓA DỰ ÁN ===
+        document.addEventListener('alpine:init', () => {
+             // Hàm lấy Alpine component an toàn
+        function getAlpineComponent() {
+            const el = document.getElementById('main-project-app');
+            return Alpine.$data(el);
+        }
 
-                const query = textBefore.substring(atPos + 1).trim().toLowerCase();
-                // Cho phép tìm kiếm rỗng (vừa gõ # xong) hoặc khi query chưa có dấu cách
-                if (query.length === 0 && !textBefore.endsWith('#')) { hideBox(); return; }
+            // --- Mở Modal Sửa ---
+                  // --- Mở Modal Sửa ---
+        $(document).on('click', '.edit-project-btn', function (e) {
+            e.preventDefault();
+            const projectId = $(this).data('id');
 
-                const matches = suggestionUsers.filter(u =>
-                    (u.userName && u.userName.toLowerCase().includes(query)) ||
-                    (u.fullName && u.fullName.toLowerCase().includes(query))
-                );
+            $.get('/Project/GetProjectForEdit', { id: projectId }, function (data) {
+                if (data) {
+                    $('#edit_idProject').val(data.idProject);
+                    $('#edit_projectName').val(data.projectName);
+                    $('#edit_startDay').val(data.startDay);
+                    $('#edit_endDay').val(data.endDay);
+                    $('#edit_leaderSelect').val(data.userId).trigger('change');
+                    $('#edit_projectMembers').val(data.membersInput);
+                    $('#edit_statusId').val(data.statusId);
+                    $('#edit_note').val(data.note);
 
-                if (matches.length === 0) { hideBox(); return; }
+                    const alpine = Alpine.$data(document.getElementById('main-project-app'));
+                    alpine.isEditModalOpen = true;
 
-                const html = matches.map(u => `
-                    <div class="px-4 py-2 hover:bg-indigo-50 cursor-pointer flex items-center gap-3 transition-colors duration-150" data-username="${u.userName}">
-                        <img src="${u.avatar || '/images/default-avatar.png'}" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
-                        <div class="flex flex-col overflow-hidden">
-                            <span class="font-medium text-gray-900 truncate">${u.fullName || u.userName}</span>
-                            <span class="text-gray-500 text-xs truncate">#${u.userName}</span>
-                        </div>
-                    </div>
-                `).join('');
-
-                const rect = ta.getBoundingClientRect();
-                const left = rect.left + window.scrollX;
-                const top = rect.bottom + window.scrollY + 5; // +5px margin top
-
-                showBox(html, left, top, $textarea.outerWidth());
+                    setTimeout(() => lucide.createIcons(), 50);
+                }
             });
+        });
 
-            // Xử lý chọn user từ popup
-            $box.on('click', '[data-username]', function (e) {
-                e.preventDefault(); e.stopPropagation(); // Ngăn chặn đóng modal cha
 
-                const username = $(this).data('username');
-                const ta = $textarea[0];
-                const caret = ta.selectionStart;
-                const textBefore = ta.value.substring(0, caret);
-                const atPos = textBefore.lastIndexOf('#');
+            // --- Xóa Dự Án ---
+            $(document).on('click', '.delete-project-btn', function (e) {
+                e.preventDefault();
+                const $btn = $(this);
+                const projectId = $btn.data('id');
+                const projectName = $btn.data('name');
+                const token = $('input[name="__RequestVerificationToken"]').first().val();
 
-                if (atPos === -1) return false;
-
-                const before = ta.value.substring(0, atPos + 1);
-                const after = ta.value.substring(caret);
-
-                // Chèn username và thêm dấu # mới để tiếp tục chọn
-                ta.value = before + username + ' #' + after;
-
-                ta.focus();
-                $textarea.trigger('keyup'); // Kích hoạt lại gợi ý ngay lập tức
-
-                return false;
-            });
-
-            // Ẩn popup khi click ra ngoài
-            $(document).on('click', function (e) {
-                if (!$(e.target).closest('#mentionSuggestions, #projectMembers').length) hideBox();
+                if (confirm(`Bạn có chắc muốn xóa dự án "${projectName}"?`)) {
+                    $.post('/Project/Delete/' + projectId, { __RequestVerificationToken: token }, function (res) {
+                        if (res.success) {
+                            $btn.closest('.project-card').fadeOut(300, function() { $(this).remove(); });
+                        } else {
+                            alert(res.message);
+                        }
+                    });
+                }
             });
         });
     </script>
