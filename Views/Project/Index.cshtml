@@ -1,4 +1,7 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Dự án";
+}
 <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     [x-cloak] {
@@ -305,5 +308,27 @@
                 }
             });
         });
+        //call update status
+        function updateProjectStatus(projectId, newStatus) {
+            $.ajax({
+                url: '/Project/UpdateStatus',
+                type: 'POST',
+                data: {
+                    id: projectId,
+                    statusId: newStatus,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').first().val()
+                },
+                success: function (res) {
+                    if (res.success) {
+                        lucide.createIcons();
+                    } else {
+                        alert(res.message || 'Không thể cập nhật trạng thái');
+                    }
+                },
+                error: function () {
+                    alert('Lỗi khi cập nhật trạng thái!');
+                }
+            });
+        }
     </script>
 }
