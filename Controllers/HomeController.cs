@@ -30,22 +30,18 @@ namespace JIRA_NTB.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
-            Console.WriteLine(user.Id);
 
             var isRole = "";
             if (User.IsInRole("ADMIN"))
             {
-                Console.WriteLine("ADMIN");
                 isRole = "ADMIN";
             }
             else if (User.IsInRole("LEADER"))
             {
-                Console.WriteLine("LEADER");
                 isRole = "LEADER";
             }
             else
             {
-                Console.WriteLine("EMPLOYEE");
                 isRole = "EMPLOYEE";
             }
             ViewBag.Role = isRole;
@@ -249,7 +245,6 @@ namespace JIRA_NTB.Controllers
             }
             else if (User.IsInRole("LEADER"))
             {
-                Console.WriteLine("LEADER");
                 var projectIdsByLeader = await _context.Projects
                     .Where(p => p.UserId == user.Id)
                     .Select(p => p.IdProject)
@@ -280,7 +275,6 @@ namespace JIRA_NTB.Controllers
             }
             else
             {
-                Console.WriteLine("EMPLOYEE");
                 var projectIds = await _context.ProjectManagers
                     .Where(pm => pm.UserId == user.Id)
                     .Select(pm => pm.ProjectId)
