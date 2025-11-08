@@ -72,13 +72,22 @@ namespace JIRA_NTB.Repository
             return await query.FirstOrDefaultAsync(t => t.IdTask == taskId);
         }
 
-        public async Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId)
+        public async Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, UserModel user, IList<string> roles)
         {
-            return await _context.Tasks
+            var query = _context.Tasks
                 .Include(t => t.Status)
                 .Include(t => t.Assignee)
                 .Where(t => t.ProjectId == projectId)
-                .ToListAsync();
+                .AsQueryable();
+            if (roles.Contains("LEADER"))
+            {
+                query = query.Where(t => t.Project.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+            return await query.ToListAsync();
         }
 
         public async Task<List<TaskItemModel>> GetByAssigneeIdAsync(string userId)

@@ -29,8 +29,6 @@ namespace JIRA_NTB.Controllers
 
         public async Task<IActionResult> Index()
         {
-            Console.Clear();
-
             var user = await _userManager.GetUserAsync(User);
             Console.WriteLine(user.Id);
 

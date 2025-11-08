@@ -14,7 +14,7 @@ namespace JIRA_NTB.Services
         Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId, string previousStatusId);
         Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId);
         Task<(bool success, string message, string? taskId)> CreateTaskAsync(CreateTaskRequest request);
-        Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId);
+        Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles);
 
 
     }
