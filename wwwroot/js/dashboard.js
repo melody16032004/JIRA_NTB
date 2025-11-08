@@ -631,6 +631,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
     `;
 
+        //${overlay}
+        //${loading}
     container.innerHTML = `
         <!-- Dashboard Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
@@ -738,7 +740,7 @@ function formTask(task = null, projects = [], members = []) {
     const assigneeDisabled = task === null ? "disabled" : "";
 
     return (`
-        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-51 overflow-hidden">
+        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-50 overflow-hidden">
             <div class="bg-gray-900 w-[700px] rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-gray-700 relative animate-fadeIn max-h-[83vh] flex flex-col">
                 <!-- Header cố định -->
                 <div class="sticky top-0 bg-gray-900 z-10 px-8 pt-6 pb-4 border-b border-gray-800 flex justify-between items-center rounded-tl-2xl rounded-tr-2xl">
