@@ -337,12 +337,12 @@ namespace JIRA_NTB.Services
             await _taskRepository.DeleteAsync(taskId);
             return (true, "Xóa nhiệm vụ thành công!");
         }
-        public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId)
+        public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles)
         {
             if (string.IsNullOrEmpty(projectId))
                 return new List<TaskItemModel>();
 
-            return await _taskRepository.GetByProjectIdAsync(projectId);
+            return await _taskRepository.GetByProjectIdAsync(projectId, user, roles);
         }
     }
 }

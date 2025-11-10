@@ -37,7 +37,7 @@
             <nav class="flex-1 overflow-y-auto px-3 py-5 space-y-2">
                 <!-- Item -->
                 <a asp-area="" asp-controller="Home" asp-action="Index"
-                   class="flex items-center p-3 border-b-4 border-indigo-500 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                   class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
                         <i data-lucide="home" class="w-4 h-4"></i>
                     </div>
@@ -100,7 +100,7 @@
         <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
 
         <!-- Main Content Area -->
-        <main class="main-content flex-1 overflow-y-auto divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
+        <main class="main-content flex-1 overflow-y-hidden divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
             <!-- Header -->
             <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-30">
                 <div class="px-6 py-4 flex items-center justify-between">
@@ -111,13 +111,44 @@
                             <i data-lucide="menu" class="w-6 h-6"></i>
                         </button>
 
-                        <h2 class="text-2xl font-semibold text-white tracking-wide">
-                            @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
-                        </h2>
+                        <div class="flex flex-col align-items-center">
+                            <h2 class="text-2xl font-semibold text-white tracking-wide">
+                                @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
+                            </h2>
+                            <div class="flex items-center gap-[5px]">
+                                <span class="text-xs text-gray-400">Xin chào,</span>
+                                <span id="me" class="text-xs text-gray-200 bg-indigo-800 rounded-full px-3 py-[2px] inline-flex items-center justify-center">
+                                    @if (User.IsInRole("ADMIN"))
+                                    {
+                                        <i data-lucide="crown" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }else if (User.IsInRole("LEADER"))
+                                    {
+                                        <i data-lucide="briefcase" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }else if (User.IsInRole("EMPLOYEE"))
+                                    {
+                                        <i data-lucide="user" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Action buttons -->
                     <div class="flex items-center space-x-3 relative">
+                        <!-- Theme -->
+                        <div class="relative group">
+                            <button onclick="toggleTheme()" id="themeButton" class="w-10 h-10 z-30 flex items-center justify-center rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md relative">
+                                <i data-lucide="sun" class="w-5 h-5 text-gray-300"></i>
+                                @* <i data-lucide="moon" class="w-5 h-5 text-gray-300"></i> *@
+                            </button>
+                            @* <span id="testTheme" class="text-black dark:text-white">Theme</span> *@
+
+                            <!-- Tooltip -->
+                            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                                Giao diện
+                            </span>
+                        </div>
+
                         <!-- Notify -->
                         <div class="relative group">
                             <button id="notifyButton"
@@ -298,11 +329,46 @@
             </header>
 
             <!-- Content -->
-            <div class="p-4 bg-gray-900/60 rounded-b-xl backdrop-blur-md">
+            <div class="p-4 bg-gray-900/60 rounded-b-xl backdrop-blur-md max-h-[90vh] custom-scroll overflow-y-auto">
                 @RenderBody()
             </div>
         </main>
     </div>
+
+    <!-- Floating Calendar Button -->
+    <div id="calendarButton"
+         class="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-500 shadow-xl flex items-center justify-center cursor-pointer transition-all z-50"
+         style="box-shadow: 0 0px 25px rgba(59, 130, 246, 0.6);">
+        <i data-lucide="calendar" class="w-6 h-6 text-white"></i>
+    </div>
+
+    <!-- Calendar Popup -->
+    <div id="calendarPopup"
+         class="hidden fixed bottom-20 right-6 bg-gray-800 text-gray-200 rounded-xl shadow-3xl p-4 w-80 z-50 border border-gray-600 transition-all duration-300"
+         style="box-shadow: 0 0px 25px rgba(59, 130, 246, 0.6);">
+        <div class="flex items-center justify-between mb-3">
+            <button id="prevMonth" class="p-1 hover:bg-gray-700 rounded">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            <h3 id="calendarTitle" class="text-lg font-semibold"></h3>
+            <button id="nextMonth" class="p-1 hover:bg-gray-700 rounded">
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1 text-center text-sm">
+            <div class="font-semibold text-indigo-400">T2</div>
+            <div class="font-semibold text-indigo-400">T3</div>
+            <div class="font-semibold text-indigo-400">T4</div>
+            <div class="font-semibold text-indigo-400">T5</div>
+            <div class="font-semibold text-indigo-400">T6</div>
+            <div class="font-semibold text-indigo-400">T7</div>
+            <div class="font-semibold text-indigo-400">CN</div>
+        </div>
+
+        <div id="calendarDays" class="grid grid-cols-7 gap-1 mt-2 text-center text-sm"></div>
+    </div>
+
     @RenderSection("GlobalModals", required: false)
     @await RenderSectionAsync("Scripts", required: false)
     <script>
@@ -323,7 +389,6 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>lucide.createIcons();</script>
-    
     <script src="/js/site.js"></script>
 </body>
 </html>

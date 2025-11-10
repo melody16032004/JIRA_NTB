@@ -1,34 +1,44 @@
-﻿const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
-const loading = `
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
-        <div class="flex flex-col items-center">
-            <!-- Vòng xoay -->
-            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <!-- Chữ -->
-            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
-                Đang xử lý, vui lòng chờ...
-            </p>
-        </div>
-    </div>
-`;
+﻿//const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
+//const loading = `
+//    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
+//        <div class="flex flex-col items-center">
+//            <!-- Vòng xoay -->
+//            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+//            <!-- Chữ -->
+//            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
+//                Đang xử lý, vui lòng chờ...
+//            </p>
+//        </div>
+//    </div>
+//`;
+let currentProject = '';
 document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("projectContainer");
-
+    var role = container.dataset.role;
+    console.log(role);
     // --- Gọi API ---
-    const [projectRes, deptRes, taskRes/*, memberRes*/] = await Promise.all([
+    const [meRes, projectRes, tasksRes, taskStatRes, projectStatRes/*, memberRes*/] = await Promise.all([
+        fetch("/api/user/me"),
         fetch("/api/projects"),
-        fetch("/api/departments"),
         fetch("/api/tasks"),
+        fetch("/api/tasks/statistics"),
+        fetch("/api/projects/statistics"),
         //fetch("/api/members"),
     ]);
-    const [projects, departments, tasks/*, members*/] = await Promise.all([
+    const [me, projects, tasks, tasksStat, projectsStat/*, members*/] = await Promise.all([
+        meRes.json(),
         projectRes.json(),
-        deptRes.json(),
-        taskRes.json(),
+        tasksRes.json(),
+        taskStatRes.json(),
+        projectStatRes.json(),
         //memberRes.json(),
     ]);
-
-    console.log(projects, departments, tasks/*, members*/);
+    //const meCur = document.getElementById("me");
+    //meCur.textContent = me.fullName;
+    console.log(me, projects, tasks/*, members*/);
+    console.log("Projects: ", projects);
+    console.log("Stats Task: ", tasksStat);
+    console.log("Stats Project: ", projectsStat);
 
 
     /*
@@ -37,41 +47,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     ***************************************
     */
     // ---| Fetch data into card |---
-    let countProject = 0;
-    let countProjectDone = 0;
-    let countTask = 0;
-    let countTaskDone = 0;
-    let countTaskInProgress = 0;
-    let countTaskTodo = 0;
-    let countTaskOverDue = 0;
+    let countProject = projects.length;
+    let countProjectDone = projectsStat.completed || 0;
+    let countTask = tasksStat.totalTasks || 0;
+    let countTaskDone = tasksStat.completedTasks || 0;
+    let countTaskInProgress = tasksStat.inProgressTasks || 0;
+    let countTaskTodo = tasksStat.todoTasks || 0;
+    let countTaskOverDue = tasksStat.overdueTasks || 0;
 
-    let countToDo = 0;
-    let countInProgress = 0;
-    let countDone = 0;
-    let countOverdue = 0;
-    // Filter data
-    projects.forEach(p => {
-        countProject++;
-        if (p.status == 3) {
-            countProjectDone++;
-        }
-        countTask += p.totalTasks;
-        countTaskDone += p.completedTasks;
-        countTaskInProgress += p.inProgressTasks;
-        countTaskTodo += p.todoTasks;
-        countTaskOverDue += p.overdueTasks;
-
-        const progress = p.status;
-        const end = new Date(p.endDay)
-        const now = new Date();
-        if (end < now && progress !== 3) {
-            countOverdue++;
-        } else {
-            if (progress === 1) countToDo++;
-            else if (progress === 2) countInProgress++;
-            else if (progress === 3) countDone++;
-        }
-    });
+    let countToDo = projectsStat.todo || 0;
+    let countInProgress = projectsStat.inProgress || 0;
+    let countDone = projectsStat.completed || 0;
+    let countOverdue = projectsStat.overdue || 0;
+    
     // --- UI ---
     const card1 = `
         <!-- Card 1 -->
@@ -186,21 +174,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
     `;
     const viewTaskNull = `
-        <div class="flex flex-col items-center justify-center py-12 bg-gradient-to-b from-gray-800/60 to-gray-900/80 border border-gray-700/40 rounded-2xl shadow-lg text-gray-300">
-            <div class="p-4 rounded-full bg-gray-700/50 border border-gray-600/40">
-                <i data-lucide="folder-x" class="w-12 h-12 text-gray-400"></i>
-            </div>
-            <p class="mt-4 text-base font-medium tracking-wide">Chưa có nhiệm vụ nào</p>
-            <p class="text-sm text-gray-500">Hãy thêm nhiệm vụ mới để bắt đầu công việc 🎯</p>
+      <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
+        <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
+          <i data-lucide="folder-x" class="w-5 h-5 text-indigo-500"></i>
         </div>
+        <span class="text-xs text-gray-400">Không có nhiệm vụ nào!</span>
+      </div>
     `;
+
 
     let viewProject = ``;
     let projectCover = ``;
     projects.forEach(p => {
         projectCover = `
             <div class="flex justify-between items-center p-4 gap-[20px] cursor-pointer hover:bg-gray-700 transition"
-                             data-toggle="project#${p.idProject}">
+                data-toggle="project#${p.idProject}">
                 <div class="w-full">
                     <div class="flex items-center justify-between w-full gap-[20px]">
                         <div class="flex items-center gap-[5px]">
@@ -208,6 +196,12 @@ document.addEventListener("DOMContentLoaded", async () => {
                             <h3 class="font-semibold text-md text-white">
                                 ${p.projectName}
                             </h3>
+                        </div>
+                        <div class="${p.status === 3 ? "" : "hidden"}">
+                            <i data-lucide="circle-check-big" class="w-9 h-9" style="color: #00ff88;"></i>
+                        </div>
+                        <div class="${p.status !== 3 && p.totalTasks !== 0 ? "" : "hidden"}">
+                            <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                         </div>
                     </div>
                     <div class="mt-5 flex align-items-center gap-3">
@@ -384,9 +378,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         viewProject += `
             <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
                 ${projectCover}
-                <div id="project#${p.idProject}" class="max-h-[1000px] overflow-hidden transition-all duration-500 ease-in-out">
+                <div id="project#${p.idProject}" class="overflow-hidden transition-all duration-500 ease-in-out">
                     <div class="p-4 border-t border-gray-700 bg-gray-900/60">
-                        <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 border border-indigo-500/30">
+                        <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 /*border border-indigo-500/30*/">
                             <div class="flex items-center justify-between mb-1">
                                 <h4 class="text-white text-sm font-semibold flex items-center gap-2">
                                     <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
@@ -412,7 +406,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                                         : ""
                                     }
                                     
-                                    <button id="addFileBtn#${p.idProject}" data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
+                                    <button id="addFileBtn#${p.idProject}" disabled data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
                                         <i data-lucide='plus' class='w-3 h-3'></i>
                                         Thêm file
                                     </button>
@@ -451,10 +445,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <i data-lucide="search"
                            class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                     </div>
-                    <button id="openUpdateProjectBtnAdd#${y}#${y}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    <button id="openUpdateProjectBtnAdd#${y}#${y}" disabled class="${role == "ADMIN" ? "" : "hidden"} hidden bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
-                    <button id="openUpdateTaskBtn#${x}#${x}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    
+                    <button id="openUpdateTaskBtn#${x}#${x}" class="${role != "EMPLOYEE" ? "" : "hidden"} bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
                     </button>
                 </div>
@@ -465,6 +460,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             <!-- Danh sách Dự án -->
             <div class="space-y-4">
                 ${controllButton}
+            </div>
+            <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
                 ${viewProjectContainer}
             </div>
         </div>
@@ -618,9 +615,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
     `;
 
+        //${overlay}
+        //${loading}
     container.innerHTML = `
-        ${loading}
-        ${overlay}
         <!-- Dashboard Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
             ${card1}
@@ -648,7 +645,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll("[id^='openUpdateTaskBtn#']").forEach(btn => {
         btn.addEventListener("click", () => {
             const task = JSON.parse(btn.getAttribute("data-task"));
-            openTaskModal(task, projects);
+            openTaskModal(task, projects, role);
         });
     });
     document.getElementById("searchInput").addEventListener("input", function () {
@@ -661,7 +658,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     //--------------------------------------------
 
     // Toggle Project
-    toggleProject();
+    toggleProject(projects);
 
     // Filter High Priority
     filterHighPrior();
@@ -700,7 +697,7 @@ async function fetchMemberByProject(idProject) {
     }
 }
 
-function formTask(task = null, projects = [], members = []) {
+function formTask(task = null, projects = [], members = [], role) {
     let renderOptionProject = ``;
     let startDate = "";
     let endDate = "";
@@ -724,11 +721,10 @@ function formTask(task = null, projects = [], members = []) {
         });
     }
 
-    const assigneeDisabled = task === null ? "disabled" : "";
+    const assigneeDisabled = (task === null || role === "EMPLOYEE") ? "disabled" : "";
 
     return (`
-        ${loading}
-        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-40 overflow-hidden">
+        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-50 overflow-hidden">
             <div class="bg-gray-900 w-[700px] rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-gray-700 relative animate-fadeIn max-h-[83vh] flex flex-col">
                 <!-- Header cố định -->
                 <div class="sticky top-0 bg-gray-900 z-10 px-8 pt-6 pb-4 border-b border-gray-800 flex justify-between items-center rounded-tl-2xl rounded-tr-2xl">
@@ -752,12 +748,13 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskName"
                                        value="${task?.nameTask ?? ""}"
                                        type="text"
+                                       ${role == "EMPLOYEE"? "disabled":""}
                                        required
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                        placeholder="Nhập tên task..." />
                             </div>
 
-                            <!-- Người nhận -->
+                            <!-- Dự án -->
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2 font-medium">Dự án</label>
                                 <div id="projectOptions" class="relative group ">
@@ -775,7 +772,7 @@ function formTask(task = null, projects = [], members = []) {
                             </div>
                         </div>
 
-                        <!-- Dự án -->
+                        <!-- Người nhận -->
                         <div class="flex flex-col sm:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2">Người nhận nhiệm vụ</label>
@@ -799,6 +796,7 @@ function formTask(task = null, projects = [], members = []) {
                             <label class="block text-xs text-gray-300 mb-2">Mô tả</label>
                             <textarea id="taskDesc"
                                   rows="4"
+                                  ${role == "EMPLOYEE" ? "disabled" : ""}
                                   class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                                   placeholder="Nhập mô tả...">${task?.note ?? ""}</textarea>
                         </div>
@@ -810,6 +808,7 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskStart"
                                        type="date"
                                        required
+                                       ${role == "EMPLOYEE" ? "disabled" : ""}
                                        value="${startDate}"
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
                                 <i data-lucide="calendar"
@@ -821,6 +820,7 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskEnd"
                                        type="date"
                                        required
+                                       ${role == "EMPLOYEE" ? "disabled" : ""}
                                        value="${endDate}"
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
                                 <i data-lucide="calendar"
@@ -847,7 +847,7 @@ function formTask(task = null, projects = [], members = []) {
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2 font-medium">Độ ưu tiên</label>
                                 <div class="relative group">
-                                    <select id="taskPriority" class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
+                                    <select id="taskPriority" ${role == "EMPLOYEE" ? "disabled" : ""} class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
                                         <option value="low" ${task === null ? "" : (task?.priority == "low" ? "selected" : "")}>Thấp</option>
                                         <option value="medium" ${task === null ? "" : (task?.priority == "medium" ? "selected" : "")}>Trung bình</option>
                                         <option value="high" ${task === null ? "" : (task?.priority == "high" ? "selected" : "")}>Cao</option>
@@ -874,6 +874,7 @@ function formTask(task = null, projects = [], members = []) {
                                     <input type="file"
                                            id="fileInputEdit"
                                            value="${task?.fileNote}"
+                                           ${role == "EMPLOYEE" ? "disabled" : ""}
                                            class="hidden"
                                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xls,.xlsx" />
                                     <!-- Hidden input để giữ file cũ -->
@@ -892,7 +893,7 @@ function formTask(task = null, projects = [], members = []) {
                         <!-- Nút submit -->
                         <div class="flex justify-end mt-4 gap-2">
                             <button id="deleteBtn" type="button" ${task ? "" : "disabled"}
-                                class="px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
+                                class="${role == "EMPLOYEE" ? "hidden" : ""} px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xóa
                             </button>
                             <button type="submit" id="confirmUploadBtn"
@@ -1071,13 +1072,13 @@ function closeFormModal(projects) {
     });
 }
 
-async function openTaskModal(task = null, projects) {
+async function openTaskModal(task = null, projects, role) {
     // Overlay
     const uploadOverlay = document.getElementById(`uploadOverlay`);
     uploadOverlay.classList.remove("hidden");
 
     // Tạo modal HTML từ formTask
-    const modalHTML = formTask(task, projects, members);
+    const modalHTML = formTask(task, projects, members, role);
 
     // Thêm vào DOM (nếu chưa có)
     let existingModal = document.getElementById("updateTaskModal");
@@ -1102,33 +1103,66 @@ async function openTaskModal(task = null, projects) {
     var members;
     if (task) {
         members = await fetchMemberByProject(task.projectId);
-
         addAssigneee(members);
+
+        const project = projects.find(p => p.idProject == task.projectId);
+        if (project) {
+            const startProj = new Date(project.startDay).toISOString().split("T")[0];
+            const endProj = new Date(project.endDay).toISOString().split("T")[0];
+            const taskStart = document.getElementById("taskStart");
+            const taskEnd = document.getElementById("taskEnd");
+
+            taskStart.min = startProj;
+            taskStart.max = endProj;
+            taskEnd.min = startProj;
+            taskEnd.max = endProj;
+        }
     }
     else {
         const projectSelect = document.getElementById("project");
-        const assigneeInput = document.getElementById("taskAssignee");
 
         projectSelect.addEventListener("change", async (e) => {
             const projectId = e.target.value;
+            const assigneeInput = document.getElementById("taskAssignee");
+            const taskStart = document.getElementById("taskStart");
+            const taskEnd = document.getElementById("taskEnd");
             if (!projectId) {
                 assigneeInput.value = "";
                 assigneeInput.setAttribute("disabled", true);
+                taskStart.removeAttribute("min");
+                taskStart.removeAttribute("max");
+                taskEnd.removeAttribute("min");
+                taskEnd.removeAttribute("max");
                 return;
             }
 
             // Gọi API load member theo project
             members = await fetchMemberByProject(projectId);
+            currentProject = e.target.value;
+
+            // 🔹 Lấy ngày bắt đầu và kết thúc của project
+            const project = projects.find(p => p.idProject == projectId);
+            if (project) {
+                const startProj = new Date(project.startDay).toISOString().split("T")[0];
+                const endProj = new Date(project.endDay).toISOString().split("T")[0];
+
+                // Ràng buộc ngày trong form
+                taskStart.min = startProj;
+                taskStart.max = endProj;
+                taskEnd.min = startProj;
+                taskEnd.max = endProj;
+            }
 
             if (members && members.length > 0) {
                 assigneeInput.removeAttribute("disabled");
                 addAssigneee(members); // hàm render danh sách gợi ý user
             }
         });
+
     }
 }
 function getUpdatedTaskFromForm(oldTask = {}) {
-    const name = document.getElementById("taskName")?.value.trim() || "";
+    const name = document.getElementById("taskName")?.value.trim();
     const description = document.getElementById("taskDesc")?.value.trim() || "";
     const startDate = document.getElementById("taskStart")?.value || "";
     const endDate = document.getElementById("taskEnd")?.value || "";
@@ -1137,6 +1171,12 @@ function getUpdatedTaskFromForm(oldTask = {}) {
     const status = document.getElementById("taskStatus")?.value || "";
     const prior = document.getElementById("taskPriority")?.value || "";
     const file = document.getElementById("existingFileUrl")?.value || "";
+
+    var isValid = (name != null && name != "");
+    if (!isValid) {
+        alert("Vui lòng nhập đầy đủ thông tin.");
+        return;
+    }
 
     const t = {
         ...oldTask, // giữ lại dữ liệu cũ
@@ -1150,7 +1190,6 @@ function getUpdatedTaskFromForm(oldTask = {}) {
         Status: status,
         Prior: prior,
         File: file,
-        //updatedAt: new Date().toISOString()
     }
     // Gộp lại thành object mới
     return t;
@@ -1195,21 +1234,36 @@ function renderLabel(status, isOverdue) {
         <span class="px-4 inline-flex items-center rounded-full border text-[10px] ${statusClass}">${statusText}</span>
     `;
 }
-function toggleProject() {
-    // 🔹 Chờ Razor render xong rồi mới gắn event
+function toggleProject(projects) {
     setTimeout(() => {
         const toggleButtons = document.querySelectorAll("[data-toggle]");
+        const toggleAllBtn = document.getElementById("toggleAllBtn");
+        let allOpen = true;
 
+        // 🔹 Khởi tạo trạng thái ban đầu cho từng project
         toggleButtons.forEach(btn => {
             const targetId = btn.getAttribute("data-toggle");
             const content = document.getElementById(targetId);
             const icon = btn.querySelector("svg");
 
-            // Mặc định mở tất cả
-            content.classList.remove("max-h-0");
-            content.classList.add("max-h-[1000px]");
-            btn.classList.add("open");
+            // Tìm project tương ứng qua id
+            const project = projects.find(p => `project#${p.idProject}` === targetId);
+            if (!project || !content) return;
 
+            // 🔹 Nếu Done hoặc không có task → thu gọn
+            if (project.status == 3 || project.totalTasks == 0) {
+                content.classList.remove("max-h-[1000px]");
+                content.classList.add("max-h-0");
+                btn.classList.remove("open");
+                if (icon) icon.style.transform = "rotate(-90deg)";
+            } else {
+                content.classList.remove("max-h-0");
+                content.classList.add("max-h-[1000px]");
+                btn.classList.add("open");
+                if (icon) icon.style.transform = "rotate(0deg)";
+            }
+
+            // 🔹 Gắn sự kiện toggle từng project
             btn.addEventListener("click", () => {
                 const isOpen = btn.classList.contains("open");
 
@@ -1217,51 +1271,54 @@ function toggleProject() {
                     content.classList.remove("max-h-[1000px]");
                     content.classList.add("max-h-0");
                     btn.classList.remove("open");
+                    if (icon) icon.style.transform = "rotate(-90deg)";
                 } else {
                     content.classList.remove("max-h-0");
                     content.classList.add("max-h-[1000px]");
                     btn.classList.add("open");
+                    if (icon) icon.style.transform = "rotate(0deg)";
                 }
 
-                if (icon) {
-                    icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-                    icon.style.transition = "transform 0.3s ease";
-                }
+                icon?.style.setProperty("transition", "transform 0.3s ease");
             });
         });
 
-        // 🔹 Nút "Thu gọn / Mở tất cả"
-        const toggleAllBtn = document.getElementById("toggleAllBtn");
-        let allOpen = true;
-
+        // 🔹 Nút “Thu gọn / Mở tất cả”
         toggleAllBtn.addEventListener("click", () => {
             toggleButtons.forEach(btn => {
                 const targetId = btn.getAttribute("data-toggle");
                 const content = document.getElementById(targetId);
                 const icon = btn.querySelector("svg");
 
+                if (!content) return;
+
                 if (allOpen) {
+                    // Thu lại tất cả
                     content.classList.remove("max-h-[1000px]");
                     content.classList.add("max-h-0");
                     btn.classList.remove("open");
-                    if (icon) icon.style.transform = "rotate(0deg)";
+                    if (icon) icon.style.transform = "rotate(-90deg)";
                 } else {
+                    // Mở tất cả
                     content.classList.remove("max-h-0");
                     content.classList.add("max-h-[1000px]");
                     btn.classList.add("open");
-                    if (icon) icon.style.transform = "rotate(180deg)";
+                    if (icon) icon.style.transform = "rotate(0deg)";
                 }
             });
 
             allOpen = !allOpen;
+
+            // Cập nhật icon + text cho nút tổng
             toggleAllBtn.innerHTML = allOpen
                 ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> <span class="text-xs">Thu gọn tất cả</span>`
                 : `<i data-lucide="chevron-down" class="w-4 h-4"></i> <span class="text-xs">Mở tất cả</span>`;
 
             lucide.createIcons();
         });
-    }, 100); // ⏳ chờ DOM của Razor render xong
+    }, 100);
 }
+
 function filterHighPrior() {
     const checkbox = document.getElementById("priorityHigh");
     const taskCards = document.querySelectorAll(".task-card");
@@ -1288,10 +1345,23 @@ function handleConfirm(task) {
         // Gọi hàm xử lý cập nhật
         const updatedTask = getUpdatedTaskFromForm(task);
         console.log("Dữ liệu mới:", updatedTask);
+
+        if (!updatedTask) return;
+
+        // Kiểm tra các field quan trọng khác trước khi gửi
+        const requiredFields = ["Name", "IdPrj", "Start", "End"];
+        for (const field of requiredFields) {
+            if (!updatedTask[field] || updatedTask[field].trim() === "") {
+                alert(`❌ Trường "${field}" không được để trống.`);
+                return;
+            }
+        }
+
         // Gọi API hoặc xử lý lưu ở đây
         const uploadOverlay = document.getElementById(`uploadOverlay`);
         const loadingOverlay = document.getElementById(`loadingOverlay`);
         try {
+            loadingOverlay.classList.remove("hidden");
             const res = await fetch("/Home/SaveTask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1299,7 +1369,6 @@ function handleConfirm(task) {
             });
 
             const data = await res.json();
-            loadingOverlay.classList.remove("hidden");
 
             if (data.success) {
                 closeFormModal();
@@ -1310,7 +1379,6 @@ function handleConfirm(task) {
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi gửi dữ liệu:", e);
-            alert("Có lỗi xảy ra khi gửi dữ liệu!");
         }
     });
 }
@@ -1345,4 +1413,42 @@ function handleDelete(taskId) {
             console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
         }
     });
+}
+
+function viewFile(fileUrl) {
+    if (!fileUrl || fileUrl.trim() === "") {
+        alert("Không có tệp để xem!");
+        return;
+    }
+
+    // Nếu fileUrl là đường dẫn tương đối -> thêm base URL
+    if (!fileUrl.startsWith("http")) {
+        fileUrl = `${window.location.origin}/${fileUrl}`;
+    }
+
+    window.open(fileUrl, "_blank"); // mở tab mới
+}
+
+function downloadFile(fileUrl) {
+    if (!fileUrl || fileUrl.trim() === "") {
+        alert("Không có tệp để tải xuống!");
+        return;
+    }
+
+    // Nếu đường dẫn tương đối -> thêm base URL
+    if (!fileUrl.startsWith("http")) {
+        fileUrl = `${window.location.origin}/${fileUrl}`;
+    }
+
+    // Tạo a tag tạm để download
+    const link = document.createElement("a");
+    link.href = fileUrl;
+
+    // Lấy tên file từ URL
+    const fileName = fileUrl.split("/").pop();
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

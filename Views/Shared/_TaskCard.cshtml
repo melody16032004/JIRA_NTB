@@ -12,13 +12,21 @@
             <h4 class="text-gray-100 font-semibold text-sm leading-snug group-hover:text-indigo-400 transition-colors line-clamp-2 break-words">
                 @Model.NameTask
             </h4>
-
             @if (Model.IsDoneLate)
             {
                 <span class="mt-1 inline-flex items-center gap-1 text-xs text-red-500 font-medium whitespace-nowrap">
                     <i class="fa-solid fa-clock flex-shrink-0"></i>
                     <span class="truncate">
                         Hoàn thành trễ @Model.DaysLate ngày
+                    </span>
+                </span>
+            }
+            else if (Model.IsDoneOnTime)
+            {
+                <span class="mt-1 inline-flex items-center gap-1 text-xs text-green-500 font-small whitespace-nowrap">
+                    <i class="fa-solid fa-clock flex-shrink-0"></i>
+                    <span class="truncate">
+                        Hoàn thành: @Model.CompletedDate.Value.ToString("dd/MM/yyyy")
                     </span>
                 </span>
             }
@@ -31,7 +39,8 @@
                     @Model.Priority
                 </span>
             }
-
+            @if(User.IsInRole("LEADER") || User.IsInRole("ADMIN"))
+            {
             @* Menu 3 chấm *@
             <div class="relative task-menu-container">
                 <button class="task-menu-btn p-1.5 hover:bg-gray-700 rounded-lg transition-colors"
@@ -52,6 +61,7 @@
                     </button>
                 </div>
             </div>
+            }
         </div>
     </div>
 

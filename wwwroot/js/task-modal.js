@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Re-attach event listeners cho các task cards mới
             attachTaskCardEvents();
-
+            window.taskDragDrop.init();
             console.log("✅ Đã render lại tasks thành công");
         } catch (err) {
             console.error("❌ Lỗi load tasks:", err);

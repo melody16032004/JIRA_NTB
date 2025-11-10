@@ -1,5 +1,23 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
+﻿function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+}
+document.addEventListener("DOMContentLoaded", async () => {
+    const [meRes] = await Promise.all([
+        fetch("/api/user/me")
+    ]);
+    const [me] = await Promise.all([
+        meRes.json(),
+    ]);
+    console.log(me);
+
+    const meCur = document.getElementById("me");
+    meCur.innerHTML += `${me.fullName}`;
+
+    // ⚙️ Sau khi thêm icon mới, phải render lại Lucide icons
     lucide.createIcons();
+
+    // const cur = User
+
 
     /* ===== SIDEBAR TOGGLE ===== */
     const sidebar = document.getElementById("sidebar");
@@ -111,4 +129,129 @@
 
         updateNotifyCount();
     }
+
+    // ==============================
+    // ========== Calendar ==========
+    // ==============================
+    const btn = document.getElementById("calendarButton");
+    const popup = document.getElementById("calendarPopup");
+    const daysContainer = document.getElementById("calendarDays");
+    const title = document.getElementById("calendarTitle");
+    const prev = document.getElementById("prevMonth");
+    const next = document.getElementById("nextMonth");
+
+    const [taskDeadlineRes, projectDeadlineRes] = await Promise.all([
+        fetch("/api/tasks/deadline"),
+        fetch("/api/projects/deadline"),
+    ]);
+    const [taskDeadline, projectDeadline] = await Promise.all([
+        taskDeadlineRes.json(),
+        projectDeadlineRes.json(),
+    ]);
+    
+    console.log("Task deadline: ", taskDeadline);
+    console.log("Project deadline: ", projectDeadline);
+
+    let currentDate = new Date();
+    // Chuẩn hóa dữ liệu thành map: { 'YYYY-MM-DD': [items] }
+    const calendarItems = {};
+
+    const addToCalendarItems = (arr, dateField, type) => {
+        arr.forEach(item => {
+            const d = new Date(item[dateField]);
+            const key = d.toISOString().split("T")[0]; // yyyy-mm-dd UTC
+            if (!calendarItems[key]) calendarItems[key] = [];
+            calendarItems[key].push({ ...item, type });
+        });
+    };
+
+    addToCalendarItems(taskDeadline, "endDate", "task");
+    addToCalendarItems(projectDeadline, "endDay", "project");
+
+    const renderCalendar = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        title.textContent = `Tháng ${month + 1} / ${year}`;
+
+        // Ngày đầu và cuối tháng
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDay = (firstDay.getDay() + 6) % 7; // chuyển CN=0 → cuối tuần
+
+        daysContainer.innerHTML = "";
+
+        // Thêm ngày trống đầu tháng
+        for (let i = 0; i < startDay; i++) {
+            daysContainer.appendChild(document.createElement("div"));
+        }
+
+        const now = new Date();
+
+        // Thêm ngày trong tháng
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            const day = document.createElement("div");
+            day.className = "relative p-2 rounded-full hover:bg-indigo-500 hover:text-white cursor-pointer transition-all";
+            day.textContent = i;
+
+            const isToday =
+                i === new Date().getDate() &&
+                month === new Date().getMonth() &&
+                year === new Date().getFullYear();
+
+            if (isToday) day.classList.add("bg-indigo-600", "text-white", "font-bold");
+
+            // Lấy key yyyy-mm-dd
+            const key = new Date(Date.UTC(year, month, i)).toISOString().split("T")[0];
+            const items = calendarItems[key];
+            if (items && items.length > 0) {
+                // Tạo dot nhỏ cho mỗi deadline
+                items.forEach(item => {
+                    const dot = document.createElement("div");
+                    dot.className = "absolute left-1/2 -translate-x-1/2 bottom-0.5 w-1 h-1 rounded-full";
+
+                    const endDate = new Date(item.type === "task" ? item.endDate : item.endDay);
+                    const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+
+                    if (diffDays <= 0) dot.classList.add("bg-red-500");
+                    else if (diffDays <= 3) dot.classList.add("bg-yellow-400");
+                    else dot.classList.add("bg-green-500");
+
+                    day.appendChild(dot);
+                });
+            }
+
+            daysContainer.appendChild(day);
+        }
+    };
+
+    btn.addEventListener("click", () => {
+        popup.classList.toggle("hidden");
+
+        if (!popup.classList.contains("hidden")) {
+            // Khi popup vừa hiện, reset về tháng hiện tại
+            currentDate = new Date();
+            renderCalendar(currentDate);
+        }
+    });
+
+    prev.addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        renderCalendar(currentDate);
+    });
+
+    next.addEventListener("click", () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        renderCalendar(currentDate);
+    });
+
+    // Ẩn khi click ra ngoài
+    document.addEventListener("click", (e) => {
+        if (!popup.contains(e.target) && !btn.contains(e.target)) {
+            popup.classList.add("hidden");
+            currentDate = new Date(); // reset về tháng hiện tại
+            renderCalendar(currentDate);
+        }
+    });
+
+    renderCalendar(currentDate);
 });
