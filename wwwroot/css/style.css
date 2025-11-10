@@ -47,6 +47,13 @@ input:invalid,
 }
 button:disabled,
 #departmentDisplay:disabled,
+#taskName:disabled,
+#project:disabled,
+#taskDesc:disabled,
+#taskStart:disabled,
+#taskEnd:disabled,
+#taskPriority:disabled,
+#fileInputEdit:disabled,
 #taskAssignee:disabled {
     opacity: 0.4;
     cursor: not-allowed;

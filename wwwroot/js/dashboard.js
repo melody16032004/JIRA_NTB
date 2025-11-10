@@ -11,28 +11,34 @@
 //        </div>
 //    </div>
 //`;
+let currentProject = '';
 document.addEventListener("DOMContentLoaded", async () => {
     const container = document.getElementById("projectContainer");
     var role = container.dataset.role;
     console.log(role);
     // --- Gọi API ---
-    const [meRes, projectRes, deptRes, taskRes/*, memberRes*/] = await Promise.all([
+    const [meRes, projectRes, tasksRes, taskStatRes, projectStatRes/*, memberRes*/] = await Promise.all([
         fetch("/api/user/me"),
         fetch("/api/projects"),
-        fetch("/api/departments"),
         fetch("/api/tasks"),
+        fetch("/api/tasks/statistics"),
+        fetch("/api/projects/statistics"),
         //fetch("/api/members"),
     ]);
-    const [me, projects, departments, tasks/*, members*/] = await Promise.all([
+    const [me, projects, tasks, tasksStat, projectsStat/*, members*/] = await Promise.all([
         meRes.json(),
         projectRes.json(),
-        deptRes.json(),
-        taskRes.json(),
+        tasksRes.json(),
+        taskStatRes.json(),
+        projectStatRes.json(),
         //memberRes.json(),
     ]);
     //const meCur = document.getElementById("me");
     //meCur.textContent = me.fullName;
-    console.log(me, projects, departments, tasks/*, members*/);
+    console.log(me, projects, tasks/*, members*/);
+    console.log("Projects: ", projects);
+    console.log("Stats Task: ", tasksStat);
+    console.log("Stats Project: ", projectsStat);
 
 
     /*
@@ -41,41 +47,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     ***************************************
     */
     // ---| Fetch data into card |---
-    let countProject = 0;
-    let countProjectDone = 0;
-    let countTask = 0;
-    let countTaskDone = 0;
-    let countTaskInProgress = 0;
-    let countTaskTodo = 0;
-    let countTaskOverDue = 0;
+    let countProject = projects.length;
+    let countProjectDone = projectsStat.completed || 0;
+    let countTask = tasksStat.totalTasks || 0;
+    let countTaskDone = tasksStat.completedTasks || 0;
+    let countTaskInProgress = tasksStat.inProgressTasks || 0;
+    let countTaskTodo = tasksStat.todoTasks || 0;
+    let countTaskOverDue = tasksStat.overdueTasks || 0;
 
-    let countToDo = 0;
-    let countInProgress = 0;
-    let countDone = 0;
-    let countOverdue = 0;
-    // Filter data
-    projects.forEach(p => {
-        countProject++;
-        if (p.status == 3) {
-            countProjectDone++;
-        }
-        countTask += p.totalTasks;
-        countTaskDone += p.completedTasks;
-        countTaskInProgress += p.inProgressTasks;
-        countTaskTodo += p.todoTasks;
-        countTaskOverDue += p.overdueTasks;
-
-        const progress = p.status;
-        const end = new Date(p.endDay)
-        const now = new Date();
-        if (end < now && progress !== 3) {
-            countOverdue++;
-        } else {
-            if (progress === 1) countToDo++;
-            else if (progress === 2) countInProgress++;
-            else if (progress === 3) countDone++;
-        }
-    });
+    let countToDo = projectsStat.todo || 0;
+    let countInProgress = projectsStat.inProgress || 0;
+    let countDone = projectsStat.completed || 0;
+    let countOverdue = projectsStat.overdue || 0;
+    
     // --- UI ---
     const card1 = `
         <!-- Card 1 -->
@@ -216,7 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <div class="${p.status === 3 ? "" : "hidden"}">
                             <i data-lucide="circle-check-big" class="w-9 h-9" style="color: #00ff88;"></i>
                         </div>
-                        <div class="${p.status !== 3 && p.todoTasks !== 0 ? "" : "hidden"}">
+                        <div class="${p.status !== 3 && p.totalTasks !== 0 ? "" : "hidden"}">
                             <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                         </div>
                     </div>
@@ -461,7 +445,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <i data-lucide="search"
                            class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                     </div>
-                    <button id="openUpdateProjectBtnAdd#${y}#${y}" class="${role == "ADMIN" ? "" : "hidden"} bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    <button id="openUpdateProjectBtnAdd#${y}#${y}" disabled class="${role == "ADMIN" ? "" : "hidden"} hidden bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
                     
@@ -661,7 +645,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll("[id^='openUpdateTaskBtn#']").forEach(btn => {
         btn.addEventListener("click", () => {
             const task = JSON.parse(btn.getAttribute("data-task"));
-            openTaskModal(task, projects);
+            openTaskModal(task, projects, role);
         });
     });
     document.getElementById("searchInput").addEventListener("input", function () {
@@ -713,7 +697,7 @@ async function fetchMemberByProject(idProject) {
     }
 }
 
-function formTask(task = null, projects = [], members = []) {
+function formTask(task = null, projects = [], members = [], role) {
     let renderOptionProject = ``;
     let startDate = "";
     let endDate = "";
@@ -737,7 +721,7 @@ function formTask(task = null, projects = [], members = []) {
         });
     }
 
-    const assigneeDisabled = task === null ? "disabled" : "";
+    const assigneeDisabled = (task === null || role === "EMPLOYEE") ? "disabled" : "";
 
     return (`
         <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-50 overflow-hidden">
@@ -764,12 +748,13 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskName"
                                        value="${task?.nameTask ?? ""}"
                                        type="text"
+                                       ${role == "EMPLOYEE"? "disabled":""}
                                        required
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                        placeholder="Nhập tên task..." />
                             </div>
 
-                            <!-- Người nhận -->
+                            <!-- Dự án -->
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2 font-medium">Dự án</label>
                                 <div id="projectOptions" class="relative group ">
@@ -787,7 +772,7 @@ function formTask(task = null, projects = [], members = []) {
                             </div>
                         </div>
 
-                        <!-- Dự án -->
+                        <!-- Người nhận -->
                         <div class="flex flex-col sm:flex-row gap-4">
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2">Người nhận nhiệm vụ</label>
@@ -811,6 +796,7 @@ function formTask(task = null, projects = [], members = []) {
                             <label class="block text-xs text-gray-300 mb-2">Mô tả</label>
                             <textarea id="taskDesc"
                                   rows="4"
+                                  ${role == "EMPLOYEE" ? "disabled" : ""}
                                   class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                                   placeholder="Nhập mô tả...">${task?.note ?? ""}</textarea>
                         </div>
@@ -822,6 +808,7 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskStart"
                                        type="date"
                                        required
+                                       ${role == "EMPLOYEE" ? "disabled" : ""}
                                        value="${startDate}"
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
                                 <i data-lucide="calendar"
@@ -833,6 +820,7 @@ function formTask(task = null, projects = [], members = []) {
                                 <input id="taskEnd"
                                        type="date"
                                        required
+                                       ${role == "EMPLOYEE" ? "disabled" : ""}
                                        value="${endDate}"
                                        class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
                                 <i data-lucide="calendar"
@@ -859,7 +847,7 @@ function formTask(task = null, projects = [], members = []) {
                             <div class="flex-1">
                                 <label class="block text-xs text-gray-300 mb-2 font-medium">Độ ưu tiên</label>
                                 <div class="relative group">
-                                    <select id="taskPriority" class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
+                                    <select id="taskPriority" ${role == "EMPLOYEE" ? "disabled" : ""} class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
                                         <option value="low" ${task === null ? "" : (task?.priority == "low" ? "selected" : "")}>Thấp</option>
                                         <option value="medium" ${task === null ? "" : (task?.priority == "medium" ? "selected" : "")}>Trung bình</option>
                                         <option value="high" ${task === null ? "" : (task?.priority == "high" ? "selected" : "")}>Cao</option>
@@ -886,6 +874,7 @@ function formTask(task = null, projects = [], members = []) {
                                     <input type="file"
                                            id="fileInputEdit"
                                            value="${task?.fileNote}"
+                                           ${role == "EMPLOYEE" ? "disabled" : ""}
                                            class="hidden"
                                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xls,.xlsx" />
                                     <!-- Hidden input để giữ file cũ -->
@@ -904,7 +893,7 @@ function formTask(task = null, projects = [], members = []) {
                         <!-- Nút submit -->
                         <div class="flex justify-end mt-4 gap-2">
                             <button id="deleteBtn" type="button" ${task ? "" : "disabled"}
-                                class="px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
+                                class="${role == "EMPLOYEE" ? "hidden" : ""} px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xóa
                             </button>
                             <button type="submit" id="confirmUploadBtn"
@@ -1083,13 +1072,13 @@ function closeFormModal(projects) {
     });
 }
 
-async function openTaskModal(task = null, projects) {
+async function openTaskModal(task = null, projects, role) {
     // Overlay
     const uploadOverlay = document.getElementById(`uploadOverlay`);
     uploadOverlay.classList.remove("hidden");
 
     // Tạo modal HTML từ formTask
-    const modalHTML = formTask(task, projects, members);
+    const modalHTML = formTask(task, projects, members, role);
 
     // Thêm vào DOM (nếu chưa có)
     let existingModal = document.getElementById("updateTaskModal");
@@ -1114,33 +1103,66 @@ async function openTaskModal(task = null, projects) {
     var members;
     if (task) {
         members = await fetchMemberByProject(task.projectId);
-
         addAssigneee(members);
+
+        const project = projects.find(p => p.idProject == task.projectId);
+        if (project) {
+            const startProj = new Date(project.startDay).toISOString().split("T")[0];
+            const endProj = new Date(project.endDay).toISOString().split("T")[0];
+            const taskStart = document.getElementById("taskStart");
+            const taskEnd = document.getElementById("taskEnd");
+
+            taskStart.min = startProj;
+            taskStart.max = endProj;
+            taskEnd.min = startProj;
+            taskEnd.max = endProj;
+        }
     }
     else {
         const projectSelect = document.getElementById("project");
-        const assigneeInput = document.getElementById("taskAssignee");
 
         projectSelect.addEventListener("change", async (e) => {
             const projectId = e.target.value;
+            const assigneeInput = document.getElementById("taskAssignee");
+            const taskStart = document.getElementById("taskStart");
+            const taskEnd = document.getElementById("taskEnd");
             if (!projectId) {
                 assigneeInput.value = "";
                 assigneeInput.setAttribute("disabled", true);
+                taskStart.removeAttribute("min");
+                taskStart.removeAttribute("max");
+                taskEnd.removeAttribute("min");
+                taskEnd.removeAttribute("max");
                 return;
             }
 
             // Gọi API load member theo project
             members = await fetchMemberByProject(projectId);
+            currentProject = e.target.value;
+
+            // 🔹 Lấy ngày bắt đầu và kết thúc của project
+            const project = projects.find(p => p.idProject == projectId);
+            if (project) {
+                const startProj = new Date(project.startDay).toISOString().split("T")[0];
+                const endProj = new Date(project.endDay).toISOString().split("T")[0];
+
+                // Ràng buộc ngày trong form
+                taskStart.min = startProj;
+                taskStart.max = endProj;
+                taskEnd.min = startProj;
+                taskEnd.max = endProj;
+            }
 
             if (members && members.length > 0) {
                 assigneeInput.removeAttribute("disabled");
                 addAssigneee(members); // hàm render danh sách gợi ý user
             }
         });
+
     }
 }
 function getUpdatedTaskFromForm(oldTask = {}) {
-    const name = document.getElementById("taskName")?.value.trim() || "";
+    const name = document.getElementById("taskName")?.value.trim();
     const description = document.getElementById("taskDesc")?.value.trim() || "";
     const startDate = document.getElementById("taskStart")?.value || "";
     const endDate = document.getElementById("taskEnd")?.value || "";
@@ -1149,6 +1171,12 @@ function getUpdatedTaskFromForm(oldTask = {}) {
     const status = document.getElementById("taskStatus")?.value || "";
     const prior = document.getElementById("taskPriority")?.value || "";
     const file = document.getElementById("existingFileUrl")?.value || "";
+
+    var isValid = (name != null && name != "");
+    if (!isValid) {
+        alert("Vui lòng nhập đầy đủ thông tin.");
+        return;
+    }
 
     const t = {
         ...oldTask, // giữ lại dữ liệu cũ
@@ -1162,7 +1190,6 @@ function getUpdatedTaskFromForm(oldTask = {}) {
         Status: status,
         Prior: prior,
         File: file,
-        //updatedAt: new Date().toISOString()
     }
     // Gộp lại thành object mới
     return t;
@@ -1224,7 +1251,7 @@ function toggleProject(projects) {
             if (!project || !content) return;
 
             // 🔹 Nếu Done hoặc không có task → thu gọn
-            if (project.status == 3 || project.todoTasks == 0) {
+            if (project.status == 3 || project.totalTasks == 0) {
                 content.classList.remove("max-h-[1000px]");
                 content.classList.add("max-h-0");
                 btn.classList.remove("open");
@@ -1318,10 +1345,23 @@ function handleConfirm(task) {
         // Gọi hàm xử lý cập nhật
         const updatedTask = getUpdatedTaskFromForm(task);
         console.log("Dữ liệu mới:", updatedTask);
+
+        if (!updatedTask) return;
+
+        // Kiểm tra các field quan trọng khác trước khi gửi
+        const requiredFields = ["Name", "IdPrj", "Start", "End"];
+        for (const field of requiredFields) {
+            if (!updatedTask[field] || updatedTask[field].trim() === "") {
+                alert(`❌ Trường "${field}" không được để trống.`);
+                return;
+            }
+        }
+
         // Gọi API hoặc xử lý lưu ở đây
         const uploadOverlay = document.getElementById(`uploadOverlay`);
         const loadingOverlay = document.getElementById(`loadingOverlay`);
         try {
+            loadingOverlay.classList.remove("hidden");
             const res = await fetch("/Home/SaveTask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1329,7 +1369,6 @@ function handleConfirm(task) {
             });
 
             const data = await res.json();
-            loadingOverlay.classList.remove("hidden");
 
             if (data.success) {
                 closeFormModal();
@@ -1340,7 +1379,6 @@ function handleConfirm(task) {
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi gửi dữ liệu:", e);
-            alert("Có lỗi xảy ra khi gửi dữ liệu!");
         }
     });
 }
