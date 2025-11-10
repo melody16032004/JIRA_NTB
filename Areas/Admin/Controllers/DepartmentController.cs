@@ -57,41 +57,70 @@ namespace JIRA_NTB.Admin.Controllers
 			return View(paginatedDepartments);
 		}
 
+		[HttpGet]
 		public IActionResult Create()
 		{
 			return View();
 		}
+
 		[HttpPost]
 		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Create(DepartmentModel department)
+		public async Task<IActionResult> Create(string DepartmentName)
 		{
-			// Tự động tạo ID cho phòng ban
-			if (string.IsNullOrEmpty(department.IdDepartment))
+			// 1. Kiểm tra thủ công xem DepartmentName có hợp lệ không
+			if (string.IsNullOrWhiteSpace(DepartmentName))
 			{
-				// Lấy phòng ban cuối cùng để tạo ID mới
-				var lastDepartment = await _context.Departments
-					.OrderByDescending(d => d.IdDepartment)
-					.FirstOrDefaultAsync();
-				
-				if (lastDepartment != null && lastDepartment.IdDepartment.StartsWith("PB"))
-				{
-					// Lấy số cuối cùng và tăng lên 1
-					var lastNumber = int.Parse(lastDepartment.IdDepartment.Substring(2));
-					department.IdDepartment = $"PB{(lastNumber + 1).ToString("D3")}";
-				}
-				else
-				{
-					// Nếu chưa có phòng ban nào, bắt đầu từ PB001
-					department.IdDepartment = "PB001";
-				}
-			}
-			
-			if (ModelState.IsValid)
-			{
-				_context.Departments.Add(department);
-				await _context.SaveChangesAsync();
+				TempData["ErrorMessage"] = "Thêm thất bại: Tên phòng ban không được để trống.";
 				return RedirectToAction(nameof(Index));
 			}
+
+			// 2. Tạo đối tượng DepartmentModel mới
+			var department = new DepartmentModel
+			{
+				DepartmentName = DepartmentName
+				// IdDepartment sẽ được gán ở bước 3
+			};
+
+			// 3. Tự động tạo ID cho phòng ban (logic cũ của bạn)
+			try
+			{
+				// Lấy *tất cả* các IdDepartment về C# (chỉ lấy cột ID)
+				var allIdStrings = await _context.Departments
+					.Select(d => d.IdDepartment)
+					.ToListAsync();
+
+				int maxNumber = 0;
+
+				if (allIdStrings.Any())
+				{
+					// Dùng LINQ to Objects (C#) để tìm số lớn nhất
+					// Nó sẽ thử parse từng ID, nếu thất bại
+					// Nó sẽ trả về 0 cho ID đó, đảm bảo không bị crash
+					maxNumber = allIdStrings
+						.Select(idStr => {
+							int.TryParse(idStr, out int number); // Thử chuyển "10" -> 10, "9" -> 9
+							return number;
+						})
+						.Max(); // Tìm số lớn nhất (ví dụ: 10)
+				}
+
+				// 4. Gán ID mới bằng cách + 1
+				// (Nếu maxNumber là 10, ID mới sẽ là "11")
+				department.IdDepartment = (maxNumber + 1).ToString();
+
+				// 5. Thêm và lưu vào database
+				_context.Departments.Add(department);
+				await _context.SaveChangesAsync();
+
+				TempData["SuccessMessage"] = "Thêm phòng ban thành công!";
+			}
+			catch (Exception ex)
+			{
+				// Bắt lỗi nếu có
+				TempData["ErrorMessage"] = "Thêm thất bại: " + ex.Message;
+			}
+
+			// Chuyển hướng về Index
 			return RedirectToAction(nameof(Index));
 		}
 
@@ -135,22 +164,16 @@ namespace JIRA_NTB.Admin.Controllers
 			return View(department);
 		}
 
-		public async Task<IActionResult> Delete(string id)
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Delete(string IdDepartment)
 		{
-			if (id == null)
+			if (string.IsNullOrEmpty(IdDepartment))
 			{
 				return NotFound();
 			}
-			var department = await _context.Departments.FirstOrDefaultAsync(m => m.IdDepartment == id);
-			if (department == null) return NotFound();
-			return View(department);
-		}
 
-		[HttpPost, ActionName("Delete")]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> DeleteConfirmed(string id)
-		{
-			var department = await _context.Departments.FindAsync(id);
+			var department = await _context.Departments.FindAsync(IdDepartment);
 			if (department != null)
 			{
 				_context.Departments.Remove(department);
