@@ -140,118 +140,208 @@ document.addEventListener("DOMContentLoaded", async () => {
     const prev = document.getElementById("prevMonth");
     const next = document.getElementById("nextMonth");
 
-    const [taskDeadlineRes, projectDeadlineRes] = await Promise.all([
-        fetch("/api/tasks/deadline"),
-        fetch("/api/projects/deadline"),
-    ]);
-    const [taskDeadline, projectDeadline] = await Promise.all([
-        taskDeadlineRes.json(),
-        projectDeadlineRes.json(),
-    ]);
-    
-    console.log("Task deadline: ", taskDeadline);
-    console.log("Project deadline: ", projectDeadline);
+    // helper
+    const pad = n => n.toString().padStart(2, "0");
 
-    let currentDate = new Date();
-    // Chuẩn hóa dữ liệu thành map: { 'YYYY-MM-DD': [items] }
+    // parse date string to local date at midnight (avoid timezone shift)
+    // parse date string to local date at midnight (avoid timezone shift)
+    function parseDateLocal(dateString) {
+        if (!dateString) return null;
+
+        // Regex để kiểm tra chuỗi có phải là YYYY-MM-DD đơn giản không
+        const simpleDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+        if (simpleDateRegex.test(dateString)) {
+            // 1. Xử lý trường hợp "2025-11-10" (không có giờ)
+            // Giữ logic cũ của bạn: parse thành nửa đêm local
+            const [y, m, d] = dateString.split("-").map(s => parseInt(s, 10));
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d); // local midnight
+        }
+
+        // 2. Xử lý trường hợp có giờ/timezone (ví dụ: "2025-11-09T23:00:00Z")
+        // Để JavaScript tự động chuyển đổi múi giờ
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return null; // Invalid date
+
+        // Lấy nửa đêm (00:00:00) của ngày local *sau khi đã chuyển đổi*
+        // Ví dụ: "2025-11-09T23:00:00Z" -> 06:00 ngày 10/11 (local)
+        // -> Hàm sẽ trả về 00:00 ngày 10/11 (local)
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function getKeyLocalFromDateObj(dateObj) {
+        return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
+    }
+
+    // safe fetch
+    async function safeFetchJson(url, fallback = []) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        } catch (err) {
+            console.warn("Fetch failed:", url, err);
+            return fallback;
+        }
+    }
+
+    // load remote data
+    const [taskDeadline, /*projectDeadline*/] = await Promise.all([
+        safeFetchJson("/api/tasks/deadline", []),
+        //safeFetchJson("/api/projects/deadline", [])
+    ]);
+
+    console.log("Task/deadline: ", taskDeadline);
+
+    // build calendarItems map: { 'YYYY-MM-DD': [items...] }
     const calendarItems = {};
 
-    const addToCalendarItems = (arr, dateField, type) => {
-        arr.forEach(item => {
-            const d = new Date(item[dateField]);
-            const key = d.toISOString().split("T")[0]; // yyyy-mm-dd UTC
-            if (!calendarItems[key]) calendarItems[key] = [];
-            calendarItems[key].push({ ...item, type });
-        });
+    const pushItem = (key, item) => {
+        if (!key) return;
+        if (!calendarItems[key]) calendarItems[key] = [];
+        calendarItems[key].push(item);
     };
 
-    addToCalendarItems(taskDeadline, "endDate", "task");
-    addToCalendarItems(projectDeadline, "endDay", "project");
+    (taskDeadline || []).forEach(t => {
+        const d = parseDateLocal(t.endDate);
+        if (!d) return;
+        const key = getKeyLocalFromDateObj(d);
+        pushItem(key, { ...t, type: "task", _parsedDate: d });
+    });
 
-    const renderCalendar = (date) => {
+    //(projectDeadline || []).forEach(p => {
+    //    const d = parseDateLocal(p.endDay);
+    //    if (!d) return;
+    //    const key = getKeyLocalFromDateObj(d);
+    //    pushItem(key, { ...p, type: "project", _parsedDate: d });
+    //});
+
+    // current shown month (local)
+    let currentDate = new Date();
+
+    function renderCalendar(date) {
         const year = date.getFullYear();
         const month = date.getMonth();
         title.textContent = `Tháng ${month + 1} / ${year}`;
 
-        // Ngày đầu và cuối tháng
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const startDay = (firstDay.getDay() + 6) % 7; // chuyển CN=0 → cuối tuần
+        const startDay = (firstDay.getDay() + 6) % 7; // make Monday first (T2)
 
         daysContainer.innerHTML = "";
 
-        // Thêm ngày trống đầu tháng
+        // fill blanks
         for (let i = 0; i < startDay; i++) {
-            daysContainer.appendChild(document.createElement("div"));
+            const empty = document.createElement("div");
+            daysContainer.appendChild(empty);
         }
 
-        const now = new Date();
+        // today midnight local for diff calculation
+        const today = new Date();
+        const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // Thêm ngày trong tháng
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const day = document.createElement("div");
             day.className = "relative p-2 rounded-full hover:bg-indigo-500 hover:text-white cursor-pointer transition-all";
             day.textContent = i;
 
-            const isToday =
-                i === new Date().getDate() &&
-                month === new Date().getMonth() &&
-                year === new Date().getFullYear();
+            // is today (local)
+            const isToday = i === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            if (isToday) day.classList.add("bg-indigo-700", "text-white", "font-bold");
 
-            if (isToday) day.classList.add("bg-indigo-600", "text-white", "font-bold");
+            // key in local
+            const keyDate = new Date(year, month, i);
+            const key = getKeyLocalFromDateObj(keyDate);
 
-            // Lấy key yyyy-mm-dd
-            const key = new Date(Date.UTC(year, month, i)).toISOString().split("T")[0];
-            const items = calendarItems[key];
-            if (items && items.length > 0) {
-                // Tạo dot nhỏ cho mỗi deadline
-                items.forEach(item => {
+            const items = calendarItems[key] || [];
+            if (items.length > 0) {
+                // show up to 3 dots, spaced
+                const maxDots = Math.min(items.length, 3);
+                for (let j = 0; j < maxDots; j++) {
+                    const item = items[j];
                     const dot = document.createElement("div");
-                    dot.className = "absolute left-1/2 -translate-x-1/2 bottom-0.5 w-1 h-1 rounded-full";
+                    // small displacement so dots don't fully overlap
+                    const offset = (j - (maxDots - 1) / 2) * 6; // px
+                    dot.style.left = `calc(50% + ${offset}px)`;
+                    dot.style.transform = "translateX(-50%)";
+                    dot.className = "absolute bottom-0.7 w-1.5 h-1.5 rounded-full";
 
-                    const endDate = new Date(item.type === "task" ? item.endDate : item.endDay);
-                    const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+                    // compute diffDays using local midnight dates
+                    const endLocal = item._parsedDate || parseDateLocal(item.endDate || item.endDay);
+                    const endMidnight = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate());
+                    const diffDays = Math.ceil((endMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
 
-                    if (diffDays <= 0) dot.classList.add("bg-red-500");
+                    if (item.statusName == 3) dot.classList.add("bg-green-500");
+                    else if (diffDays < 0) dot.classList.add("bg-red-500");
                     else if (diffDays <= 3) dot.classList.add("bg-yellow-400");
-                    else dot.classList.add("bg-green-500");
+                    else dot.classList.add("bg-blue-500");
+
+                    // small tooltip
+                    dot.title = item.type === "task"
+                        ? `${item.nameTask || item.Name || "Task"} — ${item.endDate?.split("T")[0] ?? ""}`
+                        : `${item.projectName || "Project"} — ${item.endDay?.split("T")[0] ?? ""}`;
 
                     day.appendChild(dot);
-                });
+                }
+
+                if (items.length > 3) {
+                    const more = document.createElement("div");
+                    more.textContent = `+${items.length - 3}`;
+                    more.className = "absolute text-[10px] bottom-3 right-1 text-gray-300";
+                    day.appendChild(more);
+                }
             }
+
+            // click on day -> show list of items for that day (optional)
+            day.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const dayItems = calendarItems[key] || [];
+                if (dayItems.length === 0) return;
+                // simple detail popup (you can replace with your UI)
+                const list = dayItems.map(it => {
+                    if (it.type === "task") return `Task: ${it.nameTask} — ${it.endDate?.split("T")[0] ?? ""} — ${it.fullName ?? ""}`;
+                    return `Project: ${it.projectName} — ${it.endDay?.split("T")[0] ?? ""}`;
+                }).join("\n");
+                alert(list);
+            });
 
             daysContainer.appendChild(day);
         }
-    };
+    }
 
-    btn.addEventListener("click", () => {
+    // toggle popup: when opening, reset to current month
+    btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const wasHidden = popup.classList.contains("hidden");
         popup.classList.toggle("hidden");
-
-        if (!popup.classList.contains("hidden")) {
-            // Khi popup vừa hiện, reset về tháng hiện tại
+        if (wasHidden) {
             currentDate = new Date();
             renderCalendar(currentDate);
         }
     });
 
-    prev.addEventListener("click", () => {
+    prev.addEventListener("click", (e) => {
+        e.stopPropagation();
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar(currentDate);
     });
 
-    next.addEventListener("click", () => {
+    next.addEventListener("click", (e) => {
+        e.stopPropagation();
         currentDate.setMonth(currentDate.getMonth() + 1);
         renderCalendar(currentDate);
     });
 
-    // Ẩn khi click ra ngoài
+    // click outside => hide and reset to current month
     document.addEventListener("click", (e) => {
         if (!popup.contains(e.target) && !btn.contains(e.target)) {
             popup.classList.add("hidden");
-            currentDate = new Date(); // reset về tháng hiện tại
+            currentDate = new Date();
             renderCalendar(currentDate);
         }
     });
 
+    // initial render (hidden)
     renderCalendar(currentDate);
 });
