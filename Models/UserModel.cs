@@ -16,7 +16,9 @@ namespace JIRA_NTB.Models
         [MaxLength(10)]
         public string? Gender { get; set; }
 
-        public string? IdDepartment { get; set; }
+        public string? DeviceAddress { get; set; }
+
+		public string? IdDepartment { get; set; }
 
         [ForeignKey("IdDepartment")]
         public DepartmentModel? Department { get; set; }
