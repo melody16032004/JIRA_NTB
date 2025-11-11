@@ -1,15 +1,23 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectDetailViewModel
 
-<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+<style>
+    /* Hide scrollbar but allow scrolling */
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-none {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+    }
+</style>
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 flex-1">
     <div class="flex items-center justify-between mb-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Bảng công việc</h3>
         <span class="text-xs text-gray-500 dark:text-gray-400">@Model.Tasks.Count nhiệm vụ</span>
     </div>
 
-    <!-- Kanban Board Container -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="kanbanBoard">
 
-        <!-- Cột 1: Kế hoạch -->
         <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center gap-2">
@@ -19,12 +27,12 @@
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
                       data-column="todo">0</span>
             </div>
-            <div class="space-y-3 overflow-y-auto flex-1" data-status="Lên kế hoạch">
-                <!-- Tasks sẽ được render ở đây -->
+            <div class="space-y-3 overflow-y-auto flex-1 scrollbar-none"
+                 style="max-height: 360px;"
+                 data-status="Lên kế hoạch">
             </div>
         </div>
 
-        <!-- Cột 2: Đang thực hiện -->
         <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center gap-2">
@@ -34,12 +42,12 @@
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
                       data-column="inprogress">0</span>
             </div>
-            <div class="space-y-3 overflow-y-auto flex-1" data-status="Đang thực hiện">
-                <!-- Tasks sẽ được render ở đây -->
+            <div class="space-y-3 overflow-y-auto flex-1 scrollbar-none"
+                 style="max-height: 360px;"
+                 data-status="Đang thực hiện">
             </div>
         </div>
 
-        <!-- Cột 3: Hoàn thành -->
         <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center gap-2">
@@ -49,12 +57,12 @@
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
                       data-column="done">0</span>
             </div>
-            <div class="space-y-3 overflow-y-auto flex-1" data-status="Hoàn thành">
-                <!-- Tasks sẽ được render ở đây -->
+            <div class="space-y-3 overflow-y-auto flex-1 scrollbar-none"
+                 style="max-height: 360px;"
+                 data-status="Hoàn thành">
             </div>
         </div>
 
-        <!-- Cột 4: Trễ hạn -->
         <div class="flex flex-col bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 min-h-[400px]">
             <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center gap-2">
@@ -64,8 +72,9 @@
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded"
                       data-column="overdue">0</span>
             </div>
-            <div class="space-y-3 overflow-y-auto flex-1" data-status="overdue">
-                <!-- Tasks sẽ được render ở đây -->
+            <div class="space-y-3 overflow-y-auto flex-1 scrollbar-none"
+                 style="max-height: 360px;"
+                 data-status="overdue">
             </div>
         </div>
 
