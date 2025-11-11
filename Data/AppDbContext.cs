@@ -15,6 +15,8 @@ namespace JIRA_NTB.Data
         public DbSet<TaskItemModel> Tasks { get; set; }
         public DbSet<Status> Statuses { get; set; }
         public DbSet<ProjectManagerModel> ProjectManagers { get; set; }
+        public DbSet<LogTaskModel> LogTasks { get; set; }
+        public DbSet<LogDevice> logDevices { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -73,6 +75,39 @@ namespace JIRA_NTB.Data
                 .WithMany(s => s.Tasks)
                 .HasForeignKey(t => t.StatusId)
                 .OnDelete(DeleteBehavior.Restrict);
+            // ===============================
+            // 🔹 Task - LogTask (1-nhiều)
+            // ===============================
+            builder.Entity<TaskItemModel>()
+                .HasMany(t => t.Logs)
+                .WithOne(l => l.Task)
+                .HasForeignKey(l => l.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ===============================
+            // 🔹 LogTask - OldUser (1-nhiều)
+            // ===============================
+            builder.Entity<LogTaskModel>()
+                .HasOne(l => l.OldUser)
+                .WithMany() // Không cần navigation ngược
+                .HasForeignKey(l => l.OldUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ===============================
+            // 🔹 LogTask - ReassignedBy (1-nhiều)
+            // ===============================
+            builder.Entity<LogTaskModel>()
+                .HasOne(l => l.ReassignedBy)
+                .WithMany() // Không cần navigation ngược
+                .HasForeignKey(l => l.ReassignedById)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<LogDevice>(entity =>
+            {
+                entity.ToTable("LogDevices"); // tên bảng trong SQL
+                entity.HasKey(ld => ld.IdLog);
+                entity.Property(ld => ld.AppName).HasMaxLength(100);
+                entity.Property(ld => ld.DeviceId).HasMaxLength(200);
+            });
         }
     }
 }

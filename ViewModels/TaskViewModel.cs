@@ -24,7 +24,7 @@ namespace JIRA_NTB.ViewModels
         //Task chưa hoàn thành mà quá hạn
         public bool IsOverdue =>
             EndDate.HasValue &&
-            EndDate.Value < DateTime.Now &&
+            EndDate.Value.Date < DateTime.Now.Date &&
             !IsCompleted;
 
         //Task hoàn thành trễ
@@ -41,7 +41,9 @@ namespace JIRA_NTB.ViewModels
 
         //Số ngày còn lại (âm nếu trễ)
         public int DaysRemaining =>
-        EndDate.HasValue ? (int)Math.Ceiling((EndDate.Value - DateTime.Now).TotalDays) : 0;
+         EndDate.HasValue
+             ? (EndDate.Value.Date - DateTime.Now.Date).Days
+             : 0;
         public int DaysLate
         {
             get

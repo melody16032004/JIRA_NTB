@@ -17,12 +17,13 @@ namespace JIRA_NTB.Controllers
     {
         private readonly ITaskService taskService;
         private readonly UserManager<UserModel> _userManager;
+        private readonly IStatusRepository statusRepository;
 
-
-        public TaskController(ITaskService taskService, UserManager<UserModel> userManager)
+        public TaskController(ITaskService taskService, UserManager<UserModel> userManager, IStatusRepository statusRepository)
         {
             this.taskService = taskService;
             _userManager = userManager;
+            this.statusRepository = statusRepository;
         }
         public async Task<IActionResult> Index()
         {
@@ -64,7 +65,8 @@ namespace JIRA_NTB.Controllers
                         previousStatusId = result.PreviousStatusId,
                         newStatusId = result.NewStatusId,
                         previousStatusName = result.PreviousStatusName,
-                        newStatusName = result.NewStatusName
+                        newStatusName = result.NewStatusName,
+                        previousCompletedDate = result.PreviousCompletedDate
                     }
                 });
             }
@@ -88,7 +90,10 @@ namespace JIRA_NTB.Controllers
                 });
             }
 
-            var result = await taskService.UndoTaskStatusAsync(request.TaskId, request.PreviousStatusId);
+            var result = await taskService.UndoTaskStatusAsync(
+                request.TaskId,
+                request.PreviousStatusId,
+                request.previousCompletedDate);
 
             if (result.Success)
             {
@@ -175,7 +180,7 @@ namespace JIRA_NTB.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
-            var result = await taskService.UpdateTaskStatusAsync(taskId, "status-deleted");
+            var result = await taskService.UpdateTaskStatusAsync(taskId, null);
             return Json(new
             {
                 success = result.Success,
