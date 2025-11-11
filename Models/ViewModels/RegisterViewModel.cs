@@ -31,5 +31,7 @@ namespace JIRA_NTB.Models.ViewModels
 		[Display(Name = "Xác nhận mật khẩu")]
 		[Compare("Password", ErrorMessage = "Mật khẩu và mật khẩu xác nhận không khớp.")]
 		public string ConfirmPassword { get; set; }
+
+		public string? DeviceAddress { get; set; }
 	}
 }

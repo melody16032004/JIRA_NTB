@@ -125,6 +125,8 @@
                         <span asp-validation-for="ConfirmPassword" class="text-red-400 text-xs mt-1 block"></span>
                     </div>
 
+                    <input type="hidden" id="deviceAddressInput" asp-for="DeviceAddress" />
+
                     <!-- Submit Button -->
                     <button type="submit" 
                             class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
@@ -164,11 +166,11 @@
     </div>
 </div>
 
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-    
     <script>
         // Hàm trợ giúp để cập nhật GIAO DIỆN của một yêu cầu
         function updateRequirement(textId, iconId, isValid)
@@ -245,17 +247,60 @@
             
             lucide.createIcons();
         }
-        
-        // Reinitialize Lucide icons after page load
-        document.addEventListener('DOMContentLoaded', function() {
-            lucide.createIcons();
-            
-            // Thêm event listener cho password input để validate realtime
-            const passwordInput = document.getElementById('passwordInput');
-            if (passwordInput) {
-                passwordInput.addEventListener('input', validatePassword);
-                passwordInput.addEventListener('keyup', validatePassword);
-            }
-        });
     </script>
 }
+
+<script>
+
+    // Reinitialize Lucide icons after page load
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const [serverRes, clientRes] = await Promise.all([
+            fetch("/api/server/address"),
+            fetch("/api/client/address"),
+        ]);
+
+        const [server, client] = await Promise.all([
+            serverRes.json(),
+            clientRes.json()
+        ]);
+        console.log("Server: ", server);
+        console.log("Client: ", client);
+
+        lucide.createIcons();
+
+        // Thêm event listener cho password input để validate realtime
+        const passwordInput = document.getElementById('passwordInput');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', validatePassword);
+            passwordInput.addEventListener('keyup', validatePassword);
+        }
+
+        console.log("Đang gọi API /api/client/address để lấy MAC...");
+        try {
+            // 1. Gọi API
+            const response = await fetch('/api/client/address');
+            if (response.ok) {
+                const data = await response.json(); // Nhận về { ip, mac, accessTime }
+
+                // 2. Tìm input ẩn và gán giá trị 'mac' vào
+                const macInput = document.getElementById('deviceAddressInput');
+                if(macInput) {
+                    macInput.value = data.mac;
+                    console.log('Lấy MAC thành công (LAN):', data.mac);
+                }
+            } else {
+                // Nếu API lỗi (404, 500)
+                console.error('API /api/client/address thất bại:', response.status);
+                const macInput = document.getElementById('deviceAddressInput');
+                if(macInput) macInput.value = 'API Error';
+            }
+
+        } catch (error) {
+            // Nếu JavaScript lỗi (server không phản hồi)
+            console.error('Lỗi JavaScript khi gọi API:', error);
+            const macInput = document.getElementById('deviceAddressInput');
+            if(macInput) macInput.value = 'JS Error';
+        }
+    });
+</script>

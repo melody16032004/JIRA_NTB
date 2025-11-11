@@ -7,7 +7,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace JIRA_NTB.Controllers
 {
@@ -34,6 +37,106 @@ namespace JIRA_NTB.Controllers
 			return View();
 		}
 
+		#region GET: api/client/ip
+
+		[HttpGet("api/server/address")]
+
+		public IActionResult GetClientIp()
+		{
+			var ipAddress = HttpContext.Connection.LocalIpAddress?.ToString();
+
+			var mac = NetworkInterface.GetAllNetworkInterfaces()
+				.Where(nic => nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+				.Select(nic => nic.GetPhysicalAddress().ToString())
+				.FirstOrDefault();
+
+			// Format MAC cho dễ đọc: "AA:BB:CC:DD:EE:FF"
+			if (!string.IsNullOrEmpty(mac))
+				mac = string.Join(":", Enumerable.Range(0, mac.Length / 2).Select(i => mac.Substring(i * 2, 2)));
+
+			var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+			
+			// --- Ghi log vào file ---
+			var logLine = $"{accessTime} - IP: {ipAddress ?? "Không xác định"} - MAC: {mac ?? "Không xác định"}";
+			var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
+			
+			try
+			{
+				System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
+			}
+
+			catch (Exception ex)
+			{
+				// Nếu muốn, có thể log lỗi ghi file ra console
+				Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
+			}
+
+			return Ok(new
+			{
+				ip = ipAddress ?? "Không xác định",
+				mac = mac ?? "Không xác định",
+				accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+			});
+		}
+		#endregion
+
+		#region GET: api/client/mac
+		[HttpGet("api/client/address")]
+		public IActionResult GetClientMac()
+		{
+			string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+			if (string.IsNullOrEmpty(clientIp))
+
+			return BadRequest("Không tìm thấy IP client");
+
+			try
+			{
+				var process = new Process
+				{
+					StartInfo = new ProcessStartInfo
+					{
+						FileName = "arp",
+						Arguments = "-a " + clientIp,
+						RedirectStandardOutput = true,
+						UseShellExecute = false,
+						CreateNoWindow = true
+					}
+				};
+				process.Start();
+				string output = process.StandardOutput.ReadToEnd();
+				process.WaitForExit();
+
+				// Parse MAC (Windows format)
+				var match = System.Text.RegularExpressions.Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
+				string macAddress = match.Success ? match.Value.Replace('-', ':') : "Không xác định";
+				var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+				// --- Ghi log vào file ---
+				var logLine = $"{accessTime} - IP: {clientIp ?? "Không xác định"} - MAC: {macAddress ?? "Không xác định"}";
+				var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
+				try
+				{
+					System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
+				}
+				catch (Exception ex)
+				{
+					// Nếu muốn, có thể log lỗi ghi file ra console
+					Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
+				}
+				return Ok(new {
+					ip = clientIp,
+					mac = macAddress,
+					accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+				});
+			}
+			catch (Exception ex)
+			{ 
+				return BadRequest($"Lỗi: {ex.Message}");
+			}
+		}
+		#endregion
+
+		#region Login
 		[HttpGet]
 		public IActionResult Login()
 		{
@@ -98,7 +201,9 @@ namespace JIRA_NTB.Controllers
 			}
 			return View(model);
 		}
+		#endregion
 
+		#region Logout
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Logout()
@@ -106,7 +211,9 @@ namespace JIRA_NTB.Controllers
 			await _signInManager.SignOutAsync();
 			return RedirectToAction("Login", "Account");
 		}
+		#endregion
 
+		#region Register
 		[HttpGet]
 		public IActionResult Register()
 		{
@@ -128,6 +235,57 @@ namespace JIRA_NTB.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Register(RegisterViewModel model)
 		{
+			string clientMacAddress = "Không xác định";
+			try
+			{
+				// 1. Lấy IP của người dùng (từ HttpContext của hàm Register)
+				string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+				if (!string.IsNullOrEmpty(clientIp) &&
+					(clientIp == "127.0.0.1" || clientIp == "::1"))
+				{
+					// Xử lý trường hợp chạy trên localhost (Lấy MAC của server)
+					// Cảnh báo: Đây là MAC của server, không phải MAC của client
+					clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
+						.Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+									  nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+						.Select(nic => nic.GetPhysicalAddress().ToString())
+						.FirstOrDefault() ?? "Localhost MAC";
+				}
+				else if (!string.IsNullOrEmpty(clientIp))
+				{
+					// 2. Chạy lệnh 'arp' với IP của người dùng
+					var process = new Process
+					{
+						StartInfo = new ProcessStartInfo
+						{
+							FileName = "arp",
+							Arguments = "-a " + clientIp,
+							RedirectStandardOutput = true,
+							UseShellExecute = false,
+							CreateNoWindow = true
+						}
+					};
+					process.Start();
+					string output = process.StandardOutput.ReadToEnd();
+					process.WaitForExit();
+
+					// 3. Parse kết quả
+					// (Lưu ý: Format regex này chỉ chạy trên Windows)
+					var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
+					if (match.Success)
+					{
+						clientMacAddress = match.Value.Replace('-', ':');
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				// Nếu có lỗi (ví dụ: chạy trên Linux, không có quyền...), ghi log và tiếp tục
+				Console.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
+				clientMacAddress = "Lỗi khi lấy MAC";
+			}
+
 			if (ModelState.IsValid) // Kiểm tra xem Email, Pass có hợp lệ không
 			{
 				// Kiểm tra xem Email đã tồn tại chưa
@@ -153,7 +311,8 @@ namespace JIRA_NTB.Controllers
 					IdDepartment = model.DepartmentId.ToString(),
 					FullName = model.FullName,
 					UserName = model.Email, // Sử dụng Email làm UserName
-					Email = model.Email
+					Email = model.Email,
+					DeviceAddress = model.DeviceAddress
 				};
 				var result = await _userManager.CreateAsync(user, model.Password);
 
@@ -228,7 +387,9 @@ namespace JIRA_NTB.Controllers
 			// trả về View cũ và hiển thị lỗi
 			return View(model);
 		}
+		#endregion
 
+		#region Email Confirmation
 		[HttpGet]
 		public IActionResult RegisterConfirmation()
 		{
@@ -274,7 +435,9 @@ namespace JIRA_NTB.Controllers
 				return View("ConfirmEmailError");
 			}
 		}
+		#endregion
 
+		#region Forgot Password
 		// ------ 1. Hiển thị trang yêu cầu ------
 		[HttpGet]
 		public IActionResult ForgotPassword()
@@ -340,7 +503,9 @@ namespace JIRA_NTB.Controllers
 			}
 			return View();
 		}
+		#endregion
 
+		#region Reset Password
 		// ------ 3. Hiển thị trang thông báo đã gửi link ------
 		[HttpGet]
 		public IActionResult ForgotPasswordConfirmation()
@@ -427,7 +592,9 @@ namespace JIRA_NTB.Controllers
 			}
 			return View(model);
 		}
+		#endregion
 
+		#region Profile
 		[Authorize] // Yêu cầu phải đăng nhập
 		[HttpGet]
 		public async Task<IActionResult> Profile()
@@ -511,5 +678,6 @@ namespace JIRA_NTB.Controllers
 			model.DepartmentName = dept?.DepartmentName ?? "Chưa có";
 			return View(model);
 		}
+		#endregion
 	}
 }
