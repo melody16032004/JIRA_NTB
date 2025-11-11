@@ -1,4 +1,5 @@
 ﻿using JIRA_NTB.Models;
+using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
 
 namespace JIRA_NTB.Services
@@ -11,7 +12,9 @@ namespace JIRA_NTB.Services
         Task<(bool success, string message)> UpdateTaskAsync(TaskViewModel model, List<IFormFile> files);
         Task<(bool success, string message)> DeleteTaskAsync(string taskId);
 
-        Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId, string previousStatusId);
+        Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId,
+                                                             string previousStatusId,
+                                                             DateTime? previousCompletedDate);
         Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId);
         Task<(bool success, string message, string? taskId)> CreateTaskAsync(CreateTaskRequest request);
         Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles);

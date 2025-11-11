@@ -104,7 +104,8 @@ const TaskUtils = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     taskId: undoData.taskId,
-                    previousStatusId: undoData.previousStatusId
+                    previousStatusId: undoData.previousStatusId,
+                    previousCompletedDate: undoData.previousCompletedDate 
                 })
             });
             const result = await response.json();
