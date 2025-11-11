@@ -1,17 +1,17 @@
 ﻿// =================================================================
 // CÁC BIẾN TOÀN CỤC VÀ TRẠNG THÁI
 // =================================================================
-const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
-const loading = `
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
-        <div class="flex flex-col items-center">
-            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
-                Đang xử lý, vui lòng chờ...
-            </p>
-        </div>
-    </div>
-`;
+//const overlay = `<div id="uploadOverlay" class="fixed inset-0 bg-black/80 hidden z-40"></div>`;
+//const loading = `
+//    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center z-[9999] backdrop-blur-sm">
+//        <div class="flex flex-col items-center">
+//            <div class="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+//            <p class="mt-4 text-white text-lg font-medium tracking-wide animate-pulse">
+//                Đang xử lý, vui lòng chờ...
+//            </p>
+//        </div>
+//    </div>
+//`;
 
 // Trạng thái phân trang
 let currentPage = 1;
