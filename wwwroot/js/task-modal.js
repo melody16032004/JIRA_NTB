@@ -465,6 +465,7 @@ document.addEventListener('click', async (e) => {
 // Load danh sách user khi chọn Project TRONG MODAL (chỉ cho CREATE)
 // ==========================
 document.addEventListener('DOMContentLoaded', () => {
+    window.attachTaskCardEvents = attachTaskCardEvents;
     const projectSelect = document.getElementById('taskProjectModal');
     const assigneeSelect = document.getElementById('taskAssignee');
 
@@ -763,22 +764,28 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     }
     function attachTaskCardEvents() {
-        // Thêm event listeners cho menu 3 chấm
+        // ✅ Xóa tất cả event listeners cũ để tránh duplicate
+        const oldBtns = document.querySelectorAll('.task-menu-btn');
+        oldBtns.forEach(btn => {
+            const clone = btn.cloneNode(true);
+            btn.parentNode.replaceChild(clone, btn);
+        });
+
+        // ✅ Thêm event listeners mới cho menu 3 chấm
         document.querySelectorAll('.task-menu-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 const menu = this.nextElementSibling;
-                menu.classList.toggle('hidden');
-            });
-        });
 
-        // Click outside để đóng menu
-        document.addEventListener('click', function (e) {
-            if (!e.target.closest('.task-menu-container')) {
-                document.querySelectorAll('.task-menu').forEach(menu => {
-                    menu.classList.add('hidden');
+                // Đóng tất cả menu khác
+                document.querySelectorAll('.task-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('hidden');
                 });
-            }
+
+                // Toggle menu hiện tại
+                menu.classList.toggle('hidden');
+                lucide.createIcons();
+            });
         });
     }
 });

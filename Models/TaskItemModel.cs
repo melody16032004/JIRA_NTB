@@ -42,5 +42,7 @@ namespace JIRA_NTB.Models
 
         [ForeignKey("StatusId")]
         public Status? Status { get; set; }
+        // 🔹 Navigation tới Log
+        public ICollection<LogTaskModel> Logs { get; set; } = new List<LogTaskModel>();
     }
 }

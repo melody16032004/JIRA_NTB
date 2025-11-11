@@ -153,7 +153,8 @@ class TaskDragDrop {
                     taskId: result.data.taskId,
                     previousStatusId: result.data.previousStatusId,
                     originalHTML: originalHTML,
-                    parentStatusId: this.previousStatusId
+                    parentStatusId: this.previousStatusId,
+                    previousCompletedDate: result.data.previousCompletedDate  // ✅ thêm
                 });
             } else {
                 TaskUtils.showError(result.message);

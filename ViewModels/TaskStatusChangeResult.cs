@@ -9,6 +9,7 @@
         public string NewStatusId { get; set; }
         public string PreviousStatusName { get; set; }
         public string NewStatusName { get; set; }
+        public DateTime? PreviousCompletedDate { get; set; }
     }
     // Request Models
     public class UpdateStatusRequest
@@ -21,5 +22,6 @@
     {
         public string TaskId { get; set; }
         public string PreviousStatusId { get; set; }
+        public DateTime? previousCompletedDate { get; set; }
     }
 }
