@@ -1,7 +1,6 @@
 using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
-using JIRA_NTB.Models.Test;
 using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -57,6 +56,101 @@ namespace JIRA_NTB.Controllers
             });
         }
 
+        [HttpGet("api/tasks/statistics")]
+        public async Task<IActionResult> GetTasksStatistics()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var now = DateTime.Now;
+
+            IQueryable<ProjectModel> query = _context.Projects;
+
+            // 🔹 Lọc theo role
+            if (User.IsInRole("LEADER"))
+            {
+                query = query.Where(p => p.UserId == user.Id);
+            }
+            else if (User.IsInRole("EMPLOYEE"))
+            {
+                var projectIds = await _context.ProjectManagers
+                    .Where(pm => pm.UserId == user.Id)
+                    .Select(pm => pm.ProjectId)
+                    .ToListAsync();
+
+                query = query.Where(p => projectIds.Contains(p.IdProject));
+            }
+            // 🔹 ADMIN thì giữ nguyên (xem tất cả)
+
+            // 🔹 Lấy thống kê theo từng project
+            var statsList = await query
+                .Select(p => new
+                {
+                    TotalTasks = p.Tasks.Count(),
+                    CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
+                    InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
+                    TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
+                    OverdueTasks = p.Tasks.Count(t => t.EndDate < now && t.Status.StatusName != TaskStatusModel.Done)
+                })
+                .ToListAsync();
+
+            // 🔹 Cộng dồn tất cả project
+            var summary = new
+            {
+                TotalTasks = statsList.Sum(x => x.TotalTasks),
+                CompletedTasks = statsList.Sum(x => x.CompletedTasks),
+                InProgressTasks = statsList.Sum(x => x.InProgressTasks),
+                TodoTasks = statsList.Sum(x => x.TodoTasks),
+                OverdueTasks = statsList.Sum(x => x.OverdueTasks)
+            };
+
+            return Ok(summary);
+        }
+
+        [HttpGet("api/projects/statistics")]
+        public async Task<IActionResult> GetProjectsStatistics()
+        {
+            var now = DateTime.Now;
+
+            var stats = new
+            {
+                Completed = await _context.Projects.CountAsync(p => p.Status.StatusName == TaskStatusModel.Done && p.EndDay >= now),
+                InProgress = await _context.Projects.CountAsync(p => p.Status.StatusName == TaskStatusModel.InProgress && p.EndDay >= now),
+                Todo = await _context.Projects.CountAsync(p => p.Status.StatusName == TaskStatusModel.Todo && p.EndDay >= now),
+                Overdue = await _context.Projects.CountAsync(p => p.Status.StatusName != TaskStatusModel.Done && p.EndDay < now),
+            };
+
+            return Ok(stats);
+        }
+
+        [HttpGet("api/projects/deadline")]
+        public async Task<IActionResult> GetProjectsDeadline()
+        {
+            var deadlines = await _context.Projects
+                .Select(p => new
+                {
+                    p.IdProject,
+                    p.ProjectName,
+                    p.EndDay,
+                })
+                .ToListAsync();
+
+            return Ok(deadlines);
+        }
+        [HttpGet("api/tasks/deadline")]
+        public async Task<IActionResult> GetTasksDeadline()
+        {
+            var deadlines = await _context.Tasks
+                .Select(t => new
+                {
+                    t.IdTask,
+                    t.NameTask,
+                    t.Assignee.FullName,
+                    t.EndDate,
+                })
+                .ToListAsync();
+            
+            return Ok(deadlines);
+        }
+
         [HttpGet("api/projects")]
         public async Task<IActionResult> GetProjects(/*[FromQuery] int page = 1, [FromQuery] int pageSize = 10*/)
         {
@@ -94,83 +188,118 @@ namespace JIRA_NTB.Controllers
             //    CurrentPage = page
             //});
             var user = await _userManager.GetUserAsync(User);
+            var now = DateTime.Now;
 
-            if (User.IsInRole("ADMIN"))
-            {
-                var projects = await _context.Projects
-                .Select(p => new
-                {
-                    p.IdProject,
-                    p.ProjectName,
-                    p.StartDay,
-                    p.EndDay,
-                    Status = p.Status.StatusName,
-                    FileNote = p.FileNote,
-                    note = p.Note,
-                    Manager = p.Manager.FullName,
-                    TotalTasks = p.Tasks.Count(),
-                    CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
-                    InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
-                    TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
-                    OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
-                })
-                .ToListAsync();
-                return Ok(projects);
-            }
-            else if (User.IsInRole("LEADER"))
-            {
-                var projects = await _context.Projects
-                .Where(p => p.UserId == user.Id)
-                .Select(p => new
-                {
-                    p.IdProject,
-                    p.ProjectName,
-                    p.StartDay,
-                    p.EndDay,
-                    Status = p.Status.StatusName,
-                    FileNote = p.FileNote,
-                    note = p.Note,
-                    Manager = p.Manager.FullName,
-                    TotalTasks = p.Tasks.Count(),
-                    CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
-                    InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
-                    TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
-                    OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
-                })
-                .ToListAsync();
+            // 🔹 Bắt đầu từ tất cả project
+            IQueryable<ProjectModel> query = _context.Projects;
 
-                return Ok(projects);
+            // 🔹 Lọc theo role
+            if (User.IsInRole("LEADER"))
+            {
+                query = query.Where(p => p.UserId == user.Id);
             }
-            else
+            else if (User.IsInRole("EMPLOYEE"))
             {
                 var projectIds = await _context.ProjectManagers
                     .Where(pm => pm.UserId == user.Id)
                     .Select(pm => pm.ProjectId)
                     .ToListAsync();
 
-                var projects = await _context.Projects
-                    .Where(p => projectIds.Contains(p.IdProject))
-                    .Select(p => new
-                    {
-                        p.IdProject,
-                        p.ProjectName,
-                        p.StartDay,
-                        p.EndDay,
-                        Status = p.Status.StatusName,
-                        FileNote = p.FileNote,
-                        note = p.Note,
-                        Manager = p.Manager.FullName,
-                        TotalTasks = p.Tasks.Count(),
-                        CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
-                        InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
-                        TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
-                        OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
-                    })
-                    .ToListAsync();
-
-                return Ok(projects);
+                query = query.Where(p => projectIds.Contains(p.IdProject));
             }
-            
+
+            // 🔹 Truy vấn dữ liệu chung
+            var projects = await query
+                .Select(p => new
+                {
+                    p.IdProject,
+                    p.ProjectName,
+                    p.StartDay,
+                    p.EndDay,
+                    Status = p.Status.StatusName,
+                    FileNote = p.FileNote,
+                    Note = p.Note,
+                    Manager = p.Manager.FullName
+                })
+                .ToListAsync();
+
+            return Ok(projects);
+
+            //if (User.IsInRole("ADMIN"))
+            //{
+            //    var projects = await _context.Projects
+            //    .Select(p => new
+            //    {
+            //        p.IdProject,
+            //        p.ProjectName,
+            //        p.StartDay,
+            //        p.EndDay,
+            //        Status = p.Status.StatusName,
+            //        FileNote = p.FileNote,
+            //        note = p.Note,
+            //        Manager = p.Manager.FullName,
+            //        TotalTasks = p.Tasks.Count(),
+            //        CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
+            //        InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
+            //        TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
+            //        OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
+            //    })
+            //    .ToListAsync();
+            //    return Ok(projects);
+            //}
+            //else if (User.IsInRole("LEADER"))
+            //{
+            //    var projects = await _context.Projects
+            //    .Where(p => p.UserId == user.Id)
+            //    .Select(p => new
+            //    {
+            //        p.IdProject,
+            //        p.ProjectName,
+            //        p.StartDay,
+            //        p.EndDay,
+            //        Status = p.Status.StatusName,
+            //        FileNote = p.FileNote,
+            //        note = p.Note,
+            //        Manager = p.Manager.FullName,
+            //        TotalTasks = p.Tasks.Count(),
+            //        CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
+            //        InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
+            //        TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
+            //        OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
+            //    })
+            //    .ToListAsync();
+
+            //    return Ok(projects);
+            //}
+            //else if (User.IsInRole("EMPLOYEE"))
+            //{
+            //    var projectIds = await _context.ProjectManagers
+            //        .Where(pm => pm.UserId == user.Id)
+            //        .Select(pm => pm.ProjectId)
+            //        .ToListAsync();
+
+            //    var projects = await _context.Projects
+            //        .Where(p => projectIds.Contains(p.IdProject))
+            //        .Select(p => new
+            //        {
+            //            p.IdProject,
+            //            p.ProjectName,
+            //            p.StartDay,
+            //            p.EndDay,
+            //            Status = p.Status.StatusName,
+            //            FileNote = p.FileNote,
+            //            note = p.Note,
+            //            Manager = p.Manager.FullName,
+            //            TotalTasks = p.Tasks.Count(),
+            //            CompletedTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Done),
+            //            InProgressTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
+            //            TodoTasks = p.Tasks.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
+            //            OverdueTasks = p.Tasks.Count(t => t.EndDate < new DateTime() || t.Overdue),
+            //        })
+            //        .ToListAsync();
+
+            //    return Ok(projects);
+            //}
         }
 
         [HttpGet("api/projects/{idProject}/members")]
@@ -304,21 +433,6 @@ namespace JIRA_NTB.Controllers
                 return Ok(tasks);
             }
             
-        }
-
-        [HttpGet("api/departments")]
-        public async Task<IActionResult> GetDepartments()
-        {
-            var departments = await _context.Departments
-                .Select(d => new
-                {
-                    d.IdDepartment,
-                    d.DepartmentName,
-                    Users = d.Users.Select(u => new { u.Id, u.FullName }).ToList()
-                })
-                .ToListAsync();
-
-            return Ok(departments);
         }
 
         // ==================== API: Thêm hoặc Cập nhật Task ====================
