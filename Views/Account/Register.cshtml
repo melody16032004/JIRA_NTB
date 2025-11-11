@@ -251,9 +251,7 @@
 }
 
 <script>
-
     // Reinitialize Lucide icons after page load
-
     document.addEventListener('DOMContentLoaded', async function() {
         const [serverRes, clientRes] = await Promise.all([
             fetch("/api/server/address"),
@@ -264,8 +262,6 @@
             serverRes.json(),
             clientRes.json()
         ]);
-        console.log("Server: ", server);
-        console.log("Client: ", client);
 
         lucide.createIcons();
 
@@ -276,7 +272,6 @@
             passwordInput.addEventListener('keyup', validatePassword);
         }
 
-        console.log("Đang gọi API /api/client/address để lấy MAC...");
         try {
             // 1. Gọi API
             const response = await fetch('/api/client/address');
@@ -287,7 +282,6 @@
                 const macInput = document.getElementById('deviceAddressInput');
                 if(macInput) {
                     macInput.value = data.mac;
-                    console.log('Lấy MAC thành công (LAN):', data.mac);
                 }
             } else {
                 // Nếu API lỗi (404, 500)
