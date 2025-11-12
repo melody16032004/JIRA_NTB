@@ -6,6 +6,8 @@ namespace JIRA_NTB.Repository
     {
         Task<List<TaskItemModel>> GetAllAsync();
         Task<List<TaskItemModel>> GetAllFilteredAsync(UserModel user, IList<string> roles);
+        Task<List<TaskItemModel>> GetTasksByStatusPagedAsync(UserModel user,IList<string> roles,
+            string? statusId = null, int page = 1, int pageSize = 10);
         Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, UserModel user, IList<string> roles);
         Task<TaskItemModel?> GetByIdAsync(string id);
         Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, UserModel user, IList<string> roles);

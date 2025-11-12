@@ -43,6 +43,49 @@ namespace JIRA_NTB.Repository
             }
             return await query.ToListAsync();
         }
+        public async Task<List<TaskItemModel>> GetTasksByStatusPagedAsync(
+    UserModel user,
+    IList<string> roles,
+    string? statusId = null,
+    int page = 1,
+    int pageSize = 10)
+        {
+            IQueryable<TaskItemModel> query = _context.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.Status)
+                .Include(t => t.Assignee);
+
+            // 🎯 Phân quyền
+            if (roles.Contains("LEADER"))
+            {
+                query = query.Where(t => t.Project.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            // 🎯 Filter theo statusId
+            if (!string.IsNullOrEmpty(statusId))
+            {
+                if (statusId == "False") // cột OVERDUE
+                {
+                    query = query.Where(t => t.Overdue
+                                             && t.Status.StatusName != TaskStatusModel.Done
+                                             && t.Status.StatusName != TaskStatusModel.Deleted);
+                }
+                else
+                {
+                    query = query.Where(t => t.Status.StatusId == statusId && !t.Overdue);
+                }
+            }
+
+            return await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
         public async Task<TaskItemModel?> GetByIdAsync(string id)
         {
             return await _context.Tasks

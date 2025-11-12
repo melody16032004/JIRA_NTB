@@ -53,6 +53,22 @@ namespace JIRA_NTB.Services
 
             return viewModel;
         }
+        public async Task<List<TaskViewModel>> GetTasksByStatusAsync(
+      UserModel user,
+      IList<string> roles,
+      string statusId,
+      int page,
+      int pageSize)
+        {
+            var tasks = await _taskRepository.GetTasksByStatusPagedAsync(
+                user,
+                roles,
+                statusId,
+                page,
+                pageSize);
+
+            return tasks.ToViewModelList();
+        }
         public async Task<TaskItemModel?> GetTaskByIdAsync(string taskId, UserModel user, IList<string> roles)
         {
             return await _taskRepository.GetByIdFilteredAsync(taskId, user, roles);

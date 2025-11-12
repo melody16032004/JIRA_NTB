@@ -32,6 +32,16 @@ namespace JIRA_NTB.Controllers
             var viewModel = await taskService.GetTaskBoardAsync(user, roles);
             return View(viewModel);
         }
+        [HttpGet]
+        public async Task<IActionResult> GetMoreTasks(string statusId, int page = 1, int pageSize = 10)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var tasks = await taskService.GetTasksByStatusAsync(user, roles, statusId, page, pageSize);
+
+            return PartialView("_TaskCardList", tasks);
+        }
         [HttpPost]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
         {
