@@ -59,7 +59,7 @@
                            class="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
                 </div>
 
-                @await Component.InvokeAsync("ProjectSelect", new { id = "headerProjectFilter", selectedId = "" })
+                @await Component.InvokeAsync("ProjectSelect", new { id = "headerProjectFilter", selectedId = ViewBag.SelectedProjectId })
                 @if (User.IsInRole("ADMIN") || User.IsInRole("LEADER"))
                 {
                 <div class="relative group inline-block">

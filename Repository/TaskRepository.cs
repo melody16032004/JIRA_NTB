@@ -48,7 +48,7 @@ namespace JIRA_NTB.Repository
     IList<string> roles,
     string? statusId = null,
     int page = 1,
-    int pageSize = 10)
+    int pageSize = 10, string? projectId = null)
         {
             IQueryable<TaskItemModel> query = _context.Tasks
                 .Include(t => t.Project)
@@ -64,7 +64,11 @@ namespace JIRA_NTB.Repository
             {
                 query = query.Where(t => t.Assignee_Id == user.Id);
             }
-
+            // Filter theo project
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                query = query.Where(t => t.ProjectId == projectId);
+            }
             // 🎯 Filter theo statusId
             if (!string.IsNullOrEmpty(statusId))
             {

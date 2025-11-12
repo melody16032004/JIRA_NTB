@@ -21,12 +21,16 @@ namespace JIRA_NTB.Services
             _userRepo = userRepo;
         }
 
-        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles)
+        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, string? projectId = null)
         {
             // ✅ Tách riêng logic cập nhật
             await _taskRepository.RefreshOverdueStatusAsync();
 
             var tasks = await _taskRepository.GetAllFilteredAsync(user, roles);
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                tasks = tasks.Where(t => t.ProjectId == projectId).ToList();
+            }
             var projects = await _projectRepository.GetAllFilteredAsync(user, roles);
             var statuses = await _statusRepository.GetAllAsync();
             var viewModel = new TaskBoardViewModel
@@ -58,14 +62,14 @@ namespace JIRA_NTB.Services
       IList<string> roles,
       string statusId,
       int page,
-      int pageSize)
+      int pageSize, string? projectId = null)
         {
             var tasks = await _taskRepository.GetTasksByStatusPagedAsync(
                 user,
                 roles,
                 statusId,
                 page,
-                pageSize);
+                pageSize, projectId);
 
             return tasks.ToViewModelList();
         }

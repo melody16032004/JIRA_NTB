@@ -92,10 +92,13 @@ class InfiniteScrollManager {
         // Đánh dấu đang loading
         this.loadingColumns.add(statusId);
         this.showLoading(column, true);
-
+        const projectFilter = document.getElementById('headerProjectFilter');
+        const projectId = projectFilter ? projectFilter.value : '';
         try {
             // Gọi API
-            const url = `/Task/GetMoreTasks?statusId=${encodeURIComponent(statusId)}&page=${nextPage}&pageSize=${columnPageSize}`;
+            const url = `/Task/GetMoreTasks?statusId=${encodeURIComponent(statusId)}
+                &page=${nextPage}&pageSize=${columnPageSize}&projectId=${encodeURIComponent(projectId || '')}`;
+
 
             const response = await fetch(url, {
                 method: 'GET',
