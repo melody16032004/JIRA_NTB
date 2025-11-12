@@ -25,12 +25,23 @@ namespace JIRA_NTB.Controllers
             _userManager = userManager;
             this.statusRepository = statusRepository;
         }
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? projectId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             var roles = await _userManager.GetRolesAsync(user);
-            var viewModel = await taskService.GetTaskBoardAsync(user, roles);
+            var viewModel = await taskService.GetTaskBoardAsync(user, roles, projectId);
+            ViewBag.SelectedProjectId = projectId; // để giữ lại lựa chọn
             return View(viewModel);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetMoreTasks(string statusId, int page = 1, int pageSize = 10, string? projectId = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var tasks = await taskService.GetTasksByStatusAsync(user, roles, statusId, page, pageSize, projectId);
+
+            return PartialView("_TaskCardList", tasks);
         }
         [HttpPost]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)

@@ -1,0 +1,7 @@
+﻿@* Views/Task/_TaskCardList.cshtml *@
+@model List<TaskViewModel>
+
+@foreach (var task in Model)
+{
+    <partial name="_TaskCard" model="task" />
+}
