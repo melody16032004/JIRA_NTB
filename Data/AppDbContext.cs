@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace JIRA_NTB.Data
 {
@@ -17,6 +18,7 @@ namespace JIRA_NTB.Data
         public DbSet<ProjectManagerModel> ProjectManagers { get; set; }
         public DbSet<LogTaskModel> LogTasks { get; set; }
         public DbSet<LogDevice> logDevices { get; set; }
+        public DbSet<CheckIn> checkIns { get; set; }
 		protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -108,6 +110,11 @@ namespace JIRA_NTB.Data
                 entity.Property(ld => ld.AppName).HasMaxLength(100);
                 entity.Property(ld => ld.DeviceId).HasMaxLength(200);
             });
+            builder.Entity<CheckIn>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.CheckIns)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade); // Khi xóa user thì xóa luôn check-in của họ
         }
     }
 }

@@ -4,7 +4,7 @@ class InfiniteScrollManager {
         this.loadingColumns = new Set();
         this.observers = new Map();
         this.pageSize = 10;
-        
+
         this.init();
     }
 
