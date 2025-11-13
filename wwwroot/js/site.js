@@ -1,13 +1,34 @@
 ﻿function toggleTheme() {
     document.documentElement.classList.toggle('dark');
 }
+let me = null; // Khai báo 'me' ở ngoài
 document.addEventListener("DOMContentLoaded", async () => {
-    const [meRes] = await Promise.all([
-        fetch("/api/user/me")
-    ]);
-    const [me] = await Promise.all([
-        meRes.json(),
-    ]);
+    if (!me) {
+        try {
+            const meRes = await fetch("/api/user/me");
+
+            // 1. Chỉ thử .json() nếu request thành công (status 200-299)
+            if (meRes.ok) {
+                me = await meRes.json();
+            }
+            // 2. Nếu meRes không .ok (ví dụ 404, 500), 'me' sẽ vẫn là 'null'
+
+        } catch (e) {
+            // 3. Lỗi này xảy ra nếu có lỗi mạng (Failed to fetch)
+            // 'me' sẽ vẫn là 'null'
+            console.error("Fetch failed:", e);
+        }
+    }
+
+    // Bây giờ, 'me' sẽ là 'null' nếu:
+    // 1. Fetch lỗi mạng (trong catch)
+    // 2. Server trả về 401, 404, 500 (vì meRes.ok là false)
+    // 3. Server trả về 200 OK với body là 'null'
+
+    if (!me || me == null) {
+        window.location.href = "/Error/403";
+    }
+
     console.log(me);
 
     const meCur = document.getElementById("me");
@@ -183,6 +204,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return await res.json();
         } catch (err) {
             console.warn("Fetch failed:", url, err);
+
             return fallback;
         }
     }

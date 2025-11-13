@@ -1149,28 +1149,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentUserRole = container.dataset.role;
     console.log("User Role:", currentUserRole);
 
-    // --- Gọi API (Tải dữ liệu ban đầu) ---
-    // Sửa lại: Tải projects trang 1 và TẤT CẢ tasks
-    let [me, initialProjects, /*tasks,*/ tasksStat, projectsStat] = await Promise.all([
-        safeFetchJson("/api/user/me", {}),
+    // --- Bước 1: Chỉ fetch thông tin user ---
+    const me = await safeFetchJson("/api/user/me", null);
+    currentUser = me; // Lưu vào state toàn cục
+
+    // --- Bước 2: Kiểm tra User TRƯỚC KHI fetch phần còn lại ---
+    if (!currentUser || currentUser == null) {
+        console.warn("User không hợp lệ hoặc chưa đăng nhập. Đang chuyển hướng...");
+        window.location.href = "/Error/403";
+        return; // Dừng thực thi ngay lập tức
+    }
+
+    // Nếu user OK, log và tiếp tục
+    console.log("User:", me);
+
+    // --- Bước 3: Fetch các dữ liệu còn lại (vì user đã hợp lệ) ---
+    let [initialProjects, tasksStat, projectsStat, server, client] = await Promise.all([
         safeFetchJson(`/api/projects?pageIndex=1&pageSize=${PAGE_SIZE}`, { items: [], pageIndex: 1, totalPages: 1 }), // Trang 1
-        //safeFetchJson("/api/tasks", []), // Tải TẤT CẢ tasks (quan trọng)
         safeFetchJson("/api/tasks/statistics", {}),
         safeFetchJson("/api/projects/statistics", {}),
+        safeFetchJson("/api/server/address", {}),
+        safeFetchJson("/api/client/address", {}),
     ]);
 
-    // --- Lưu vào state toàn cục ---
-    currentUser = me;
-    //allTasks = tasks; // Lưu tất cả task
+    // --- Lưu nốt vào state toàn cục ---
     allTasksStat = tasksStat;
     allProjectsStat = projectsStat;
 
-    // --- Log dữ liệu ban đầu ---
-    console.log("User:", me);
+    // --- Log dữ liệu ban đầu (phần còn lại) ---
     console.log("Projects (Trang 1): ", initialProjects);
-    //console.log("Tasks (Tất cả): ", allTasks);
     console.log("Stats Task: ", tasksStat);
     console.log("Stats Project: ", projectsStat);
+    console.log("Server: ", server);
+    console.log("Client: ", client);
 
     // --- Render giao diện LẦN ĐẦU TIÊN ---
     renderDashboard(initialProjects);
@@ -1178,14 +1189,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("✅ Dữ liệu đã tải và render xong. Ẩn loader.");
 
     if (fullPageLoader) {
-        // Thêm class opacity-0 để kích hoạt hiệu ứng fade-out
-        //fullPageLoader.classList.add('opacity-0');
-
-        // Sau khi hiệu ứng 500ms kết thúc, xóa loader khỏi DOM
         setTimeout(() => {
             fullPageLoader.classList.add('hidden');
-            //fullPageLoader.remove();
-        }, 500); // Phải khớp với 'duration-500' của Tailwind
+        }, 500);
     }
 });
 

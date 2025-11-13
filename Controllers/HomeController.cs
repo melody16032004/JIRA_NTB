@@ -2,6 +2,7 @@ using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
