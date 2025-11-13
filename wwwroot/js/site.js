@@ -136,15 +136,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btn = document.getElementById("calendarButton");
     const popup = document.getElementById("calendarPopup");
     const daysContainer = document.getElementById("calendarDays");
-    const title = document.getElementById("calendarTitle");
+    //const title = document.getElementById("calendarTitle");
+    const selectMonth = document.getElementById("selectMonth"); // <<< THÊM VÀO
+    const selectYear = document.getElementById("selectYear"); // <<< THÊM VÀO
     const prev = document.getElementById("prevMonth");
     const next = document.getElementById("nextMonth");
+    const summaryContainer = document.getElementById("calendarSummary");
 
     // helper
     const pad = n => n.toString().padStart(2, "0");
 
-    // parse date string to local date at midnight (avoid timezone shift)
-    // parse date string to local date at midnight (avoid timezone shift)
     function parseDateLocal(dateString) {
         if (!dateString) return null;
 
@@ -187,12 +188,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // load remote data
-    const [taskDeadline, /*projectDeadline*/] = await Promise.all([
+    const [taskDeadline, projectDeadline] = await Promise.all([
         safeFetchJson("/api/tasks/deadline", []),
-        //safeFetchJson("/api/projects/deadline", [])
+        safeFetchJson("/api/projects/deadline", [])
     ]);
 
     console.log("Task/deadline: ", taskDeadline);
+    console.log("Project/deadline: ", projectDeadline);
 
     // build calendarItems map: { 'YYYY-MM-DD': [items...] }
     const calendarItems = {};
@@ -210,24 +212,211 @@ document.addEventListener("DOMContentLoaded", async () => {
         pushItem(key, { ...t, type: "task", _parsedDate: d });
     });
 
-    //(projectDeadline || []).forEach(p => {
-    //    const d = parseDateLocal(p.endDay);
-    //    if (!d) return;
-    //    const key = getKeyLocalFromDateObj(d);
-    //    pushItem(key, { ...p, type: "project", _parsedDate: d });
-    //});
+    (projectDeadline || []).forEach(p => {
+        const d = parseDateLocal(p.endDay);
+        if (!d) return;
+        const key = getKeyLocalFromDateObj(d);
+        pushItem(key, { ...p, type: "project", _parsedDate: d });
+    });
 
     // current shown month (local)
     let currentDate = new Date();
 
+    // ======================================================
+    // MỚI: CÁC HÀM ĐIỀN THÁNG/NĂM
+    // ======================================================
+
+    // Hàm này chỉ chạy 1 lần
+    function populateMonthSelector() {
+        const months = [
+            "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+            "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+        ];
+        selectMonth.innerHTML = months.map((month, index) => {
+            return `<option value="${index}">${month}</option>`;
+        }).join("");
+    }
+
+    // Hàm này sẽ chạy mỗi khi render,
+    // để đảm bảo năm hiện tại luôn ở khoảng giữa
+    function populateYearSelector(centerYear) {
+        const years = [];
+        // Lấy 5 năm trước và 5 năm sau
+        for (let i = centerYear - 5; i <= centerYear + 5; i++) {
+            years.push(`<option value="${i}">${i}</option>`);
+        }
+        selectYear.innerHTML = years.join("");
+    }
+
+    // ======================================================
+    // MỚI: HÀM HELPER ĐỂ HIỂN THỊ TEXT THÔNG BÁO
+    // ======================================================
+    function getDiffText(diffDays) {
+        // SỬA: Bỏ logic quá hạn
+        if (diffDays === 0) return "Hôm nay";
+        if (diffDays === 1) return "Ngày mai";
+        if (diffDays === 2) return "Ngày mốt"; // SỬA: Thêm ngày mốt
+        if (diffDays < 0) return `Đã qua ${-diffDays} ngày`;
+        return `${diffDays} ngày tới`; // Trường hợp dự phòng
+    }
+
+    // ======================================================
+    // FUNCTION: HÀM RENDER KHUNG THÔNG BÁO
+    // ======================================================
+    function renderSummary(todayMidnight, filterDate = null) {
+        const alerts = [];
+        let noDataMessage = "";
+
+        if (filterDate) {
+            // --- CHẾ ĐỘ 1: LỌC THEO NGÀY (khi click) ---
+            const key = getKeyLocalFromDateObj(filterDate);
+            const itemsForDay = calendarItems[key] || [];
+
+            // Gán 'diffDays' cho các item (để sorting và tô màu)
+            itemsForDay.forEach(item => {
+                const endLocal = item._parsedDate;
+                if (!endLocal) return;
+                const endMidnight = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate());
+                // Tính diffDays so với 'hôm nay' (todayMidnight)
+                const diffDays = Math.ceil((endMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+                alerts.push({ ...item, diffDays });
+            });
+
+            // Cập nhật thông báo "không có dữ liệu"
+            const dateString = filterDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            noDataMessage = `
+                <div class="w-full flex flex-col items-center justify-center py-8">
+                    <i data-lucide="message-circle-warning" class="w-5 h-5"></i>
+                    <div class="text-sm text-center text-gray-500 py-2">
+                        Không có deadline ngày ${dateString}
+                    </div>
+                </div>
+            `;
+
+        } else {
+            // --- CHẾ ĐỘ 2: MẶC ĐỊNH (Hôm nay, Mai, Mốt) ---
+            const allItems = Object.values(calendarItems).flat();
+            allItems.forEach(item => {
+                const endLocal = item._parsedDate;
+                if (!endLocal) return;
+                const endMidnight = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate());
+                const diffDays = Math.ceil((endMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+
+                // Chỉ lấy item cho hôm nay (0), mai (1), và mốt (2)
+                if (diffDays >= 0 && diffDays <= 2) {
+                    alerts.push({ ...item, diffDays });
+                }
+            });
+
+            noDataMessage = `
+                <div class="w-full flex flex-col items-center justify-center gap-1 py-8">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-gray-500"></i>
+                    <div class="text-sm text-center text-gray-500 mt-2">
+                        Không có việc nào sắp/quá hạn
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. Sắp xếp: (SỬA ĐỔI LOGIC SẮP XẾP)
+        //    - Ưu tiên 1: Đẩy statusName = 3 (Hoàn thành) xuống dưới cùng.
+        //    - Ưu tiên 2: Trong mỗi nhóm (chưa hoàn thành / đã hoàn thành), sắp xếp theo diffDays.
+        alerts.sort((a, b) => {
+            const a_is_complete = (a.statusName == 3);
+            const b_is_complete = (b.statusName == 3);
+
+            if (a_is_complete && !b_is_complete) return 1;
+            if (!a_is_complete && b_is_complete) return -1;
+
+            // Nếu cả hai cùng trạng thái (cùng hoàn thành hoặc cùng chưa),
+            // thì sắp xếp theo ngày (gần nhất lên trước)
+            return a.diffDays - b.diffDays;
+        });
+
+        // 4. Render HTML
+        if (alerts.length === 0) {
+            //summaryContainer.innerHTML = `<div class="text-base text-center text-gray-500 py-8">Không có việc nào sắp/quá hạn.</div>`;
+            summaryContainer.innerHTML = noDataMessage;
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            return;
+        }
+
+        summaryContainer.innerHTML = alerts.map(item => {
+            const text = getDiffText(item.diffDays);
+            let colorClass = 'text-blue-400'; // Mặc định (ngày mốt)
+
+            if (item.statusName == 3) {
+                colorClass = 'text-green-400'; // Đã hoàn thành
+            }
+            else if (item.diffDays < 0) { // Thêm check quá hạn
+                colorClass = 'text-red-400';
+            }
+            else if (item.diffDays <= 1) { // Hôm nay hoặc ngày mai
+                colorClass = 'text-yellow-400';
+            }
+
+            const icon = (
+                item.type === 'task'
+                    ? item.statusName == 3
+                        ? 'check-square'
+                        : 'square'
+                    : item.type === 'project'
+                        ? item.statusName == 3
+                            ? 'folder-check'
+                            : 'folder'
+                        : 'circle-alert'
+            );
+            const name = item.type === 'task' ? (item.nameTask || "Task") : (item.projectName || "Project");
+
+            // SỬA: Thêm `fullName` (từ Assignee.FullName hoặc Manager.FullName) vào tooltip
+            const person = item.fullName || "";
+            const titleAttr = item.type === 'task'
+                ? `${name} - ${person} — ${text}`
+                : `${name} - Manager: ${person} — ${text}`;
+
+            return `
+            <div class="flex flex-col items-start justify-start p-1 rounded-md hover:bg-gray-700 transition">
+                <div class="flex items-center justify-between text-sm cursor-pointer w-full" title="${titleAttr}">
+                    <div class="flex items-center overflow-hidden min-w-0">
+                        <i data-lucide="${icon}" class="w-4 h-4 mr-2 flex-shrink-0 ${colorClass}"></i>
+                        <span class="truncate ${colorClass} text-xs">${name}</span>
+                    </div>
+                    <span class="flex-shrink-0 text-[10px] text-gray-400 ml-2 ${colorClass}">${text}</span>
+                </div>
+                <div class="flex items-center justify-between w-full">
+                    ${ item.type === 'task'
+                        ? `<span class="text-[10px] pl-6 text-gray-400 italic">${item.projectName}</span>`
+                        : ``}
+                    <span class="text-[10px] pl-6 text-gray-200 italic">${item.fullName}</span>
+                </div>
+            </div>
+        `;
+        }).join("");
+
+        // Gọi lại Lucide để render các icon vừa chèn
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    // ======================================================
+    // HÀM RENDER CALENDAR
+    // ======================================================
     function renderCalendar(date) {
         const year = date.getFullYear();
         const month = date.getMonth();
-        title.textContent = `Tháng ${month + 1} / ${year}`;
+
+        populateYearSelector(year);
+        selectMonth.value = month;
+        selectYear.value = year;
 
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const startDay = (firstDay.getDay() + 6) % 7; // make Monday first (T2)
+        const startDay = (firstDay.getDay() + 6) % 7;
 
         daysContainer.innerHTML = "";
 
@@ -240,6 +429,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         // today midnight local for diff calculation
         const today = new Date();
         const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        // --- MỚI: GỌI HÀM RENDER SUMMARY ---
+        // (Luôn render summary dựa trên 'hôm nay', bất kể đang xem tháng nào)
+        renderSummary(todayMidnight);
+        // --- KẾT THÚC PHẦN MỚI ---
 
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const day = document.createElement("div");
@@ -254,56 +448,102 @@ document.addEventListener("DOMContentLoaded", async () => {
             const keyDate = new Date(year, month, i);
             const key = getKeyLocalFromDateObj(keyDate);
 
-            const items = calendarItems[key] || [];
-            if (items.length > 0) {
+            const allItems = calendarItems[key] || [];
+            const tasks = allItems.filter(it => it.type === 'task' && it.statusName != 3);
+            const projects = allItems.filter(it => it.type === 'project' && it.statusName != 3);
+
+
+            if (projects.length > 0) {
+                day.classList.add("border-2", "box-border");
+                const item = projects[0];
+                const endLocal = item._parsedDate || parseDateLocal(item.endDay);
+                const endMidnight = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate());
+                const diffDays = Math.ceil((endMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+
+                // Tô màu cho border (giống logic tô màu của task)
+                // (API Project của bạn không có statusName, nên chỉ tô theo ngày)
+                if (item.statusName == 3) day.classList.add("border-green-500")
+                else if (diffDays < 0) day.classList.add("border-red-500");
+                else if (diffDays <= 3) day.classList.add("border-yellow-400");
+                else day.classList.add("border-blue-500");
+            }
+
+            if (tasks.length > 0) {
                 // show up to 3 dots, spaced
-                const maxDots = Math.min(items.length, 3);
+                const maxDots = Math.min(tasks.length, 1);
                 for (let j = 0; j < maxDots; j++) {
-                    const item = items[j];
+                    const item = tasks[j];
                     const dot = document.createElement("div");
-                    // small displacement so dots don't fully overlap
                     const offset = (j - (maxDots - 1) / 2) * 6; // px
                     dot.style.left = `calc(50% + ${offset}px)`;
                     dot.style.transform = "translateX(-50%)";
                     dot.className = "absolute bottom-0.7 w-1.5 h-1.5 rounded-full";
-
-                    // compute diffDays using local midnight dates
                     const endLocal = item._parsedDate || parseDateLocal(item.endDate || item.endDay);
                     const endMidnight = new Date(endLocal.getFullYear(), endLocal.getMonth(), endLocal.getDate());
                     const diffDays = Math.ceil((endMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
 
-                    if (item.statusName == 3) dot.classList.add("bg-green-500");
-                    else if (diffDays < 0) dot.classList.add("bg-red-500");
+                    //if (item.statusName == 3) dot.classList.add("bg-green-500");
+                    //else
+                    if (diffDays < 0) dot.classList.add("bg-red-500");
                     else if (diffDays <= 3) dot.classList.add("bg-yellow-400");
                     else dot.classList.add("bg-blue-500");
 
                     // small tooltip
+                    const person = item.fullName || "";
                     dot.title = item.type === "task"
-                        ? `${item.nameTask || item.Name || "Task"} — ${item.endDate?.split("T")[0] ?? ""}`
-                        : `${item.projectName || "Project"} — ${item.endDay?.split("T")[0] ?? ""}`;
+                        ? `${item.nameTask || "Task"} - ${person} — ${item.endDate?.split("T")[0] ?? ""}`
+                        : `${item.projectName || "Project"} - ${person} — ${item.endDay?.split("T")[0] ?? ""}`;
 
                     day.appendChild(dot);
                 }
 
-                if (items.length > 3) {
+                if (tasks.length > 3) {
                     const more = document.createElement("div");
-                    more.textContent = `+${items.length - 3}`;
-                    more.className = "absolute text-[10px] bottom-3 right-1 text-gray-300";
+                    more.textContent = `+${tasks.length - 1}`;
+                    more.className = "absolute text-[10px] bottom-5 right-3 text-green-400";
                     day.appendChild(more);
                 }
             }
 
             // click on day -> show list of items for that day (optional)
+            //day.addEventListener("click", (e) => {
+            //    e.stopPropagation();
+            //    const dayItems = calendarItems[key] || [];
+            //    if (dayItems.length === 0) return;
+            //    // simple detail popup (you can replace with your UI)
+            //    const list = dayItems.map(it => {
+            //        if (it.type === "task") return `Task: ${it.nameTask} — ${it.endDate?.split("T")[0] ?? ""} — ${it.fullName ?? ""}`;
+            //        return `Project: ${it.projectName} — ${it.endDay?.split("T")[0] ?? ""} - ${it.fullName ?? ""}`;
+            //    }).join("\n");
+            //    alert(list);
+            //});
+            // ======================================================
+            // SỬA: THÊM SỰ KIỆN CLICK CHO TỪNG NGÀY
+            // ======================================================
             day.addEventListener("click", (e) => {
                 e.stopPropagation();
-                const dayItems = calendarItems[key] || [];
-                if (dayItems.length === 0) return;
-                // simple detail popup (you can replace with your UI)
-                const list = dayItems.map(it => {
-                    if (it.type === "task") return `Task: ${it.nameTask} — ${it.endDate?.split("T")[0] ?? ""} — ${it.fullName ?? ""}`;
-                    return `Project: ${it.projectName} — ${it.endDay?.split("T")[0] ?? ""}`;
-                }).join("\n");
-                alert(list);
+
+                // 1. Cập nhật Summary
+                // 'todayMidnight' và 'keyDate' đều đã có sẵn trong scope này
+                renderSummary(todayMidnight, keyDate);
+
+                // 2. Cập nhật Highlight
+                // Xóa highlight cũ
+                const currentlySelected = daysContainer.querySelector('.day-selected');
+                if (currentlySelected) {
+                    currentlySelected.classList.remove('day-selected');
+                    // Chỉ xóa màu nền nếu nó KHÔNG PHẢI là 'hôm nay'
+                    if (!currentlySelected.classList.contains('bg-indigo-700')) {
+                        currentlySelected.classList.remove('bg-indigo-500', 'text-white');
+                    }
+                }
+
+                // Thêm highlight mới
+                day.classList.add('day-selected');
+                // Nếu nó không phải 'hôm nay', thì thêm màu nền highlight
+                if (!isToday) {
+                    day.classList.add('bg-indigo-500', 'text-white');
+                }
             });
 
             daysContainer.appendChild(day);
@@ -342,6 +582,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
+    // ======================================================
+    // MỚI: SỰ KIỆN CHO CÁC THẺ SELECT
+    // ======================================================
+    function handleSelectChange() {
+        const newYear = parseInt(selectYear.value, 10);
+        const newMonth = parseInt(selectMonth.value, 10);
+
+        // Set ngày về 1 để tránh lỗi (ví dụ: nhảy từ 31/1 sang tháng 2)
+        currentDate = new Date(newYear, newMonth, 1);
+        renderCalendar(currentDate);
+    }
+
+    selectMonth.addEventListener("change", handleSelectChange);
+    selectYear.addEventListener("change", handleSelectChange);
+
+    // MỚI: Điền các tháng (chỉ chạy 1 lần duy nhất)
+    populateMonthSelector();
     // initial render (hidden)
     renderCalendar(currentDate);
 });

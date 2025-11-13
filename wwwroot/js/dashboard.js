@@ -11,7 +11,7 @@ let allTasksStat = {};
 let allProjectsStat = {};
 let currentUser = {};
 let currentUserRole = '';
-let isProjectToggleAllOpen = true;
+let isProjectToggleAllOpen = false;
 const PAGE_SIZE = 5; // Định nghĩa pageSize ở một nơi
 const TASK_PAGE_SIZE = 3;
 const viewTaskNull = `
@@ -53,7 +53,7 @@ function renderTaskCard(t) {
     }
 
     return `
-        <div class="task-card border-l-[2px] ${priorityBorder} p-4 ml-[50px] rounded-bl-[10px] transition transform duration-300"
+        <div class="task-card border-l-[2px] ${priorityBorder} p-4 ml-4 md:ml-[50px] rounded-bl-[10px] transition transform duration-300"
             data-project-id="${t.projectId}"
             data-priority="${t.priority.toLowerCase()}">
             <div class="flex justify-between items-center">
@@ -83,7 +83,7 @@ function renderTaskCard(t) {
                             <i data-lucide='paperclip' class='w-4 h-4'></i>
                         </button>
                         <div class="absolute -top-0 z-100 right-0 -translate-x-1/3 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-                            <div class="flex justify-end gap-[10px] bg-gray-900">
+                            <div class="flex justify-end gap-[35px] bg-gray-900">
                                 <div class="relative group">
                                     <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
                                             onclick="downloadFile('${t.fileNote}')"
@@ -109,26 +109,26 @@ function renderTaskCard(t) {
                     </div>
                 </div>
             </div>
-            <div class="flex flex-row justify-between items-center w-full">
-                <div class="flex justify-start gap-3 items-center text-sm text-gray-400">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center w-full gap-2 md:gap-0">
+                <div class="flex flex-col md:flex-row md:justify-start gap-2 md:gap-3 items-start md:items-center text-sm text-gray-400">
                     <div class="flex flex-wrap gap-2">
                         ${renderLabel(t.statusName, t.overdue)}
                     </div>
-                    <span class="text-gray-400">•</span>
+                    <span class="text-gray-400 hidden md:inline">•</span>
                     <div class="relative group cursor-pointer text-xs">
                         <div class="flex gap-1 items-center">
                             <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
                             <span>${t.nameAssignee ?? "Chưa có"}</span>
                         </div>
                     </div>
-                    <span class="text-gray-400">•</span>
+                    <span class="text-gray-400 hidden md:inline">•</span>
                     <div class="relative group cursor-pointer text-xs">
                         <div class="flex gap-1 items-center">
                             <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
                             <span>${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
                         </div>
                     </div>
-                    <span class="text-gray-400">•</span>
+                    <span class="text-gray-400 hidden md:inline">•</span>
                     <div class="relative group cursor-pointer text-xs">
                         <div class="flex gap-1 items-center">
                             <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
@@ -172,7 +172,7 @@ async function loadTasksForProject(projectId, page) {
     const container = document.querySelector(`.task-scroll-container[data-project-id="${projectId}"]`);
 
     if (!container) return; // Không tìm thấy container
-    if (loader) loader.style.display = 'block';
+    if (loader) loader.style.display = 'flex';
 
     // Nếu tải trang 1, xóa task cũ đi
     if (page === 1) {
@@ -362,6 +362,7 @@ function renderDashboard(projects) {
             </div>
 
             <div class="flex items-center gap-3">
+                <!--
                 <div class="relative group cursor-pointer">
                     <div
                         class="flex items-center gap-2 bg-gray-800/90 border border-red-500 rounded-lg px-3 py-2 hover:bg-red-600/10 transition-all duration-200">
@@ -379,6 +380,7 @@ function renderDashboard(projects) {
                         Lọc nhiệm vụ có độ ưu tiên cao
                     </span>
                 </div>
+                -->
 
                 <button id="toggleAllBtn"
                     class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition-all">
@@ -394,14 +396,6 @@ function renderDashboard(projects) {
             <span>Hiện chưa có dự án nào.</span>
         </div>
     `;
-    //const viewTaskNull = `
-    //  <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
-    //    <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
-    //      <i data-lucide="folder-x" class="w-5 h-5 text-indigo-500"></i>
-    //    </div>
-    //    <span class="text-xs text-gray-400">Không có nhiệm vụ nào!</span>
-    //  </div>
-    //`;
 
     let viewProject = ``;
     let projectCover = ``;
@@ -427,8 +421,8 @@ function renderDashboard(projects) {
                                 <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                             </div>
                         </div>
-                        <div class="mt-5 flex align-items-center gap-3">
-                            <div class="flex gap-1 items-center  bg-gray-700/50 px-4 py-1.5 rounded-full">
+                        <div class="mt-5 flex flex-col md:flex-row md:items-center gap-3 items-start md:items-center">
+                            <div class="flex gap-1 items-center  bg-gray-700/50 px-4 py-1.5 rounded-full">
                                 <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
                                 <span class="text-xs">${p.manager ?? "Unknown"}</span>
                             </div>
@@ -452,129 +446,6 @@ function renderDashboard(projects) {
             `;
             console.log();
             
-            //let taskListView = ``;
-            //const projectTasks = tasks.filter(t => t.projectId === p.idProject);
-            //if (projectTasks.length > 0) {
-            //    projectTasks.forEach(t => {
-            //        let priorityBorder = "";
-            //        switch (t.priority.toLowerCase()) {
-            //            case "high":
-            //                priorityBorder = "border-red-900";
-            //                break;
-            //            default:
-            //                priorityBorder = "border-gray-700";
-            //                break;
-            //        }
-            //        taskListView += `
-            //            <div class="task-card border-l-[2px] ${priorityBorder} p-4 ml-[50px] rounded-bl-[10px] transition transform duration-300"
-            //                data-project-id="${p.idProject}"
-            //                data-priority="${t.priority.toLowerCase()}">
-            //                <div class="flex justify-between items-center">
-            //                    <h2 class="font-semibold text-white text-sm">
-            //                        ${t.nameTask}
-            //                    </h2>
-            //                    <div class="relative group">
-            //                        <button id="openUpdateTaskBtn#${p.projectId}#${t.idTask}"
-            //                            onclick="this.blur()"
-            //                            class="p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
-            //                            data-task='${JSON.stringify(t)}'>
-            //                            <i data-lucide="bolt" class="w-4 h-4 text-gray-300"></i>
-            //                        </button>
-            //                        <span class="absolute z-20 left-1/2 -top-[-1px] -translate-x-[8rem] bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                            Xem chi tiết
-            //                        </span>
-            //                    </div>
-            //                </div>
-            //                <div class="flex items-center justify-between mb-6 mt-3 bg-gray-700/40 px-2 py-1 rounded-lg border border-gray-600">
-            //                    <div class="flex items-start gap-2 max-w-[70%]">
-            //                        <i data-lucide="info" class="w-5 h-5 text-indigo-400"></i>
-            //                        <p class="text-indigo-300 text-xs leading-relaxed">
-            //                            <span class="font-semibold text-white">Mô tả công việc: </span>
-            //                            <span>
-            //                                ${t.note}
-            //                            </span>
-            //                        </p>
-            //                    </div>
-            //                    <div class="flex items-center gap-2 relative">
-            //                        <div class="relative group">
-            //                            <button class="flex items-center gap-2 text-sm text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-2 py-2 transition-all">
-            //                                <i data-lucide='paperclip' class='w-4 h-4'></i>
-            //                            </button>
-            //                            <div class="absolute -top-0 z-100 right-0 -translate-x-1/3 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                <div class="flex justify-end gap-[10px] bg-gray-900">
-            //                                    <div class="relative group">
-            //                                        <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-            //                                                onclick="downloadFile('${t.fileNote}')"
-            //                                                ${!t.fileNote || t.fileNote.trim() === "" ? "disabled" : ""}>
-            //                                            <i data-lucide='download' class='w-3 h-3'></i>
-            //                                        </button>
-            //                                        <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                            Tải xuống
-            //                                        </span>
-            //                                    </div>
-            //                                    <div class="relative group">
-            //                                        <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-            //                                                onclick="viewFile('${t.fileNote}')"
-            //                                                ${!t.fileNote || t.fileNote.trim() === "" ? "disabled" : ""}>
-            //                                            <i data-lucide='eye' class='w-3 h-3'></i>
-            //                                        </button>
-            //                                        <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                            Xem
-            //                                        </span>
-            //                                    </div>
-            //                                </div>
-            //                            </div>
-            //                        </div>
-            //                    </div>
-            //                </div>
-            //                <div class="flex flex-row justify-between items-center w-full">
-            //                    <div class="flex justify-start gap-3 items-center text-sm text-gray-400">
-            //                        <div class="flex flex-wrap gap-2">
-            //                            ${renderLabel(t.statusName, t.overdue)}
-            //                        </div>
-            //                        <span class="text-gray-400">•</span>
-            //                        <div class="relative group cursor-pointer text-xs">
-            //                            <div class="flex gap-1 items-center">
-            //                                <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
-            //                                <span>${t.nameAssignee ?? "Chưa có"}</span>
-            //                            </div>
-            //                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                Người thực hiện
-            //                            </span>
-            //                        </div>
-            //                        <span class="text-gray-400">•</span>
-            //                        <div class="relative group cursor-pointer text-xs">
-            //                            <div class="flex gap-1 items-center">
-            //                                <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
-            //                                <span class="">
-            //                                    ${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-            //                                </span>
-            //                            </div>
-            //                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                Thời gian bắt đầu
-            //                            </span>
-            //                        </div>
-            //                        <span class="text-gray-400">•</span>
-            //                        <div class="relative group cursor-pointer text-xs">
-            //                            <div class="flex gap-1 items-center">
-            //                                <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
-            //                                <span>
-            //                                    ${t.endDate ? new Date(t.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-            //                                </span>
-            //                            </div>
-            //                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-            //                                Thời gian hết hạn
-            //                            </span>
-            //                        </div>
-            //                    </div>
-            //                </div>
-            //            </div>
-            //        `;
-            //    });
-            //}
-            //else {
-            //    taskListView = viewTaskNull;
-            //}
             let taskListView = '';
             if (p.totalTasks == 0) {
                 // Nếu project không có task, hiển thị "viewTaskNull"
@@ -582,16 +453,17 @@ function renderDashboard(projects) {
             }
 
             viewProject += `
-                <div class="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+                <div class="project-container bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
                     ${projectCover}
-                    <div id="project#${p.idProject}" class="overflow-hidden transition-all duration-500 ease-in-out" >
+                    <div id="project#${p.idProject}" class="overflow-hidden transition-all duration-500 ease-in-out">
                         <div class="p-4 border-t border-gray-700 bg-gray-900/60">
-                            <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10 /*border border-indigo-500/30*/">
+                            <div class="mb-4 p-3 rounded-lg bg-gradient-to-r from-indigo-600/20 to-purple-600/10">
                                 <div class="flex items-center justify-between mb-1">
                                     <h4 class="text-white text-sm font-semibold flex items-center gap-2">
                                         <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
                                         Mô tả dự án
                                     </h4>
+                                    <!--
                                     <div class="flex items-center gap-2 relative">
                                         ${p.fileNote && p.fileNote.trim() !== ""
                                             ? `
@@ -607,14 +479,14 @@ function renderDashboard(projects) {
                                                     Xem
                                                 </button>
                                             `
-                                            : ""
-                                        }
-                                        
+                                            : ""}
+                            
                                         <button id="addFileBtn#${p.idProject}" disabled data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
                                             <i data-lucide='plus' class='w-3 h-3'></i>
                                             Thêm file
                                         </button>
                                     </div>
+                                    -->
                                 </div>
 
                                 <p class="text-gray-300 text-sm leading-relaxed">
@@ -626,8 +498,18 @@ function renderDashboard(projects) {
                                 data-project-id="${p.idProject}">
                                 ${taskListView}
                             </div>
-                            <div id="loader-pj-${p.idProject}" class="task-loader" style="display: none; text-align: center; padding: 10px;">
-                                <span class="text-xs text-gray-400">Đang tải thêm...</span>
+
+                            <!-- Loader -->
+                            <div id="loader-pj-${p.idProject}" 
+                                 class="task-loader w-full flex justify-center items-center gap-2 py-3 text-gray-400 text-xs transition-all duration-300"
+                                 style="display: none;">
+                                <svg class="animate-spin w-4 h-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                <span>Đang tải thêm...</span>
                             </div>
                         </div>
                     </div>
@@ -646,13 +528,13 @@ function renderDashboard(projects) {
 
     const leftColumn = `
         <div class="lg:col-span-2 bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-4">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4 md:gap-0">
                 <h2 class="text-md font-semibold text-white">Dự án & Nhiệm vụ</h2>
-                <div class="flex gap-3">
+                <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                     <div class="relative flex items-center">
                         <input type="text" id="searchInput"
                                 placeholder="Tìm kiếm..."
-                                class="bg-gray-800 text-white text-xs pl-9 pr-3 py-2 rounded-lg border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition w-60" />
+                                class="bg-gray-800 text-white text-xs pl-9 pr-3 py-2 rounded-lg border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition w-full md:w-60" />
                         <i data-lucide="search"
                             class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                     </div>
@@ -904,15 +786,21 @@ function attachAllEventListeners(projects, role) {
     if (searchInput) {
         searchInput.addEventListener("input", function () {
             const keyword = this.value.toLowerCase();
-            document.querySelectorAll(".task-card").forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = text.includes(keyword) ? "block" : "none";
+
+            document.querySelectorAll(".project-container").forEach(projectBlock => {
+                //const text = card.textContent.toLowerCase();
+                //card.style.display = text.includes(keyword) ? "block" : "none";
+                // 1. Lấy toàn bộ text của cả khối project (bao gồm title, tasks, v.v.)
+                const text = projectBlock.textContent.toLowerCase();
+
+                // 2. Ẩn/hiện CẢ KHỐI project đó
+                projectBlock.style.display = text.includes(keyword) ? "block" : "none";
             });
         });
     }
     // CÁC HÀM LOGIC GẮN EVENT KHÁC
     toggleProject(projects); // Gắn lại sự kiện toggle
-    filterHighPrior(); // Gắn lại sự kiện filter
+    //filterHighPrior(); // Gắn lại sự kiện filter
 
     initInfiniteScroll();
 }
