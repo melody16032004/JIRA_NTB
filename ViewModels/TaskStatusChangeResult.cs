@@ -10,6 +10,8 @@
         public string PreviousStatusName { get; set; }
         public string NewStatusName { get; set; }
         public DateTime? PreviousCompletedDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
+        public bool IsCompleted { get; set; } = false;
     }
     // Request Models
     public class UpdateStatusRequest
