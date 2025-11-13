@@ -1147,7 +1147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Gán vào state toàn cục
     currentUserRole = container.dataset.role;
-    console.log("User Role:", currentUserRole);
+    //console.log("User Role:", currentUserRole);
 
     // --- Bước 1: Chỉ fetch thông tin user ---
     const me = await safeFetchJson("/api/user/me", null);
@@ -1161,15 +1161,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Nếu user OK, log và tiếp tục
-    console.log("User:", me);
+    //console.log("User:", me);
 
     // --- Bước 3: Fetch các dữ liệu còn lại (vì user đã hợp lệ) ---
-    let [initialProjects, tasksStat, projectsStat, server, client] = await Promise.all([
+    let [initialProjects, tasksStat, projectsStat] = await Promise.all([
         safeFetchJson(`/api/projects?pageIndex=1&pageSize=${PAGE_SIZE}`, { items: [], pageIndex: 1, totalPages: 1 }), // Trang 1
         safeFetchJson("/api/tasks/statistics", {}),
         safeFetchJson("/api/projects/statistics", {}),
-        safeFetchJson("/api/server/address", {}),
-        safeFetchJson("/api/client/address", {}),
     ]);
 
     // --- Lưu nốt vào state toàn cục ---
@@ -1180,13 +1178,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("Projects (Trang 1): ", initialProjects);
     console.log("Stats Task: ", tasksStat);
     console.log("Stats Project: ", projectsStat);
-    console.log("Server: ", server);
-    console.log("Client: ", client);
 
     // --- Render giao diện LẦN ĐẦU TIÊN ---
     renderDashboard(initialProjects);
 
-    console.log("✅ Dữ liệu đã tải và render xong. Ẩn loader.");
+    //console.log("✅ Dữ liệu đã tải và render xong. Ẩn loader.");
 
     if (fullPageLoader) {
         setTimeout(() => {

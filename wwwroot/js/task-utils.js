@@ -55,7 +55,7 @@ const TaskUtils = {
 
     showSuccessWithUndo(message, undoData) {
         const toast = document.createElement('div');
-        toast.className = 'fixed top-5 right-5 bg-gray-800 text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-slide-up';
+        toast.className = 'fixed top-16 right-5 bg-gray-800 text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-slide-up';
         toast.style.transition = 'all 0.3s ease';
         toast.innerHTML = `
             <i data-lucide="check-circle" class="w-5 h-5"></i>
@@ -74,13 +74,13 @@ const TaskUtils = {
         const progressBar = document.createElement('div');
         progressBar.className = 'absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-b-lg';
         progressBar.style.width = '100%';
-        progressBar.style.transition = 'width 5s linear';
+        progressBar.style.transition = 'width 15s linear';
         toast.appendChild(progressBar);
         setTimeout(() => progressBar.style.width = '0%', 10);
 
         const hideTimeout = setTimeout(() => {
             this.hideToast(toast);
-        }, 5000);
+        }, 15000);
 
         toast.querySelector('.close-toast').addEventListener('click', () => {
             clearTimeout(hideTimeout);
@@ -105,7 +105,7 @@ const TaskUtils = {
                 body: JSON.stringify({
                     taskId: undoData.taskId,
                     previousStatusId: undoData.previousStatusId,
-                    previousCompletedDate: undoData.previousCompletedDate 
+                    previousCompletedDate: undoData.previousCompletedDate
                 })
             });
             const result = await response.json();

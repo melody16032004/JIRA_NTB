@@ -7,29 +7,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const meRes = await fetch("/api/user/me");
 
-            // 1. Chỉ thử .json() nếu request thành công (status 200-299)
             if (meRes.ok) {
                 me = await meRes.json();
             }
-            // 2. Nếu meRes không .ok (ví dụ 404, 500), 'me' sẽ vẫn là 'null'
 
         } catch (e) {
-            // 3. Lỗi này xảy ra nếu có lỗi mạng (Failed to fetch)
-            // 'me' sẽ vẫn là 'null'
             console.error("Fetch failed:", e);
         }
     }
-
-    // Bây giờ, 'me' sẽ là 'null' nếu:
-    // 1. Fetch lỗi mạng (trong catch)
-    // 2. Server trả về 401, 404, 500 (vì meRes.ok là false)
-    // 3. Server trả về 200 OK với body là 'null'
 
     if (!me || me == null) {
         window.location.href = "/Error/403";
     }
 
-    console.log(me);
+    //console.log(me);
 
     const meCur = document.getElementById("me");
     meCur.innerHTML += `${me.fullName}`;
@@ -215,8 +206,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         safeFetchJson("/api/projects/deadline", [])
     ]);
 
-    console.log("Task/deadline: ", taskDeadline);
-    console.log("Project/deadline: ", projectDeadline);
+    //console.log("Task/deadline: ", taskDeadline);
+    //console.log("Project/deadline: ", projectDeadline);
 
     // build calendarItems map: { 'YYYY-MM-DD': [items...] }
     const calendarItems = {};
