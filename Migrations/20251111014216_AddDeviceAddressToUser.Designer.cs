@@ -4,6 +4,7 @@ using JIRA_NTB.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JIRA_NTB.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251111014216_AddDeviceAddressToUser")]
+    partial class AddDeviceAddressToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,71 +68,6 @@ namespace JIRA_NTB.Migrations
                     b.HasKey("IdDepartment");
 
                     b.ToTable("Departments");
-                });
-
-            modelBuilder.Entity("JIRA_NTB.Models.LogDevice", b =>
-                {
-                    b.Property<string>("IdLog")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AppName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("DeviceId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("IPV4")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime?>("TimeEnd")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("TimeStart")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("IdLog");
-
-                    b.ToTable("LogDevices", (string)null);
-                });
-
-            modelBuilder.Entity("JIRA_NTB.Models.LogTaskModel", b =>
-                {
-                    b.Property<string>("LogId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("OldUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("Progress")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ReassignedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReassignedById")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("TaskId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("LogId");
-
-                    b.HasIndex("OldUserId");
-
-                    b.HasIndex("ReassignedById");
-
-                    b.HasIndex("TaskId");
-
-                    b.ToTable("LogTasks");
                 });
 
             modelBuilder.Entity("JIRA_NTB.Models.ProjectManagerModel", b =>
@@ -452,33 +390,6 @@ namespace JIRA_NTB.Migrations
                     b.ToTable("UserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("JIRA_NTB.Models.LogTaskModel", b =>
-                {
-                    b.HasOne("JIRA_NTB.Models.UserModel", "OldUser")
-                        .WithMany()
-                        .HasForeignKey("OldUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("JIRA_NTB.Models.UserModel", "ReassignedBy")
-                        .WithMany()
-                        .HasForeignKey("ReassignedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("JIRA_NTB.Models.TaskItemModel", "Task")
-                        .WithMany("Logs")
-                        .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("OldUser");
-
-                    b.Navigation("ReassignedBy");
-
-                    b.Navigation("Task");
-                });
-
             modelBuilder.Entity("JIRA_NTB.Models.ProjectManagerModel", b =>
                 {
                     b.HasOne("JIRA_NTB.Models.ProjectModel", "Project")
@@ -620,11 +531,6 @@ namespace JIRA_NTB.Migrations
                     b.Navigation("Projects");
 
                     b.Navigation("Tasks");
-                });
-
-            modelBuilder.Entity("JIRA_NTB.Models.TaskItemModel", b =>
-                {
-                    b.Navigation("Logs");
                 });
 
             modelBuilder.Entity("JIRA_NTB.Models.UserModel", b =>

@@ -104,7 +104,8 @@ const TaskUtils = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     taskId: undoData.taskId,
-                    previousStatusId: undoData.previousStatusId
+                    previousStatusId: undoData.previousStatusId,
+                    previousCompletedDate: undoData.previousCompletedDate 
                 })
             });
             const result = await response.json();
@@ -193,14 +194,40 @@ const TaskUtils = {
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }, 10);
 
-        // ❌ KHÔNG cập nhật task count ở đây - để handleUndo xử lý
+        this.attachTaskCardEventListeners(restored);
 
         // Nếu có drag-drop instance, refresh listeners
         if (window.taskDragDrop) {
             window.taskDragDrop.refresh();
         }
     },
+    // ✅ Hàm mới: Attach event listeners cho một task card cụ thể
+    attachTaskCardEventListeners(taskCard) {
+        if (!taskCard) return;
 
+        // Xử lý nút menu 3 chấm
+        const menuBtn = taskCard.querySelector('.task-menu-btn');
+        if (menuBtn) {
+            // Xóa event listener cũ (nếu có)
+            const newBtn = menuBtn.cloneNode(true);
+            menuBtn.parentNode.replaceChild(newBtn, menuBtn);
+
+            // Thêm event listener mới
+            newBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const menu = this.nextElementSibling;
+
+                // Đóng tất cả menu khác
+                document.querySelectorAll('.task-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('hidden');
+                });
+
+                // Toggle menu hiện tại
+                menu.classList.toggle('hidden');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+        }
+    },
     showSimpleToast(message, type = 'success') {
         const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
         const icon = type === 'success' ? 'check-circle' : 'alert-circle';

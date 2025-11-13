@@ -108,7 +108,7 @@ namespace JIRA_NTB.Repository
             foreach (var t in tasks)
             {
                 bool shouldBeOverdue =
-                    t.EndDate.Value < DateTime.Now &&
+                    t.EndDate.Value.Date < DateTime.Now.Date &&
                     t.Status?.StatusName != TaskStatusModel.Done;
                 if (t.Overdue != shouldBeOverdue)
                 {

@@ -88,7 +88,7 @@
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-                <form asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1 overflow-hidden">
+                <form id="createProjectForm" asp-action="Create" asp-controller="Project" method="post" class="flex flex-col flex-1 overflow-hidden">
                     <div class="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                         <div>
                             <label asp-for="NewProject.ProjectName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tên dự án</label>
@@ -150,7 +150,6 @@
             </div>
         </div>
     </template>
-
     <template x-teleport="body">
         @await Html.PartialAsync("~/Views/Project/Partial/_EditProjectModal.cshtml", Model)
     </template>
@@ -159,6 +158,45 @@
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+             // === 4. KIỂM TRA DỮ LIỆU TRƯỚC KHI TẠO ===
+        $(document).on('submit', '#createProjectForm', function (e) {
+            const projectName = $.trim($('#NewProject_ProjectName').val());
+            const startDate = $('#NewProject_StartDay').val();
+            const endDate = $('#NewProject_EndDay').val();
+            const department = $('#departmentSelect').val();
+            const leader = $('#leaderSelect').val();
+            const status = $('#NewProject_StatusId').val();
+
+            let errors = [];
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // bỏ phần giờ để so sánh đúng
+
+            if (!projectName) errors.push("⚠️ Vui lòng nhập tên dự án.");
+            if (!department) errors.push("⚠️ Vui lòng chọn phòng ban.");
+            if (!leader) errors.push("⚠️ Vui lòng chọn người quản lý.");
+            if (!status) errors.push("⚠️ Vui lòng chọn trạng thái.");
+
+            if (startDate) {
+                const start = new Date(startDate);
+                if (start < today) {
+                    errors.push("⚠️ Ngày bắt đầu phải lớn hơn hoặc bằng ngày hiện tại.");
+                }
+            }
+
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                errors.push("⚠️ Ngày kết thúc phải sau ngày bắt đầu.");
+            }
+
+            if (errors.length > 0) {
+                e.preventDefault(); // chặn submit
+                alert(errors.join("\n"));
+                return false;
+            }
+        });
+
+    </script>
     <script>
         lucide.createIcons();
 
@@ -331,4 +369,5 @@
             });
         }
     </script>
+
 }

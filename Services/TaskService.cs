@@ -60,7 +60,7 @@ namespace JIRA_NTB.Services
         public async Task<TaskStatusChangeResult> UpdateTaskStatusAsync(string taskId, string newStatusId)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
-            
+
             if (task == null)
             {
                 return new TaskStatusChangeResult
@@ -69,45 +69,72 @@ namespace JIRA_NTB.Services
                     Message = "Task không tồn tại"
                 };
             }
-            // Check task có trễ hạn không
+
             bool isOverdue = task.Overdue;
-            // Lấy thông tin status cũ và mới
+
             var previousStatusId = task.StatusId;
             var previousStatus = task.Status;
-            var newStatus = await _statusRepository.GetByIdAsync(newStatusId);
+            DateTime? previousCompletedDate = null;
+            Status newStatus = null;
 
-            if (newStatus == null)
+            if (newStatusId != null)
             {
-                return new TaskStatusChangeResult
+                newStatus = await _statusRepository.GetByIdAsync(newStatusId);
+
+                if (newStatus == null)
                 {
-                    Success = false,
-                    Message = "Status mới không tồn tại"
-                };
-            }
+                    return new TaskStatusChangeResult
+                    {
+                        Success = false,
+                        Message = "Status mới không tồn tại"
+                    };
+                }
 
-            // Validate transition rules
-            var validationResult = ValidateStatusTransition(task.Status?.StatusName, newStatus.StatusName, isOverdue);
-            if (!validationResult.isValid)
-            {
-                return new TaskStatusChangeResult
+                // Update FK
+                task.StatusId = newStatusId;
+
+                // Set CompletedDate correctly
+                if (newStatus.StatusName == TaskStatusModel.Done)
                 {
-                    Success = false,
-                    Message = validationResult.message
-                };
-            }
-
-            // Update status - CHỈ CẬP NHẬT StatusId
-            task.StatusId = newStatusId;
-
-            // Nếu chuyển sang Done, set CompletedDate
-            if (newStatus.StatusName == TaskStatusModel.Done)
-            {
-                task.CompletedDate = DateTime.Now;
+                    task.CompletedDate = DateTime.Now;
+                }
+                else
+                {
+                    if (previousStatus?.StatusName == TaskStatusModel.Done)
+                    {
+                        previousCompletedDate = task.CompletedDate;
+                        task.CompletedDate = null;
+                        
+                    }
+                }
             }
             else
             {
-                task.CompletedDate = null;
+                var deleted = await _statusRepository.GetByStatusNameAsync(TaskStatusModel.Deleted);
+                if (deleted == null)
+                {
+                    return new TaskStatusChangeResult
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy trạng thái Deleted"
+                    };
+                }
+
+                // Gán FK đúng
+                task.StatusId = deleted.StatusId;
+                newStatus = deleted;
             }
+
+            // Nếu muốn validate, để đây
+            //var validation = ValidateStatusTransition(previousStatus?.StatusName, newStatus.StatusName, isOverdue);
+            //if (!validation.isValid)
+            //{
+            //    return new TaskStatusChangeResult
+            //    {
+            //        Success = false,
+            //        Message = validation.message
+            //    };
+            //}
 
             await _taskRepository.UpdateAsync(task);
 
@@ -117,13 +144,16 @@ namespace JIRA_NTB.Services
                 Message = "Cập nhật trạng thái thành công",
                 TaskId = taskId,
                 PreviousStatusId = previousStatusId,
-                NewStatusId = newStatusId,
+                NewStatusId = task.StatusId,
                 PreviousStatusName = previousStatus?.StatusName.ToString(),
-                NewStatusName = newStatus.StatusName.ToString()
+                NewStatusName = newStatus.StatusName.ToString(),
+                PreviousCompletedDate = previousCompletedDate,  
             };
         }
 
-        public async Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId, string previousStatusId)
+        public async Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId,
+                                                             string previousStatusId,
+                                                             DateTime? previousCompletedDate)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
 
@@ -151,7 +181,7 @@ namespace JIRA_NTB.Services
 
             // Restore previous status - CHỈ CẬP NHẬT StatusId
             task.StatusId = previousStatusId;
-            task.CompletedDate = null; // Clear completed date when undo
+            task.CompletedDate = previousCompletedDate; // Clear completed date when undo
 
             await _taskRepository.UpdateAsync(task);
 

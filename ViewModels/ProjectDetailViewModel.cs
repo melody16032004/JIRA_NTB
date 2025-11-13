@@ -3,6 +3,18 @@ using System.Collections.Generic;
 
 namespace JIRA_NTB.ViewModels
 {
+    // Dùng cho biểu đồ cột chồng (Stacked Bar Chart)
+    public class StackedBarChartData
+    {
+        public List<string> Categories { get; set; } = new List<string>();
+        public List<StackedBarSeries> Series { get; set; } = new List<StackedBarSeries>();
+    }
+
+    public class StackedBarSeries
+    {
+        public string Name { get; set; }
+        public List<int> Data { get; set; } = new List<int>();
+    }
     public class ProjectDetailViewModel
     {
         public ProjectModel Project { get; set; }
@@ -16,7 +28,8 @@ namespace JIRA_NTB.ViewModels
 
         // Biểu đồ thời gian từng Task
         public List<GanttTaskData> TaskTimelineData { get; set; }
-
+        public StackedBarChartData UserTaskStats { get; set; }
+        public List<UserTaskStatViewModel> UserStats { get; set; }
         public ProjectDetailViewModel()
         {
             Tasks = new List<TaskItemModel>();
