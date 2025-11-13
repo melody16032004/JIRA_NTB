@@ -254,11 +254,12 @@
 <script>
     // Reinitialize Lucide icons after page load
     document.addEventListener('DOMContentLoaded', async function() {
+        // Gọi API
         const [serverRes, clientRes] = await Promise.all([
             fetch("/api/server/address"),
             fetch("/api/client/address"),
         ]);
-
+        // Lấy dữ liệu JSON
         const [server, client] = await Promise.all([
             serverRes.json(),
             clientRes.json()
@@ -266,13 +267,14 @@
         console.log("client: ", client);
 
         lucide.createIcons();
-
         // Thêm event listener cho password input để validate realtime
         const passwordInput = document.getElementById('passwordInput');
         if (passwordInput) {
             passwordInput.addEventListener('input', validatePassword);
             passwordInput.addEventListener('keyup', validatePassword);
         }
+
+        // Gán MAC vào input ẩn
         const macInput = document.getElementById('deviceAddressInput');
         if(client){
             macInput.value = client.mac;
