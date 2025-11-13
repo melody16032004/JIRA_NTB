@@ -263,6 +263,7 @@
             serverRes.json(),
             clientRes.json()
         ]);
+        console.log("client: ", client);
 
         lucide.createIcons();
 
@@ -272,30 +273,13 @@
             passwordInput.addEventListener('input', validatePassword);
             passwordInput.addEventListener('keyup', validatePassword);
         }
-
-        try {
-            // 1. Gọi API
-            const response = await fetch('/api/client/address');
-            if (response.ok) {
-                const data = await response.json(); // Nhận về { ip, mac, accessTime }
-
-                // 2. Tìm input ẩn và gán giá trị 'mac' vào
-                const macInput = document.getElementById('deviceAddressInput');
-                if(macInput) {
-                    macInput.value = data.mac;
-                }
-            } else {
-                // Nếu API lỗi (404, 500)
-                console.error('API /api/client/address thất bại:', response.status);
-                const macInput = document.getElementById('deviceAddressInput');
-                if(macInput) macInput.value = 'API Error';
-            }
-
-        } catch (error) {
-            // Nếu JavaScript lỗi (server không phản hồi)
-            console.error('Lỗi JavaScript khi gọi API:', error);
-            const macInput = document.getElementById('deviceAddressInput');
-            if(macInput) macInput.value = 'JS Error';
+        const macInput = document.getElementById('deviceAddressInput');
+        if(client){
+            macInput.value = client.mac;
+        } else{
+            macInput.value = 'Unknown';
         }
+
+        console.log("result: ", macInput.value);
     });
 </script>

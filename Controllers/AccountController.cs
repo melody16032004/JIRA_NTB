@@ -108,7 +108,7 @@ namespace JIRA_NTB.Controllers
 
 				// Parse MAC (Windows format)
 				var match = System.Text.RegularExpressions.Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-				string macAddress = match.Success ? match.Value.Replace('-', ':') : "Không xác định";
+				string macAddress = match.Success ? match.Value.ToUpper().Replace('-', ':') : "Không xác định";
 				var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
 				// --- Ghi log vào file ---
@@ -235,6 +235,9 @@ namespace JIRA_NTB.Controllers
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Register(RegisterViewModel model)
 		{
+			Console.Clear();
+			Console.WriteLine(model.DeviceAddress);
+
 			string clientMacAddress = "Không xác định";
 			try
 			{
@@ -314,6 +317,7 @@ namespace JIRA_NTB.Controllers
 					Email = model.Email,
 					DeviceAddress = model.DeviceAddress
 				};
+				
 				var result = await _userManager.CreateAsync(user, model.Password);
 
 				if (result.Succeeded)
