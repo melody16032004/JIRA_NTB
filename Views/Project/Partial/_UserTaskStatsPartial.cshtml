@@ -1,0 +1,116 @@
+﻿@* Partial hiển thị thống kê task của từng user (Dark Minimal UI) *@
+@model List<JIRA_NTB.ViewModels.UserTaskStatViewModel>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="p-6 bg-gray-800 text-gray-400 rounded-2xl text-center border border-gray-700">
+        <p class="italic text-sm">Chưa có thành viên nào được giao task</p>
+    </div>
+}
+else
+{
+    <div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 ">
+        @foreach (var user in Model)
+        {
+            var priorityBarChartId = $"priority-bar-chart-{user.UserId}";
+            var statusDonutChartId = $"status-donut-chart-{user.UserId}";
+
+            <div class="bg-gray-900 border border-gray-700 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300">
+                <!-- Header -->
+                <div class="flex items-center mb-4">
+                    <img src="@(user.UserAvatarUrl ?? "/images/default-avatar.png")" alt="Avatar"
+                         class="w-12 h-12 rounded-full border border-gray-700 object-cover" />
+                    <div class="ml-4">
+                        <div class="text-gray-100 font-semibold text-lg">@user.UserName</div>
+                        <div class="text-gray-400 text-sm">Tổng cộng: <span class="text-indigo-400">@user.TotalTasks</span> task</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-2 gap-4 mt-3">
+                    <div class="bg-gray-800 rounded-xl p-3 border border-gray-700">
+                        <h4 class="text-gray-300 text-sm mb-2 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-layer-group text-indigo-400"></i> Task theo Độ ưu tiên
+                        </h4>
+                        <div id="@priorityBarChartId" class="chart-container"></div>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-xl p-3 border border-gray-700">
+                        <h4 class="text-gray-300 text-sm mb-2 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-chart-pie text-indigo-400"></i> Task theo Trạng thái
+                        </h4>
+                        <div id="@statusDonutChartId" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    const priorityBarData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(user.PriorityChart));
+                    const statusDonutData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(user.StatusChart));
+
+                    const priorityBarEl = document.getElementById("@priorityBarChartId");
+                    const statusDonutEl = document.getElementById("@statusDonutChartId");
+                    const emptyHtml = "<p class='text-gray-500 text-xs italic text-center mt-10'>Không có dữ liệu</p>";
+                    const chartFontColor = '#E5E7EB';
+
+                    // --- Biểu đồ cột (Priority) ---
+                    if (priorityBarData?.Series?.length && priorityBarData.Series.some(s => s > 0)) {
+                        const barOptions = {
+                            series: [{ name: 'Số lượng', data: priorityBarData.Series }],
+                            chart: { type: 'bar', height: 230, toolbar: { show: false }, foreColor: chartFontColor },
+                            plotOptions: { bar: { borderRadius: 6, columnWidth: '60%', distributed: true } },
+                            colors: ['#EF4444', '#F59E0B', '#10B981'],
+                            dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                            xaxis: { categories: priorityBarData.Labels, labels: { style: { colors: chartFontColor, fontSize: '13px' } } },
+                            yaxis: { labels: { style: { colors: chartFontColor } } },
+                            grid: { borderColor: '#1F2937' },
+                            legend: { show: false }
+                        };
+                        new ApexCharts(priorityBarEl, barOptions).render();
+                    } else {
+                        priorityBarEl.innerHTML = emptyHtml;
+                    }
+
+                    // --- Biểu đồ donut (Status + Overdue + Late) ---
+                    if (statusDonutData?.Series?.length && statusDonutData.Series.some(s => s > 0)) {
+                        const donutOptions = {
+                            series: statusDonutData.Series,
+                            labels: statusDonutData.Labels,
+                            chart: { type: 'donut', height: 230, foreColor: chartFontColor },
+                            plotOptions: { pie: { donut: { size: '70%' } } },
+                            colors: ['#3B82F6', '#F59E0B', '#10B981', '#EF4444', '#9CA3AF'],
+                            dataLabels: { enabled: true, formatter: (val) => val.toFixed(0) + '%' },
+                            legend: { position: 'bottom', labels: { colors: chartFontColor } },
+                            grid: { borderColor: '#1F2937' },
+                        };
+                        new ApexCharts(statusDonutEl, donutOptions).render();
+                    } else {
+                        statusDonutEl.innerHTML = emptyHtml;
+                    }
+                });
+            </script>
+        }
+    </div>
+}
+
+<!-- ApexCharts + FontAwesome (icon nhẹ) -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://kit.fontawesome.com/a2e0f1f6c1.js" crossorigin="anonymous"></script>
+
+<style>
+    .chart-container {
+        min-height: 230px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .user-stat-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .user-stat-card {
+        transition: all 0.3s ease;
+    }
+</style>

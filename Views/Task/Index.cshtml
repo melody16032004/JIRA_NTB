@@ -11,7 +11,8 @@
             Status = "TO DO",
             StatusTitle = "CẦN THỰC HIỆN",
             StatusColor = "bg-gray-500",
-            Tasks = Model.TodoTasks,
+            Tasks = Model.TodoTasks.Take(3).ToList(),
+            TotalCount = Model.TodoTasks.Count,
             StatusId = Model.Statuses
             .FirstOrDefault(s => s.StatusName == TaskStatusModel.Todo)?.StatusId
         },
@@ -20,7 +21,8 @@
             Status = "IN PROGRESS",
             StatusTitle = "ĐANG THỰC HIỆN",
             StatusColor = "bg-blue-500",
-            Tasks = Model.InProgressTasks,
+            Tasks = Model.InProgressTasks.Take(10).ToList(),
+            TotalCount = Model.InProgressTasks.Count,
             StatusId = Model.Statuses
             .FirstOrDefault(s => s.StatusName == TaskStatusModel.InProgress)?.StatusId        
         },
@@ -29,7 +31,8 @@
             Status = "OVERDUE",
             StatusTitle = "TRỄ HẠN",
             StatusColor = "bg-red-500",
-            Tasks = Model.OverdueTasks,
+            Tasks = Model.OverdueTasks.Take(10).ToList(),
+            TotalCount = Model.OverdueTasks.Count,
             StatusId = "False"
         },
         new TaskColumnViewModel
@@ -37,14 +40,15 @@
             Status = "DONE",
             StatusTitle = "ĐÃ HOÀN THÀNH",
             StatusColor = "bg-green-500",
-            Tasks = Model.DoneTasks,
+            Tasks = Model.DoneTasks.Take(10).ToList(),
+            TotalCount = Model.DoneTasks.Count,
             StatusId = Model.Statuses
             .   FirstOrDefault(s => s.StatusName == TaskStatusModel.Done)?.StatusId
         }
     };
 }
 <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-    <div class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 shadow-lg">
+    <div class="z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 shadow-lg">
         <div class="px-6 py-4">
             <div class="flex items-center gap-3">
                 <div class="relative flex-1 max-w-md">
@@ -55,7 +59,7 @@
                            class="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
                 </div>
 
-                @await Component.InvokeAsync("ProjectSelect", new { id = "headerProjectFilter", selectedId = "" })
+                @await Component.InvokeAsync("ProjectSelect", new { id = "headerProjectFilter", selectedId = ViewBag.SelectedProjectId })
                 @if (User.IsInRole("ADMIN") || User.IsInRole("LEADER"))
                 {
                 <div class="relative group inline-block">
@@ -84,137 +88,7 @@
 </div>
 
 @section GlobalModals {
-    <div id="modalCreateTask" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
-        <div class="bg-gray-800 rounded-xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-2xl max-h-[85vh] flex flex-col">
-
-            <!-- Header -->
-            <div class="bg-gray-800 px-5 py-3 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-                <h3 id="modalTitle" class="text-lg font-semibold text-white">Tạo nhiệm vụ mới</h3>
-                <button id="btnCloseModal" class="text-gray-400 hover:text-white transition-colors">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <!-- Body (cuộn được) -->
-            <div class="flex-1 overflow-y-auto px-5 py-4 custom-scroll">
-                <form id="formCreateTask" class="space-y-3">
-                    <!-- Thêm hidden field để lưu task ID khi edit -->
-                    <input type="hidden" id="taskId" value="">
-                    <!-- Tên nhiệm vụ -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-200 mb-1.5">
-                            Tên nhiệm vụ <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text"
-                               id="taskName"
-                               required
-                               placeholder="Nhập tên nhiệm vụ..."
-                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    </div>
-
-                    <!-- Thuộc dự án -->
-                    <label class="block text-xs font-medium text-gray-200 mb-1.5">
-                        Thuộc dự án <span class="text-red-500">*</span>
-                    </label>
-                    @await Component.InvokeAsync("ProjectSelect", new { id = "taskProjectModal", selectedId = ViewBag.SelectedProjectId })
-
-                    <!-- Mô tả -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-200 mb-1.5">Mô tả</label>
-                        <textarea id="taskDescription"
-                              rows="2"
-                              placeholder="Mô tả chi tiết nhiệm vụ..."
-                              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"></textarea>
-                    </div>
-
-                    <!-- Người thực hiện và Ưu tiên -->
-
-                    <div class="grid grid-cols-2 gap-4 items-end">
-                        <!-- Cột 1: Người thực hiện -->
-                        <div class="flex flex-col">
-                            <label class="block text-xs font-medium text-gray-200 mb-1.5">
-                                Người thực hiện
-                            </label>
-                            <select id="taskAssignee"
-                                    name="Assignee_Id"
-                                    required
-                                    disabled
-                                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200
-                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer disabled:opacity-50">
-                                <option value="">-- Chọn người --</option>
-                            </select>
-                        </div>
-
-                        <!-- Cột 2: Ưu tiên -->
-                        <div class="flex flex-col">
-                            <label class="block text-xs font-medium text-gray-200 mb-1.5">
-                                Ưu tiên
-                            </label>
-                            <select id="taskPriority"
-                                    class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200
-                               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer">
-                                <option value="low">Thấp</option>
-                                <option value="medium">Trung bình</option>
-                                <option value="high">Cao</option>
-                            </select>
-                        </div>
-                    </div>
-
-
-                    <!-- Ngày bắt đầu và Hạn chót -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-200 mb-1.5">Ngày bắt đầu</label>
-                            <input type="date"
-                                   id="taskStartDate"
-                                   min="@DateTime.Now.ToString("yyyy-MM-dd")"
-                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-200 mb-1.5">Hạn chót</label>
-                            <input type="date"
-                                   id="taskDeadline"
-                                   min="@DateTime.Now.ToString("yyyy-MM-dd")"
-                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer">
-                        </div>
-                    </div>
-
-                    <!-- Upload File/Image -->
-                    <div>
-                        <label class="block text-xs font-medium text-gray-200 mb-1.5">Đính kèm tệp</label>
-                        <div class="file-upload-area border-2 border-dashed border-gray-600 rounded-lg p-4 text-center cursor-pointer hover:border-gray-500 transition-colors"
-                             id="fileUploadArea">
-                            <input type="file"
-                                   id="taskFiles"
-                                   multiple
-                                   accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                                   class="hidden">
-                            <div id="uploadPlaceholder">
-                                <i data-lucide="upload-cloud" class="w-8 h-8 text-gray-400 mx-auto mb-2"></i>
-                                <p class="text-gray-400 text-xs mb-0.5">Nhấp để chọn hoặc kéo thả tệp vào đây</p>
-                                <p class="text-gray-500 text-xs">Hỗ trợ: Ảnh, PDF, Word, Excel</p>
-                            </div>
-                            <div id="filePreview" class="hidden mt-3">
-                                <div id="fileList" class="space-y-1.5"></div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Footer -->
-            <div class="bg-gray-800 px-5 py-3 border-t border-gray-700 flex justify-end gap-2 flex-shrink-0">
-                <button id="btnCancelTask"
-                        class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg text-sm font-medium transition-all">
-                    Hủy
-                </button>
-                <button id="btnSaveTask"
-                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all shadow-lg hover:shadow-indigo-500/50">
-                    Tạo nhiệm vụ
-                </button>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_TaskCreateModal")
 }
 <link href="~/css/task-board.css" rel="stylesheet" />
 
@@ -222,4 +96,5 @@
     <script src="~/js/task-modal.js"></script>
     <script src="~/js/task-board.js"></script>
     <script src="~/js/task-utils.js"></script>
+    <script src="~/js/task-infinite-scroll.js"></script>
 }

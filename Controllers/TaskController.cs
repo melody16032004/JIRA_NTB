@@ -17,19 +17,31 @@ namespace JIRA_NTB.Controllers
     {
         private readonly ITaskService taskService;
         private readonly UserManager<UserModel> _userManager;
+        private readonly IStatusRepository statusRepository;
 
-
-        public TaskController(ITaskService taskService, UserManager<UserModel> userManager)
+        public TaskController(ITaskService taskService, UserManager<UserModel> userManager, IStatusRepository statusRepository)
         {
             this.taskService = taskService;
             _userManager = userManager;
+            this.statusRepository = statusRepository;
         }
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? projectId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             var roles = await _userManager.GetRolesAsync(user);
-            var viewModel = await taskService.GetTaskBoardAsync(user, roles);
+            var viewModel = await taskService.GetTaskBoardAsync(user, roles, projectId);
+            ViewBag.SelectedProjectId = projectId; // để giữ lại lựa chọn
             return View(viewModel);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetMoreTasks(string statusId, int page = 1, int pageSize = 10, string? projectId = null)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var tasks = await taskService.GetTasksByStatusAsync(user, roles, statusId, page, pageSize, projectId);
+
+            return PartialView("_TaskCardList", tasks);
         }
         [HttpPost]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
@@ -64,7 +76,8 @@ namespace JIRA_NTB.Controllers
                         previousStatusId = result.PreviousStatusId,
                         newStatusId = result.NewStatusId,
                         previousStatusName = result.PreviousStatusName,
-                        newStatusName = result.NewStatusName
+                        newStatusName = result.NewStatusName,
+                        previousCompletedDate = result.PreviousCompletedDate
                     }
                 });
             }
@@ -88,7 +101,10 @@ namespace JIRA_NTB.Controllers
                 });
             }
 
-            var result = await taskService.UndoTaskStatusAsync(request.TaskId, request.PreviousStatusId);
+            var result = await taskService.UndoTaskStatusAsync(
+                request.TaskId,
+                request.PreviousStatusId,
+                request.previousCompletedDate);
 
             if (result.Success)
             {
@@ -175,7 +191,7 @@ namespace JIRA_NTB.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
-            var result = await taskService.UpdateTaskStatusAsync(taskId, "status-deleted");
+            var result = await taskService.UpdateTaskStatusAsync(taskId, null);
             return Json(new
             {
                 success = result.Success,

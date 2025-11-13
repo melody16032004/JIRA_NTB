@@ -1,35 +1,87 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectDetailViewModel
+@{
+    ViewData["Title"] = Model.Project.ProjectName;
+}
+<style>
+    /* Hide scrollbar but allow scrolling */
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
 
-<div class="flex flex-col lg:flex-row gap-6">
+    .scrollbar-none {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
+<div class="flex flex-col gap-3">
 
-    <div class="lg:w-2/3 space-y-6">
+    <div class="flex flex-col lg:flex-row gap-2">
 
-        <!-- Thông tin dự án -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-xl"></div>
-
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">@Model.Project.ProjectName</h2>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
-                @Model.Project.Status.StatusName
-            </span>
-
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">
-                @Model.Project.Note
-            </p>
-
-            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-6 text-sm">
-                <div class="flex items-center text-gray-600 dark:text-gray-400">
-                    <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
-                    <span>Bắt đầu: @Model.Project.StartDay?.ToString("dd/MM/yyyy")</span>
+        <div class="lg:w-2/3 w-full flex flex-col gap-3">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-xl"></div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">@Model.Project.ProjectName</h2>
+                <div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                        @Model.Project.Status.StatusName
+                    </span>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-400">
-                    <i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>
-                    <span>Kết thúc: @Model.Project.EndDay?.ToString("dd/MM/yyyy")</span>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-4 leading-relaxed">
+                    @Model.Project.Note
+                </p>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 text-sm">
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i data-lucide="calendar" class="w-4 h-4 mr-2"></i>
+                        <span>Bắt đầu: @Model.Project.StartDay?.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                        <i data-lucide="calendar-check" class="w-4 h-4 mr-2"></i>
+                        <span>Kết thúc: @Model.Project.EndDay?.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+
+                <button id="btnCreateTask"
+                        class="mt-5 flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700
+               text-white rounded-lg text-sm font-medium transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Thêm mới
+                </button>
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                @await Html.PartialAsync("~/Views/Project/Partial/_KanbanBoardPartial.cshtml", Model)
+            </div>
+        </div>
+
+        <div class="lg:w-1/3 w-full flex flex-col gap-3">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tổng quan trạng thái</h3>
+                <div id="taskStatusChart" class="flex justify-center"></div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 flex flex-col sticky top-6 flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 shrink-0">
+                    Thành viên (@Model.Members.Count)
+                </h3>
+                <div class="overflow-y-auto max-h-48 scrollbar-none">
+                    <ul class="space-y-3 pr-2">
+                        @foreach (var member in Model.Members)
+                        {
+                            <li class="flex items-center space-x-3">
+                                <img src="@member.Avt" alt="@member.FullName" class="w-9 h-9 rounded-full ring-2 ring-indigo-500/30 shrink-0">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">@member.FullName</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@member.Email</p>
+                                </div>
+                            </li>
+                        }
+                    </ul>
                 </div>
             </div>
         </div>
-        @await Html.PartialAsync("~/Views/Project/Partial/_KanbanBoardPartial.cshtml", Model)
-        <!-- Biểu đồ thời gian công việc -->
+    </div>
+
+    <div class="flex flex-col gap-3">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Biểu đồ thời gian công việc</h3>
@@ -38,7 +90,6 @@
             <div id="taskTimelineChart" class="min-h-[420px]"></div>
         </div>
 
-        <!-- Danh sách công việc -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
             <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
                 <h3 class="text-lg font-semibold dark:text-white">Công việc (@Model.Tasks.Count)</h3>
@@ -56,33 +107,15 @@
                 }
             </ul>
         </div>
-    </div>
-
-    <!-- Cột bên phải -->
-    <div class="lg:w-1/3 space-y-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tổng quan trạng thái</h3>
-            <div id="taskStatusChart"></div>
-        </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Thống kê công việc theo thành viên
+            </h3>
 
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Thành viên (@Model.Members.Count)</h3>
-            <ul class="space-y-3">
-                @foreach (var member in Model.Members)
-                {
-                    <li class="flex items-center space-x-3">
-                        <img src="@member.Avt" alt="@member.FullName" class="w-9 h-9 rounded-full ring-2 ring-indigo-500/30">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">@member.FullName</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">@member.Email</p>
-                        </div>
-                    </li>
-                }
-            </ul>
+            @await Html.PartialAsync("~/Views/Project/Partial/_UserTaskStatsPartial.cshtml", Model.UserStats)
         </div>
     </div>
 </div>
-
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script> 
@@ -93,8 +126,8 @@
             // Cấu hình biểu đồ Donut 
             var options = { chart: 
             { type: 'donut', height: 300, 
-            // Màu chữ cho dark mode 
-            foreColor: document.body.classList.contains('dark') ? '#E5E7EB' : '#111827' }, 
+            // Màu chữ cho dark mode
+            foreColor: document.body.classList.contains('dark') ? '#d1d5db' : '#d1d5db'    },
             series: chartSeries, labels: chartLabels, 
             plotOptions: { 
                 pie: { 
@@ -105,8 +138,8 @@
                             total: 
                             { 
                                 show: true, 
-                                label: 'Tổng số', 
-                                color: document.body.classList.contains('dark') ? '#9CA3AF' : '#374151' 
+                                label: 'Tổng số',
+                                color: document.body.classList.contains('dark') ? '#d1d5db' : '#d1d5db'
                             } 
                         } 
                     } 
@@ -163,7 +196,7 @@
 
             var ganttSeries = [{
             data: timelineData
-                .filter(t => t.status !== "Hoàn thành") // ❌ Ẩn các task đã hoàn thành
+                .filter(t => t.status !== "Hoàn thành") // Ẩn các task đã hoàn thành
                 .map(t => ({
                     x: t.name,
                     y: [t.start, t.end],
@@ -266,7 +299,7 @@
                 yaxis: {
                     labels: {
                         style: {
-                            colors: isDark ? '#D1D5DB' : '#374151',
+                            colors: isDark ? '#D1D5DB' : '#D1D5DB',
                             fontSize: '12px',
                             fontWeight: 500
                         },
@@ -372,4 +405,5 @@
             observer.observe(document.body, { attributes: true });
         });
     </script>
+
 }
