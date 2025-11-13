@@ -1,4 +1,7 @@
 ﻿@model JIRA_NTB.ViewModels.ProjectDetailViewModel
+@{
+    ViewData["Title"] = Model.Project.ProjectName;
+}
 <style>
     /* Hide scrollbar but allow scrolling */
     .scrollbar-none::-webkit-scrollbar {
@@ -6,8 +9,8 @@
     }
 
     .scrollbar-none {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 </style>
 <div class="flex flex-col gap-3">
@@ -36,6 +39,13 @@
                         <span>Kết thúc: @Model.Project.EndDay?.ToString("dd/MM/yyyy")</span>
                     </div>
                 </div>
+
+                <button id="btnCreateTask"
+                        class="mt-5 flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700
+               text-white rounded-lg text-sm font-medium transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Thêm mới
+                </button>
             </div>
 
             <div class="flex-1 flex flex-col">
@@ -96,6 +106,13 @@
                     </li>
                 }
             </ul>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Thống kê công việc theo thành viên
+            </h3>
+
+            @await Html.PartialAsync("~/Views/Project/Partial/_UserTaskStatsPartial.cshtml", Model.UserStats)
         </div>
     </div>
 </div>
@@ -388,4 +405,5 @@
             observer.observe(document.body, { attributes: true });
         });
     </script>
+
 }

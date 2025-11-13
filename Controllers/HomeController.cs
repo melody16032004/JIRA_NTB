@@ -145,16 +145,36 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/deadline")]
         public async Task<IActionResult> GetProjectsDeadline()
         {
-            var deadlines = await _context.Projects
-                .Select(p => new
-                {
-                    p.IdProject,
-                    p.ProjectName,
-                    p.EndDay,
-                })
-                .ToListAsync();
-
-            return Ok(deadlines);
+            var user = await _userManager.GetUserAsync(User);
+            if (User.IsInRole("LEADER"))
+            {
+                var deadlines = await _context.Projects
+                    .Where(p => p.UserId == user.Id)
+                    .Select(p => new
+                    {
+                        p.IdProject,
+                        p.ProjectName,
+                        p.EndDay,
+                        p.Manager.FullName,
+                        p.Status.StatusName
+                    })
+                    .ToListAsync();
+                return Ok(deadlines);
+            }
+            else if(User.IsInRole("ADMIN"))
+            {
+                var deadlines = await _context.Projects
+                    .Select(p => new
+                    {
+                        p.IdProject,
+                        p.ProjectName,
+                        p.EndDay,
+                        p.Manager.FullName,
+                        p.Status.StatusName
+                    }).ToListAsync();
+                return Ok(deadlines);
+            }
+            return Ok();
         }
         #endregion
 
@@ -174,6 +194,7 @@ namespace JIRA_NTB.Controllers
                         t.Assignee.FullName,
                         t.EndDate,
                         t.Status.StatusName,
+                        t.Project.ProjectName,
                     })
                     .ToListAsync();
 
@@ -190,6 +211,7 @@ namespace JIRA_NTB.Controllers
                         t.Assignee.FullName,
                         t.EndDate,
                         t.Status.StatusName,
+                        t.Project.ProjectName,
                     })
                     .ToListAsync();
 
@@ -250,7 +272,7 @@ namespace JIRA_NTB.Controllers
                     Status = p.Status.StatusName,
                     FileNote = p.FileNote,
                     Note = p.Note,
-                    Manager = p.Manager.FullName
+                    Manager = p.Manager.FullName,
                 })
                 .ToListAsync();
 
@@ -681,48 +703,6 @@ namespace JIRA_NTB.Controllers
             {
                 return StatusCode(500, new { success = false, message = $"Lỗi khi xóa: {ex.Message}" });
             }
-        }
-        #endregion
-
-        // =================================================================
-        // MỚI: API SIÊU NHANH CHO SUMMARY (THẺ + BIỂU ĐỒ)
-        // =================================================================
-        #region GET: api/dashboard/summary
-        [HttpGet("api/dashboard/summary")]
-        public async Task<IActionResult> GetDashboardSummary()
-        {
-            var projectSummary = await _context.Projects
-                .GroupBy(p => 1) // Nhóm tất cả lại để đếm
-                .Select(g => new
-                {
-                    CountProject = g.Count(),
-                    CountProjectDone = g.Count(p => p.Status.StatusName == TaskStatusModel.Done),
-                    CountToDo = g.Count(p => p.Status.StatusName == TaskStatusModel.Todo),
-                    CountInProgress = g.Count(p => p.Status.StatusName == TaskStatusModel.InProgress),
-                    // Đếm Overdue chính xác bằng SQL
-                    CountOverdue = g.Count(p => p.EndDay < DateTime.Now && p.Status.StatusName != TaskStatusModel.Done)
-                }).FirstOrDefaultAsync();
-
-            var taskSummary = await _context.Tasks
-                .GroupBy(t => 1)
-                .Select(g => new
-                {
-                    CountTask = g.Count(),
-                    CountTaskDone = g.Count(t => t.Status.StatusName == TaskStatusModel.Done),
-                    CountTaskInProgress = g.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
-                    CountTaskTodo = g.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
-                    CountTaskOverDue = g.Count(t => t.EndDate < DateTime.Now || t.Overdue)
-                }).FirstOrDefaultAsync();
-
-            // Nếu không có dự án/task nào, gán giá trị 0
-            var emptyProjectSummary = new { CountProject = 0, CountProjectDone = 0, CountToDo = 0, CountInProgress = 0, CountOverdue = 0 };
-            var emptyTaskSummary = new { CountTask = 0, CountTaskDone = 0, CountTaskInProgress = 0, CountTaskTodo = 0, CountTaskOverDue = 0 };
-
-            return Ok(new
-            {
-                ProjectSummary = projectSummary ?? emptyProjectSummary,
-                TaskSummary = taskSummary ?? emptyTaskSummary
-            });
         }
         #endregion
     }

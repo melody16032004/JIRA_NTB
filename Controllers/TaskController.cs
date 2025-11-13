@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
@@ -54,7 +55,8 @@ namespace JIRA_NTB.Controllers
                     message = "Dữ liệu không hợp lệ"
                 });
             }
-            if(request.NewStatusId == "False")
+
+            if (request.NewStatusId == "False")
             {
                 return Json(new
                 {
@@ -62,7 +64,16 @@ namespace JIRA_NTB.Controllers
                     message = "Không thể cập nhật trạng thái trễ hạn"
                 });
             }
-            var result = await taskService.UpdateTaskStatusAsync(request.TaskId, request.NewStatusId);
+
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var result = await taskService.UpdateTaskStatusAsync(
+                request.TaskId,
+                request.NewStatusId,
+                user,
+                roles
+            );
 
             if (result.Success)
             {
@@ -77,7 +88,10 @@ namespace JIRA_NTB.Controllers
                         newStatusId = result.NewStatusId,
                         previousStatusName = result.PreviousStatusName,
                         newStatusName = result.NewStatusName,
-                        previousCompletedDate = result.PreviousCompletedDate
+                        previousCompletedDate = result.PreviousCompletedDate,
+                        // ✅ Thêm total count
+                        sourceTotalCount = result.SourceTotalCount,
+                        targetTotalCount = result.TargetTotalCount
                     }
                 });
             }
@@ -101,17 +115,29 @@ namespace JIRA_NTB.Controllers
                 });
             }
 
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
             var result = await taskService.UndoTaskStatusAsync(
                 request.TaskId,
                 request.PreviousStatusId,
-                request.previousCompletedDate);
+                request.previousCompletedDate,
+                user,
+                roles
+            );
 
             if (result.Success)
             {
                 return Json(new
                 {
                     success = true,
-                    message = result.Message
+                    message = result.Message,
+                    data = new
+                    {
+                        // ✅ Thêm total count cho undo
+                        sourceTotalCount = result.SourceTotalCount,
+                        targetTotalCount = result.TargetTotalCount
+                    }
                 });
             }
 
@@ -191,14 +217,80 @@ namespace JIRA_NTB.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
-            var result = await taskService.UpdateTaskStatusAsync(taskId, null);
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var result = await taskService.DeleteTaskAsync(taskId, user, roles);
+
+            if (result.Success)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = result.Message,
+                    data = new
+                    {
+                        taskId = result.TaskId,
+                        previousStatusId = result.PreviousStatusId,
+                        previousCompletedDate = result.PreviousCompletedDate,
+                        // ✅ Chỉ cần sourceTotalCount (column bị xóa task)
+                        sourceTotalCount = result.SourceTotalCount
+                    }
+                });
+            }
+
             return Json(new
             {
-                success = result.Success,
-                message = result.Message,
-                previousStatusId = result.PreviousStatusId // để client dùng undo
+                success = false,
+                message = result.Message
             });
         }
+        [Authorize(Roles = "ADMIN,LEADER")]
+        [HttpPost]
+        public async Task<IActionResult> RestoreTask([FromBody] RestoreTaskRequest request)
+        {
+            if (string.IsNullOrEmpty(request.TaskId) || string.IsNullOrEmpty(request.PreviousStatusId))
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Dữ liệu không hợp lệ"
+                });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var result = await taskService.RestoreTaskAsync(
+                request.TaskId,
+                request.PreviousStatusId,
+                request.PreviousCompletedDate,
+                user,
+                roles
+            );
+
+            if (result.Success)
+            {
+                return Json(new
+                {
+                    success = true,
+                    message = result.Message,
+                    data = new
+                    {
+                        taskId = result.TaskId,
+                        // ✅ Chỉ cần targetTotalCount (column được restore)
+                        targetTotalCount = result.TargetTotalCount
+                    }
+                });
+            }
+
+            return Json(new
+            {
+                success = false,
+                message = result.Message
+            });
+        }
+
         //[HttpGet]
         //public async Task<IActionResult> GetTasksByProjectId(string projectId)
         //{

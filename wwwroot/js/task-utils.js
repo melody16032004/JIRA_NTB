@@ -105,7 +105,7 @@ const TaskUtils = {
                 body: JSON.stringify({
                     taskId: undoData.taskId,
                     previousStatusId: undoData.previousStatusId,
-                    previousCompletedDate: undoData.previousCompletedDate 
+                    previousCompletedDate: undoData.previousCompletedDate
                 })
             });
             const result = await response.json();

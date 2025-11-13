@@ -29,5 +29,6 @@ namespace JIRA_NTB.Models
         public ICollection<ProjectModel>? ManagedProjects { get; set; }
 
         public ICollection<ProjectManagerModel>? ProjectManagers { get; set; }
+        public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
     }
 }
