@@ -1,14 +1,26 @@
 ﻿function toggleTheme() {
     document.documentElement.classList.toggle('dark');
 }
+let me = null; // Khai báo 'me' ở ngoài
 document.addEventListener("DOMContentLoaded", async () => {
-    const [meRes] = await Promise.all([
-        fetch("/api/user/me")
-    ]);
-    const [me] = await Promise.all([
-        meRes.json(),
-    ]);
-    console.log(me);
+    if (!me) {
+        try {
+            const meRes = await fetch("/api/user/me");
+
+            if (meRes.ok) {
+                me = await meRes.json();
+            }
+
+        } catch (e) {
+            console.error("Fetch failed:", e);
+        }
+    }
+
+    if (!me || me == null) {
+        window.location.href = "/Error/403";
+    }
+
+    //console.log(me);
 
     const meCur = document.getElementById("me");
     meCur.innerHTML += `${me.fullName}`;
@@ -183,6 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return await res.json();
         } catch (err) {
             console.warn("Fetch failed:", url, err);
+
             return fallback;
         }
     }
@@ -193,8 +206,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         safeFetchJson("/api/projects/deadline", [])
     ]);
 
-    console.log("Task/deadline: ", taskDeadline);
-    console.log("Project/deadline: ", projectDeadline);
+    //console.log("Task/deadline: ", taskDeadline);
+    //console.log("Project/deadline: ", projectDeadline);
 
     // build calendarItems map: { 'YYYY-MM-DD': [items...] }
     const calendarItems = {};
