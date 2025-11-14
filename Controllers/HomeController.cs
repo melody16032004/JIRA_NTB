@@ -2,6 +2,7 @@ using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -145,16 +146,36 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/deadline")]
         public async Task<IActionResult> GetProjectsDeadline()
         {
-            var deadlines = await _context.Projects
-                .Select(p => new
-                {
-                    p.IdProject,
-                    p.ProjectName,
-                    p.EndDay,
-                })
-                .ToListAsync();
-
-            return Ok(deadlines);
+            var user = await _userManager.GetUserAsync(User);
+            if (User.IsInRole("LEADER"))
+            {
+                var deadlines = await _context.Projects
+                    .Where(p => p.UserId == user.Id)
+                    .Select(p => new
+                    {
+                        p.IdProject,
+                        p.ProjectName,
+                        p.EndDay,
+                        p.Manager.FullName,
+                        p.Status.StatusName
+                    })
+                    .ToListAsync();
+                return Ok(deadlines);
+            }
+            else if(User.IsInRole("ADMIN"))
+            {
+                var deadlines = await _context.Projects
+                    .Select(p => new
+                    {
+                        p.IdProject,
+                        p.ProjectName,
+                        p.EndDay,
+                        p.Manager.FullName,
+                        p.Status.StatusName
+                    }).ToListAsync();
+                return Ok(deadlines);
+            }
+            return Ok();
         }
         #endregion
 
@@ -174,6 +195,7 @@ namespace JIRA_NTB.Controllers
                         t.Assignee.FullName,
                         t.EndDate,
                         t.Status.StatusName,
+                        t.Project.ProjectName,
                     })
                     .ToListAsync();
 
@@ -190,6 +212,7 @@ namespace JIRA_NTB.Controllers
                         t.Assignee.FullName,
                         t.EndDate,
                         t.Status.StatusName,
+                        t.Project.ProjectName,
                     })
                     .ToListAsync();
 
@@ -250,7 +273,7 @@ namespace JIRA_NTB.Controllers
                     Status = p.Status.StatusName,
                     FileNote = p.FileNote,
                     Note = p.Note,
-                    Manager = p.Manager.FullName
+                    Manager = p.Manager.FullName,
                 })
                 .ToListAsync();
 
@@ -465,134 +488,134 @@ namespace JIRA_NTB.Controllers
         #endregion
 
         #region GET: api/client/ip
-        [HttpGet("api/server/address")]
-        public IActionResult GetClientIp()
-        {
-            var ipAddress = HttpContext.Connection.LocalIpAddress?.ToString();
+        //[HttpGet("api/server/address")]
+        //public IActionResult GetClientIp()
+        //{
+        //    var ipAddress = HttpContext.Connection.LocalIpAddress?.ToString();
 
-            var mac = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-                              nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .Select(nic => nic.GetPhysicalAddress().ToString())
-                .FirstOrDefault();
+        //    var mac = NetworkInterface.GetAllNetworkInterfaces()
+        //        .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+        //                      nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+        //        .Select(nic => nic.GetPhysicalAddress().ToString())
+        //        .FirstOrDefault();
 
-            // Format MAC cho dễ đọc: "AA:BB:CC:DD:EE:FF"
-            if (!string.IsNullOrEmpty(mac))
-                mac = string.Join(":", Enumerable.Range(0, mac.Length / 2)
-                    .Select(i => mac.Substring(i * 2, 2)));
+        //    // Format MAC cho dễ đọc: "AA:BB:CC:DD:EE:FF"
+        //    if (!string.IsNullOrEmpty(mac))
+        //        mac = string.Join(":", Enumerable.Range(0, mac.Length / 2)
+        //            .Select(i => mac.Substring(i * 2, 2)));
 
-            var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            // --- Ghi log vào file ---
-            var logLine = $"{accessTime} - IP: {ipAddress ?? "Không xác định"} - MAC: {mac ?? "Không xác định"}";
-            var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
+        //    var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        //    // --- Ghi log vào file ---
+        //    var logLine = $"{accessTime} - IP: {ipAddress ?? "Không xác định"} - MAC: {mac ?? "Không xác định"}";
+        //    var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
 
-            try
-            {
-                System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
-            }
-            catch (Exception ex)
-            {
-                // Nếu muốn, có thể log lỗi ghi file ra console
-                Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
-            }
+        //    try
+        //    {
+        //        System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // Nếu muốn, có thể log lỗi ghi file ra console
+        //        Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
+        //    }
 
-            return Ok(new
-            {
-                ip = ipAddress ?? "Không xác định",
-                mac = mac ?? "Không xác định",
-                accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-            });
-        }
+        //    return Ok(new
+        //    {
+        //        ip = ipAddress ?? "Không xác định",
+        //        mac = mac ?? "Không xác định",
+        //        accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        //    });
+        //}
         #endregion
 
         #region GET: api/client/mac
-        [HttpGet("api/client/address")]
-        public IActionResult GetClientMac()
-        {
-            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-            if (string.IsNullOrEmpty(clientIp))
-                return BadRequest("Không tìm thấy IP client");
+        //[HttpGet("api/client/address")]
+        //public IActionResult GetClientMac()
+        //{
+        //    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+        //    if (string.IsNullOrEmpty(clientIp))
+        //        return BadRequest("Không tìm thấy IP client");
 
-            try
-            {
-                var process = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "arp",
-                        Arguments = "-a " + clientIp,
-                        RedirectStandardOutput = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
+        //    try
+        //    {
+        //        var process = new Process
+        //        {
+        //            StartInfo = new ProcessStartInfo
+        //            {
+        //                FileName = "arp",
+        //                Arguments = "-a " + clientIp,
+        //                RedirectStandardOutput = true,
+        //                UseShellExecute = false,
+        //                CreateNoWindow = true
+        //            }
+        //        };
+        //        process.Start();
+        //        string output = process.StandardOutput.ReadToEnd();
+        //        process.WaitForExit();
 
-                // Parse MAC (Windows format)
-                var match = System.Text.RegularExpressions.Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-                string macAddress = match.Success ? match.Value.Replace('-', ':') : "Không xác định";
+        //        // Parse MAC (Windows format)
+        //        var match = System.Text.RegularExpressions.Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
+        //        string macAddress = match.Success ? match.Value.Replace('-', ':') : "Không xác định";
 
-                var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                // --- Ghi log vào file ---
-                var logLine = $"{accessTime} - IP: {clientIp ?? "Không xác định"} - MAC: {macAddress ?? "Không xác định"}";
-                var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
+        //        var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        //        // --- Ghi log vào file ---
+        //        var logLine = $"{accessTime} - IP: {clientIp ?? "Không xác định"} - MAC: {macAddress ?? "Không xác định"}";
+        //        var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
 
-                try
-                {
-                    System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
-                }
-                catch (Exception ex)
-                {
-                    // Nếu muốn, có thể log lỗi ghi file ra console
-                    Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
-                }
+        //        try
+        //        {
+        //            System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            // Nếu muốn, có thể log lỗi ghi file ra console
+        //            Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
+        //        }
 
-                return Ok(new { 
-                    ip = clientIp,
-                    mac = macAddress,
-                    accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Lỗi: {ex.Message}");
-            }
-        }
+        //        return Ok(new { 
+        //            ip = clientIp,
+        //            mac = macAddress,
+        //            accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest($"Lỗi: {ex.Message}");
+        //    }
+        //}
         #endregion
 
-        #region
-        [HttpGet("api/server/processes")]
-        public IActionResult LogRunningProcesses()
-        {
-            try
-            {
-                var processes = Process.GetProcesses()
-                    .OrderBy(p => p.ProcessName)
-                    .Select(p => $"{p.ProcessName} (PID: {p.Id})")
-                    .ToList();
+        #region GET: api/server/processes
+        //[HttpGet("api/server/processes")]
+        //public IActionResult LogRunningProcesses()
+        //{
+        //    try
+        //    {
+        //        var processes = Process.GetProcesses()
+        //            .OrderBy(p => p.ProcessName)
+        //            .Select(p => $"{p.ProcessName} (PID: {p.Id})")
+        //            .ToList();
 
-                var logPath = Path.Combine(AppContext.BaseDirectory, "process_log.txt");
-                var logTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                var logContent = new StringBuilder();
-                logContent.AppendLine($"🕒 {logTime} - Danh sách tiến trình đang chạy:");
-                logContent.AppendLine(string.Join(Environment.NewLine, processes));
-                logContent.AppendLine(new string('-', 60));
+        //        var logPath = Path.Combine(AppContext.BaseDirectory, "process_log.txt");
+        //        var logTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        //        var logContent = new StringBuilder();
+        //        logContent.AppendLine($"🕒 {logTime} - Danh sách tiến trình đang chạy:");
+        //        logContent.AppendLine(string.Join(Environment.NewLine, processes));
+        //        logContent.AppendLine(new string('-', 60));
 
-                System.IO.File.AppendAllText(logPath, logContent.ToString());
+        //        System.IO.File.AppendAllText(logPath, logContent.ToString());
 
-                return Ok(new
-                {
-                    message = "✅ Đã ghi log danh sách tiến trình đang chạy.",
-                    processCount = processes.Count
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            message = "✅ Đã ghi log danh sách tiến trình đang chạy.",
+        //            processCount = processes.Count
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { error = ex.Message });
+        //    }
+        //}
         #endregion
 
         #region POST: Home/SaveTask
@@ -681,48 +704,6 @@ namespace JIRA_NTB.Controllers
             {
                 return StatusCode(500, new { success = false, message = $"Lỗi khi xóa: {ex.Message}" });
             }
-        }
-        #endregion
-
-        // =================================================================
-        // MỚI: API SIÊU NHANH CHO SUMMARY (THẺ + BIỂU ĐỒ)
-        // =================================================================
-        #region GET: api/dashboard/summary
-        [HttpGet("api/dashboard/summary")]
-        public async Task<IActionResult> GetDashboardSummary()
-        {
-            var projectSummary = await _context.Projects
-                .GroupBy(p => 1) // Nhóm tất cả lại để đếm
-                .Select(g => new
-                {
-                    CountProject = g.Count(),
-                    CountProjectDone = g.Count(p => p.Status.StatusName == TaskStatusModel.Done),
-                    CountToDo = g.Count(p => p.Status.StatusName == TaskStatusModel.Todo),
-                    CountInProgress = g.Count(p => p.Status.StatusName == TaskStatusModel.InProgress),
-                    // Đếm Overdue chính xác bằng SQL
-                    CountOverdue = g.Count(p => p.EndDay < DateTime.Now && p.Status.StatusName != TaskStatusModel.Done)
-                }).FirstOrDefaultAsync();
-
-            var taskSummary = await _context.Tasks
-                .GroupBy(t => 1)
-                .Select(g => new
-                {
-                    CountTask = g.Count(),
-                    CountTaskDone = g.Count(t => t.Status.StatusName == TaskStatusModel.Done),
-                    CountTaskInProgress = g.Count(t => t.Status.StatusName == TaskStatusModel.InProgress),
-                    CountTaskTodo = g.Count(t => t.Status.StatusName == TaskStatusModel.Todo),
-                    CountTaskOverDue = g.Count(t => t.EndDate < DateTime.Now || t.Overdue)
-                }).FirstOrDefaultAsync();
-
-            // Nếu không có dự án/task nào, gán giá trị 0
-            var emptyProjectSummary = new { CountProject = 0, CountProjectDone = 0, CountToDo = 0, CountInProgress = 0, CountOverdue = 0 };
-            var emptyTaskSummary = new { CountTask = 0, CountTaskDone = 0, CountTaskInProgress = 0, CountTaskTodo = 0, CountTaskOverDue = 0 };
-
-            return Ok(new
-            {
-                ProjectSummary = projectSummary ?? emptyProjectSummary,
-                TaskSummary = taskSummary ?? emptyTaskSummary
-            });
         }
         #endregion
     }
