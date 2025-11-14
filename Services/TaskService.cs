@@ -450,7 +450,15 @@ namespace JIRA_NTB.Services
             task.CompletedDate = null;
 
             await _taskRepository.UpdateAsync(task);
+            var log = new LogStatusUpdate
+            {
+                IdTask = task.IdTask,
+                IdUserUpdate = user.Id,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = task.StatusId,
+            };
 
+            await _taskRepository.AddStatusLog(log);
             // ✅ Count sau khi xóa = count trước - 1
             var sourceTotalCount = sourceTotalCountBeforeDelete - 1;
 
