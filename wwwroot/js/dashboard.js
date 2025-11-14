@@ -12,9 +12,10 @@ let allProjectsStat = {};
 let currentUser = {};
 let currentUserRole = '';
 let isProjectToggleAllOpen = false;
-const PAGE_SIZE = 5; // Định nghĩa pageSize ở một nơi
+const PAGE_SIZE = 5;
 const TASK_PAGE_SIZE = 3;
 let currentViewMode = 'list';
+let ganttChartInstance = null;
 const viewTaskNull = `
   <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
     <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
@@ -591,20 +592,24 @@ function renderDashboard(projects) {
             <div class="space-y-4">
                 ${controllButton}
             </div>
-            <div id="project-list-view" class="${currentViewMode === 'list' ? '' : 'hidden'}">
-                <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
-                    ${viewProjectContainer}
-                </div>
+            <div id="project-list-view" class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll ${currentViewMode === 'list' ? '' : 'hidden'}">
+                ${viewProjectContainer}
             </div>
 
-            <div id="project-gantt-view" class="${currentViewMode === 'gantt' ? '' : 'hidden'}">
-                <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
-                    <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
-                        <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
-                        <span>Chức năng Gantt Chart đang được phát triển.</span>
-                        <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
-                    </div>
+            <div id="project-gantt-view" class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll ${currentViewMode === 'gantt' ? '' : 'hidden'}">
+                <div id="gantt-chart-container" class="gantt-target"></div>
+                <div id="gantt-placeholder" class="flex flex-col items-center justify-center text-center py-10 text-white">
+                    <i data-lucide="gantt-chart-square" class="w-16 h-16"></i>
+                    <span>Bấm nút Gantt để xây dựng biểu đồ...</span>
                 </div>
+
+                <!--
+                <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
+                    <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
+                    <span>Chức năng Gantt Chart đang được phát triển.</span>
+                    <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
+                </div>
+                -->
             </div>
         </div>
     `;
@@ -895,6 +900,7 @@ function attachAllEventListeners(projects, role) {
                 //nextPage.removeAttribute("disabled");
                 prevPage.disabled = true;
                 nextPage.disabled = true;
+                buildAndRenderGanttChart(projects.items);
             }
 
             // 4. Cập nhật style nút (toggle class active)
@@ -956,6 +962,183 @@ function handleTaskScroll(event) {
 /* =========================================== */
 /* ================ HELPER =================== */
 /* =========================================== */
+/**
+ * Lấy dữ liệu và xây dựng biểu đồ Gantt (PHIÊN BẢN JIRA TIMELINE)
+ */
+async function buildAndRenderGanttChart(projects) {
+    // 1. Nếu đã render rồi thì thôi
+    if (ganttChartInstance) {
+        ganttChartInstance.destroy();
+        ganttChartInstance = null;
+    }
+
+    const ganttContainer = document.getElementById("gantt-chart-container");
+    const ganttPlaceholder = document.getElementById("gantt-placeholder");
+
+    if (!ganttContainer) return;
+
+    // 2. Hiển thị loader
+    ganttPlaceholder.style.display = 'block';
+    ganttContainer.innerHTML = ''; // Xóa chart cũ
+    ganttPlaceholder.innerHTML = `
+        <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400">
+            <svg class="animate-spin w-8 h-8 text-indigo-400 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span>Đang xây dựng biểu đồ Gantt...</span>
+        </div>`;
+
+    try {
+        // 3. Gọi API (giữ nguyên)
+        const apiCalls = projects.map(p =>
+            safeFetchJson(`/api/projects/${p.idProject}/all-tasks`)
+        );
+        const allTaskLists = await Promise.all(apiCalls);
+
+        // 4. "Dịch" dữ liệu sang định dạng Timeline của ApexCharts
+        // series = [ { name: 'Tên Project', data: [ { x: 'Tên Task', y: [start, end] } ] } ]
+
+        let ganttSeries = [];
+
+        projects.forEach((project, index) => {
+            const tasks = allTaskLists[index];
+            let projectData = [];
+
+            // 4.1. Thêm Project (Epic)
+            // (Thanh này sẽ có màu riêng)
+            projectData.push({
+                x: project.projectName, // Tên trên trục Y
+                y: [
+                    new Date(project.startDay).getTime(),
+                    new Date(project.endDay).getTime()
+                ],
+                // Chúng ta sẽ dùng mảng 'colors' bên dưới
+                // fillColor: '#4338CA' 
+            });
+
+            // 4.2. Thêm các task con
+            if (tasks.length > 0) {
+                tasks.forEach(task => {
+                    projectData.push({
+                        x: `\u00A0\u00A0↳ ${task.nameTask}`, // Tên trên trục Y
+                        y: [
+                            new Date(task.startDate).getTime(),
+                            new Date(task.endDate).getTime()
+                        ],
+                        // 'fillColor' sẽ được ghi đè bởi mảng 'colors'
+                    });
+                });
+            }
+
+            // 4.3. Thêm nhóm này vào series chính
+            ganttSeries.push({
+                name: project.projectName, // Tên này sẽ hiện ở Legend/Tooltip
+                data: projectData
+            });
+        });
+
+        // 5. Khởi tạo biểu đồ ApexCharts (với options kiểu Jira)
+        ganttPlaceholder.style.display = 'none'; // Ẩn placeholder
+
+        const options = {
+            series: ganttSeries,
+            chart: {
+                type: 'rangeBar',
+                height: 600,
+                background: 'transparent',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: '<i data-lucide="download" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
+                        selection: true,
+                        zoom: true,
+                        zoomin: '<i data-lucide="zoom-in" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
+                        zoomout: '<i data-lucide="zoom-out" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
+                        pan: '<i data-lucide="move" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
+                        reset: '<i data-lucide="home" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
+                    }
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    borderRadius: 4,
+                    // TẮT: Để tất cả task con có cùng màu với project
+                    distributed: false,
+                }
+            },
+            // TẮT: Ẩn chữ *trên* thanh bar
+            dataLabels: {
+                enabled: false,
+            },
+            // THÊM: Đường kẻ "Hôm nay"
+            annotations: {
+                xaxis: [
+                    {
+                        x: new Date().getTime(), // Mốc "Hôm nay"
+                        strokeDashArray: 2,     // Nét đứt
+                        borderColor: '#FF4560', // Màu đỏ
+                        label: {
+                            borderColor: '#FF4560',
+                            style: { color: '#fff', background: '#FF4560' },
+                            text: 'Hôm nay'
+                        }
+                    }
+                ]
+            },
+            xaxis: {
+                type: 'datetime', // Trục X là thời gian
+                labels: {
+                    style: { colors: '#9CA3AF' }
+                },
+                axisBorder: { show: false },
+                axisTicks: { color: '#374151' }
+            },
+            // BẬT: Hiển thị danh sách project/task bên trái
+            yaxis: {
+                show: true,
+                labels: {
+                    align: 'left',  // Bắt buộc căn trái
+                    offsetX: 0,
+                    style: {
+                        colors: '#E5E7EB', // Màu chữ
+                        fontSize: '13px',
+                        fontFamily: 'inherit'
+                    },
+                    // Cắt bớt tên nếu quá dài
+                    maxWidth: 200,
+                }
+            },
+            grid: {
+                borderColor: '#374151',
+                row: {
+                    colors: ['transparent', 'rgba(128, 128, 128, 0.05)'],
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                x: {
+                    format: 'dd/MM/yyyy'
+                }
+            },
+            // THÊM: Mảng màu cho từng Project (series)
+            // ApexCharts sẽ tự động xoay vòng các màu này
+            colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#F9C80E']
+        };
+
+        ganttChartInstance = new ApexCharts(ganttContainer, options);
+        ganttChartInstance.render();
+
+        lucide.createIcons();
+
+    } catch (err) {
+        console.error("Lỗi xây dựng Gantt Chart:", err);
+        ganttPlaceholder.style.display = 'block';
+        ganttPlaceholder.innerHTML = `<span class="text-red-400">Lỗi khi tải dữ liệu Gantt.</span>`;
+    }
+}
+
 /**
  * Xử lý bật/tắt accordion project (Code của BẠN - đã sửa lỗi)
  */
@@ -1175,6 +1358,12 @@ console.log();
 async function loadPageData(page, pageSize = PAGE_SIZE) {
     console.log(`🔄 Load dữ liệu trang: ${page}`);
     let loading = document.getElementById("loadingOverlay");
+
+    if (ganttChartInstance) {
+        ganttChartInstance.destroy(); // Dùng hàm .destroy() của ApexCharts
+        ganttChartInstance = null;
+    }
+
     try {
         // (Có thể thêm hiệu ứng loading ở đây)
         loading.classList.remove("hidden");
