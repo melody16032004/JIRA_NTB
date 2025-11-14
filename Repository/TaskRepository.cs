@@ -89,7 +89,53 @@ namespace JIRA_NTB.Repository
                 .Take(pageSize)
                 .ToListAsync();
         }
+        /// <summary>
+        /// ✅ Đếm tổng số task theo status (có phân quyền)
+        /// </summary>
+        public async Task<int> GetTaskCountByStatusAsync(
+            UserModel user,
+            IList<string> roles,
+            string? statusId = null,
+            string? projectId = null)
+        {
+            IQueryable<TaskItemModel> query = _context.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.Status)
+                .Include(t => t.Assignee);
 
+            // 🎯 Phân quyền
+            if (roles.Contains("LEADER"))
+            {
+                query = query.Where(t => t.Project.UserId == user.Id);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            // Filter theo project
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                query = query.Where(t => t.ProjectId == projectId);
+            }
+
+            // 🎯 Filter theo statusId
+            if (!string.IsNullOrEmpty(statusId))
+            {
+                if (statusId == "False") // cột OVERDUE
+                {
+                    query = query.Where(t => t.Overdue
+                                             && t.Status.StatusName != TaskStatusModel.Done
+                                             && t.Status.StatusName != TaskStatusModel.Deleted);
+                }
+                else
+                {
+                    query = query.Where(t => t.Status.StatusId == statusId && !t.Overdue);
+                }
+            }
+
+            return await query.CountAsync();
+        }
         public async Task<TaskItemModel?> GetByIdAsync(string id)
         {
             return await _context.Tasks
@@ -183,6 +229,20 @@ namespace JIRA_NTB.Repository
                 _context.Tasks.Remove(task);
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task AddLogAsync(LogTaskModel log)
+        {
+            await _context.LogTasks.AddAsync(log);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+        public async Task AddStatusLog(LogStatusUpdate log)
+        {
+            await _context.LogStatusUpdates.AddAsync(log);
+            await _context.SaveChangesAsync();
         }
     }
 }

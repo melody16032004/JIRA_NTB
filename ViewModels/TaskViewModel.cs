@@ -82,6 +82,7 @@ namespace JIRA_NTB.ViewModels
         public string StatusTitle { get; set; }
         public string StatusColor { get; set; }
         public int TotalCount { get; set; }
+        public int PageSize { get; set; } = 10;
         public List<TaskViewModel> Tasks { get; set; } = new List<TaskViewModel>();
     }
 

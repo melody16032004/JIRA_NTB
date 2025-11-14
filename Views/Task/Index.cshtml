@@ -11,7 +11,7 @@
             Status = "TO DO",
             StatusTitle = "CẦN THỰC HIỆN",
             StatusColor = "bg-gray-500",
-            Tasks = Model.TodoTasks.Take(3).ToList(),
+            Tasks = Model.TodoTasks.Take(10).ToList(),
             TotalCount = Model.TodoTasks.Count,
             StatusId = Model.Statuses
             .FirstOrDefault(s => s.StatusName == TaskStatusModel.Todo)?.StatusId
@@ -40,10 +40,11 @@
             Status = "DONE",
             StatusTitle = "ĐÃ HOÀN THÀNH",
             StatusColor = "bg-green-500",
-            Tasks = Model.DoneTasks.Take(10).ToList(),
+            PageSize = 5,
+            Tasks = Model.DoneTasks.Take(5).ToList(),
             TotalCount = Model.DoneTasks.Count,
             StatusId = Model.Statuses
-            .   FirstOrDefault(s => s.StatusName == TaskStatusModel.Done)?.StatusId
+                .FirstOrDefault(s => s.StatusName == TaskStatusModel.Done)?.StatusId
         }
     };
 }
@@ -89,12 +90,13 @@
 
 @section GlobalModals {
     @await Html.PartialAsync("_TaskCreateModal")
+    @await Html.PartialAsync("_ReAssignModal")
 }
 <link href="~/css/task-board.css" rel="stylesheet" />
 
 @section Scripts {
+    <script src="~/js/task-utils.js"></script>
     <script src="~/js/task-modal.js"></script>
     <script src="~/js/task-board.js"></script>
-    <script src="~/js/task-utils.js"></script>
     <script src="~/js/task-infinite-scroll.js"></script>
 }

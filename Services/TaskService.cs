@@ -77,10 +77,13 @@ namespace JIRA_NTB.Services
         {
             return await _taskRepository.GetByIdFilteredAsync(taskId, user, roles);
         }
-        public async Task<TaskStatusChangeResult> UpdateTaskStatusAsync(string taskId, string newStatusId)
+        public async Task<TaskStatusChangeResult> UpdateTaskStatusAsync(
+    string taskId,
+    string newStatusId,
+    UserModel user,
+    IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
-
             if (task == null)
             {
                 return new TaskStatusChangeResult
@@ -91,7 +94,6 @@ namespace JIRA_NTB.Services
             }
 
             bool isOverdue = task.Overdue;
-
             var previousStatusId = task.StatusId;
             var previousStatus = task.Status;
             DateTime? previousCompletedDate = null;
@@ -100,7 +102,6 @@ namespace JIRA_NTB.Services
             if (newStatusId != null)
             {
                 newStatus = await _statusRepository.GetByIdAsync(newStatusId);
-
                 if (newStatus == null)
                 {
                     return new TaskStatusChangeResult
@@ -124,7 +125,6 @@ namespace JIRA_NTB.Services
                     {
                         previousCompletedDate = task.CompletedDate;
                         task.CompletedDate = null;
-                        
                     }
                 }
             }
@@ -140,23 +140,34 @@ namespace JIRA_NTB.Services
                     };
                 }
 
-                // Gán FK đúng
                 task.StatusId = deleted.StatusId;
                 newStatus = deleted;
             }
 
-            // Nếu muốn validate, để đây
-            //var validation = ValidateStatusTransition(previousStatus?.StatusName, newStatus.StatusName, isOverdue);
-            //if (!validation.isValid)
-            //{
-            //    return new TaskStatusChangeResult
-            //    {
-            //        Success = false,
-            //        Message = validation.message
-            //    };
-            //}
-
             await _taskRepository.UpdateAsync(task);
+            var log = new LogStatusUpdate
+            {
+                IdTask = task.IdTask,
+                IdUserUpdate = user.Id,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = task.StatusId,
+            };
+          
+            await _taskRepository.AddStatusLog(log);
+                
+            var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                previousStatusId,
+                null // projectId - lấy từ session nếu cần filter theo project
+            );
+
+            var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                newStatusId,
+                null
+            );
 
             return new TaskStatusChangeResult
             {
@@ -167,16 +178,21 @@ namespace JIRA_NTB.Services
                 NewStatusId = task.StatusId,
                 PreviousStatusName = previousStatus?.StatusName.ToString(),
                 NewStatusName = newStatus.StatusName.ToString(),
-                PreviousCompletedDate = previousCompletedDate,  
+                PreviousCompletedDate = previousCompletedDate,
+                // ✅ Trả về total count
+                SourceTotalCount = sourceTotalCount,
+                TargetTotalCount = targetTotalCount
             };
         }
 
-        public async Task<TaskStatusChangeResult> UndoTaskStatusAsync(string taskId,
-                                                             string previousStatusId,
-                                                             DateTime? previousCompletedDate)
+        public async Task<TaskStatusChangeResult> UndoTaskStatusAsync(
+    string taskId,
+    string previousStatusId,
+    DateTime? previousCompletedDate,
+    UserModel user,
+    IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
-
             if (task == null)
             {
                 return new TaskStatusChangeResult
@@ -187,7 +203,6 @@ namespace JIRA_NTB.Services
             }
 
             var previousStatus = await _statusRepository.GetByIdAsync(previousStatusId);
-
             if (previousStatus == null)
             {
                 return new TaskStatusChangeResult
@@ -199,11 +214,26 @@ namespace JIRA_NTB.Services
 
             var currentStatusId = task.StatusId;
 
-            // Restore previous status - CHỈ CẬP NHẬT StatusId
+            // Restore previous status
             task.StatusId = previousStatusId;
-            task.CompletedDate = previousCompletedDate; // Clear completed date when undo
+            task.CompletedDate = previousCompletedDate;
 
             await _taskRepository.UpdateAsync(task);
+
+            // ✅ Lấy total count sau khi undo
+            var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                currentStatusId,
+                null
+            );
+
+            var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                previousStatusId,
+                null
+            );
 
             return new TaskStatusChangeResult
             {
@@ -212,9 +242,13 @@ namespace JIRA_NTB.Services
                 TaskId = taskId,
                 PreviousStatusId = currentStatusId,
                 NewStatusId = previousStatusId,
-                NewStatusName = previousStatus.StatusName.ToString()
+                NewStatusName = previousStatus.StatusName.ToString(),
+                // ✅ Trả về total count
+                SourceTotalCount = sourceTotalCount,
+                TargetTotalCount = targetTotalCount
             };
         }
+
 
         private (bool isValid, string message) ValidateStatusTransition(
             TaskStatusModel? currentStatus,
@@ -368,31 +402,186 @@ namespace JIRA_NTB.Services
             await _taskRepository.UpdateAsync(task);
             return (true, "Cập nhật nhiệm vụ thành công!");
         }
-
-
-        public async Task<(bool success, string message)> DeleteTaskAsync(string taskId)
+        public async Task<TaskStatusChangeResult> DeleteTaskAsync(
+            string taskId,
+            UserModel user,
+            IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
             if (task == null)
-                return (false, "Không tìm thấy nhiệm vụ");
-
-            // Xóa file nếu có
-            if (!string.IsNullOrEmpty(task.FileNote))
             {
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", task.FileNote.TrimStart('/'));
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
+                return new TaskStatusChangeResult
+                {
+                    Success = false,
+                    Message = "Task không tồn tại"
+                };
             }
 
-            await _taskRepository.DeleteAsync(taskId);
-            return (true, "Xóa nhiệm vụ thành công!");
+            var previousStatusId = task.StatusId;
+            var previousStatus = task.Status;
+            DateTime? previousCompletedDate = null;
+
+            // Lưu CompletedDate nếu task đang ở trạng thái Done
+            if (previousStatus?.StatusName == TaskStatusModel.Done)
+            {
+                previousCompletedDate = task.CompletedDate;
+            }
+
+            // ✅ LẤY COUNT TRƯỚC KHI UPDATE
+            var sourceTotalCountBeforeDelete = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                previousStatusId,
+                null
+            );
+
+            var deletedStatus = await _statusRepository.GetByStatusNameAsync(TaskStatusModel.Deleted);
+            if (deletedStatus == null)
+            {
+                return new TaskStatusChangeResult
+                {
+                    Success = false,
+                    Message = "Không tìm thấy trạng thái Deleted"
+                };
+            }
+
+            // Chuyển sang Deleted
+            task.StatusId = deletedStatus.StatusId;
+            task.CompletedDate = null;
+
+            await _taskRepository.UpdateAsync(task);
+            var log = new LogStatusUpdate
+            {
+                IdTask = task.IdTask,
+                IdUserUpdate = user.Id,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = task.StatusId,
+            };
+
+            await _taskRepository.AddStatusLog(log);
+            // ✅ Count sau khi xóa = count trước - 1
+            var sourceTotalCount = sourceTotalCountBeforeDelete - 1;
+
+            return new TaskStatusChangeResult
+            {
+                Success = true,
+                Message = "Đã chuyển task vào thùng rác",
+                TaskId = taskId,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = deletedStatus.StatusId,
+                PreviousStatusName = previousStatus?.StatusName.ToString(),
+                NewStatusName = TaskStatusModel.Deleted.ToString(),
+                PreviousCompletedDate = previousCompletedDate,
+                SourceTotalCount = sourceTotalCount,
+                TargetTotalCount = 0
+            };
         }
+        /// <summary>
+        /// ✅ Restore task từ Deleted (để undo delete)
+        /// </summary>
+        public async Task<TaskStatusChangeResult> RestoreTaskAsync(
+            string taskId,
+            string previousStatusId,
+            DateTime? previousCompletedDate,
+            UserModel user,
+            IList<string> roles)
+        {
+            var task = await _taskRepository.GetByIdAsync(taskId);
+            if (task == null)
+            {
+                return new TaskStatusChangeResult
+                {
+                    Success = false,
+                    Message = "Task không tồn tại"
+                };
+            }
+
+            var previousStatus = await _statusRepository.GetByIdAsync(previousStatusId);
+            if (previousStatus == null)
+            {
+                return new TaskStatusChangeResult
+                {
+                    Success = false,
+                    Message = "Status trước đó không tồn tại"
+                };
+            }
+
+            // Restore về status cũ
+            task.StatusId = previousStatusId;
+            task.CompletedDate = previousCompletedDate;
+
+            await _taskRepository.UpdateAsync(task);
+
+            // ✅ Lấy count của column được restore
+            var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                previousStatusId,
+                null
+            );
+
+            return new TaskStatusChangeResult
+            {
+                Success = true,
+                Message = "Đã khôi phục task",
+                TaskId = taskId,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = previousStatusId,
+                NewStatusName = previousStatus.StatusName.ToString(),
+                // ✅ Chỉ trả về target count (column được restore)
+                SourceTotalCount = 0,
+                TargetTotalCount = targetTotalCount
+            };
+        }
+
         public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles)
         {
             if (string.IsNullOrEmpty(projectId))
                 return new List<TaskItemModel>();
 
             return await _taskRepository.GetByProjectIdAsync(projectId, user, roles);
+        }
+        public async Task<int> GetTotalTaskCountByStatusAsync(
+        UserModel user,
+        IList<string> roles,
+        string statusId,
+        string? projectId = null)
+        {
+            return await _taskRepository.GetTaskCountByStatusAsync(
+                user,
+                roles,
+                statusId,
+                projectId);
+        }
+        public async Task<bool> ReassignTaskAsync(ReassignTaskDto dto, string reassignedById)
+        {
+            var task = await _taskRepository.GetByIdAsync(dto.TaskId);
+            if (task == null)
+                return false;
+
+            string oldUserId = task.Assignee_Id;
+
+            if (oldUserId == dto.NewUserId)
+                throw new Exception("Người mới phải khác người cũ.");
+
+            // 🔹 Tạo log thay đổi
+            var log = new LogTaskModel
+            {
+                TaskId = dto.TaskId,
+                Progress = dto.Progress,
+                Reason = dto.Reason,
+                OldUserId = oldUserId,
+                ReassignedById = reassignedById
+            };
+
+            await _taskRepository.AddLogAsync(log);
+
+            // 🔹 Cập nhật Task sang người mới
+            task.Assignee_Id = dto.NewUserId;
+
+            await _taskRepository.SaveChangesAsync();
+
+            return true;
         }
     }
 }

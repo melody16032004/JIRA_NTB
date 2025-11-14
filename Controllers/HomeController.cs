@@ -2,6 +2,7 @@ using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -584,37 +585,37 @@ namespace JIRA_NTB.Controllers
         //}
         #endregion
 
-        #region
-        [HttpGet("api/server/processes")]
-        public IActionResult LogRunningProcesses()
-        {
-            try
-            {
-                var processes = Process.GetProcesses()
-                    .OrderBy(p => p.ProcessName)
-                    .Select(p => $"{p.ProcessName} (PID: {p.Id})")
-                    .ToList();
+        #region GET: api/server/processes
+        //[HttpGet("api/server/processes")]
+        //public IActionResult LogRunningProcesses()
+        //{
+        //    try
+        //    {
+        //        var processes = Process.GetProcesses()
+        //            .OrderBy(p => p.ProcessName)
+        //            .Select(p => $"{p.ProcessName} (PID: {p.Id})")
+        //            .ToList();
 
-                var logPath = Path.Combine(AppContext.BaseDirectory, "process_log.txt");
-                var logTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                var logContent = new StringBuilder();
-                logContent.AppendLine($"🕒 {logTime} - Danh sách tiến trình đang chạy:");
-                logContent.AppendLine(string.Join(Environment.NewLine, processes));
-                logContent.AppendLine(new string('-', 60));
+        //        var logPath = Path.Combine(AppContext.BaseDirectory, "process_log.txt");
+        //        var logTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        //        var logContent = new StringBuilder();
+        //        logContent.AppendLine($"🕒 {logTime} - Danh sách tiến trình đang chạy:");
+        //        logContent.AppendLine(string.Join(Environment.NewLine, processes));
+        //        logContent.AppendLine(new string('-', 60));
 
-                System.IO.File.AppendAllText(logPath, logContent.ToString());
+        //        System.IO.File.AppendAllText(logPath, logContent.ToString());
 
-                return Ok(new
-                {
-                    message = "✅ Đã ghi log danh sách tiến trình đang chạy.",
-                    processCount = processes.Count
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            message = "✅ Đã ghi log danh sách tiến trình đang chạy.",
+        //            processCount = processes.Count
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { error = ex.Message });
+        //    }
+        //}
         #endregion
 
         #region POST: Home/SaveTask

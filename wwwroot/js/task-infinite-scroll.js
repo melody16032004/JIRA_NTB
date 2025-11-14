@@ -4,7 +4,7 @@ class InfiniteScrollManager {
         this.loadingColumns = new Set();
         this.observers = new Map();
         this.pageSize = 10;
-        
+
         this.init();
     }
 
@@ -89,16 +89,19 @@ class InfiniteScrollManager {
         const currentPage = parseInt(column.dataset.page) || 1;
         const nextPage = currentPage + 1;
         const columnPageSize = column.dataset.pageSize || this.pageSize;
+
+        // ✅ Kiểm tra xem có extraItems không (từ drag & drop)
+        const extraItems = parseInt(column.dataset.extraItems || '0');
+
         // Đánh dấu đang loading
         this.loadingColumns.add(statusId);
         this.showLoading(column, true);
         const projectFilter = document.getElementById('headerProjectFilter');
         const projectId = projectFilter ? projectFilter.value : '';
+
         try {
             // Gọi API
-            const url = `/Task/GetMoreTasks?statusId=${encodeURIComponent(statusId)}
-                &page=${nextPage}&pageSize=${columnPageSize}&projectId=${encodeURIComponent(projectId || '')}`;
-
+            const url = `/Task/GetMoreTasks?statusId=${encodeURIComponent(statusId)}&page=${nextPage}&pageSize=${columnPageSize}&projectId=${encodeURIComponent(projectId || '')}`;
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -116,22 +119,30 @@ class InfiniteScrollManager {
             // Parse HTML response
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const newTasks = doc.querySelectorAll('.task-card');
+            let newTasks = doc.querySelectorAll('.task-card');
 
             if (newTasks.length > 0) {
-                // Append tasks vào column
-                this.appendTasks(column, newTasks);
+                // ✅ Xử lý duplicate nếu có extraItems
+                newTasks = this.handleDuplicateItems(column, newTasks, extraItems);
 
-                // Cập nhật page number
-                column.dataset.page = nextPage;
+                if (newTasks.length > 0) {
+                    // Append tasks vào column
+                    this.appendTasks(column, newTasks);
 
-                // Cập nhật counter
-                this.updateTaskCounter(column, newTasks.length);
+                    // Cập nhật page number
+                    column.dataset.page = nextPage;
 
-                // Re-initialize Lucide icons
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
+                    // Cập nhật counter
+                    this.updateTaskCounter(column, newTasks.length);
+
+                    // Re-initialize Lucide icons
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
                 }
+
+                // ✅ Reset extraItems sau khi xử lý
+                column.dataset.extraItems = '0';
 
                 // Kiểm tra còn task không
                 if (newTasks.length < columnPageSize) {
@@ -157,6 +168,38 @@ class InfiniteScrollManager {
             this.loadingColumns.delete(statusId);
             this.showLoading(column, false);
         }
+    }
+
+    // ✅ HÀM MỚI: Xử lý duplicate items do drag & drop
+    handleDuplicateItems(column, newTasks, extraItems) {
+        if (extraItems <= 0) {
+            return newTasks; // Không có extra items, trả về như cũ
+        }
+
+        const taskList = column.querySelector('.task-list');
+        const existingTaskIds = new Set();
+
+        // Lấy tất cả task IDs hiện có trong DOM
+        taskList.querySelectorAll('.task-card').forEach(card => {
+            const taskId = card.dataset.taskId;
+            if (taskId) {
+                existingTaskIds.add(taskId);
+            }
+        });
+
+        // Lọc bỏ các items đã tồn tại
+        const filteredTasks = Array.from(newTasks).filter(task => {
+            const taskId = task.dataset.taskId;
+            if (existingTaskIds.has(taskId)) {
+                console.log(`[InfiniteScroll] Skipping duplicate task: ${taskId}`);
+                return false;
+            }
+            return true;
+        });
+
+        console.log(`[InfiniteScroll] Filtered ${newTasks.length - filteredTasks.length} duplicate items`);
+
+        return filteredTasks;
     }
 
     appendTasks(column, newTasks) {
@@ -187,6 +230,10 @@ class InfiniteScrollManager {
 
         // Re-attach event listeners
         this.attachTaskEventListeners(taskList);
+        if (window.taskDragDrop) {
+            window.taskDragDrop.refresh();
+            console.log('[InfiniteScroll] Drag & Drop listeners refreshed');
+        }
     }
 
     showLoading(column, show) {
@@ -270,38 +317,47 @@ class InfiniteScrollManager {
     }
 
     // Hủy observer cho một cột cụ thể
-    destroyObserver(status) {
-        const observerData = this.observers.get(status);
+    destroyObserver(statusId) {
+        const observerData = this.observers.get(statusId);
         if (observerData) {
             observerData.observer.disconnect();
             if (observerData.sentinel && observerData.sentinel.parentNode) {
                 observerData.sentinel.remove();
             }
-            this.observers.delete(status);
-            console.log(`[InfiniteScroll] Observer destroyed for ${status}`);
+            this.observers.delete(statusId);
+            console.log(`[InfiniteScroll] Observer destroyed for ${statusId}`);
         }
     }
 
-    // Refresh - gọi khi có thay đổi (create, update, delete task)
-    refresh(status = null) {
-        if (status) {
+    // ✅ CẬP NHẬT: Refresh - gọi khi có thay đổi (create, update, delete task)
+    refresh(statusId = null) {
+        if (statusId) {
             // Reset specific column
-            const column = document.querySelector(`.task-column[data-status="${status}"]`);
+            const column = document.querySelector(`.task-column[data-status-id="${statusId}"]`);
             if (column) {
-                column.dataset.page = '1';
-                column.dataset.hasMore = 'true';
-                // Recreate observer
-                this.destroyObserver(status);
-                this.setupColumnObserver(column);
+                // ✅ KHÔNG reset page về 1, giữ nguyên vị trí hiện tại
+                // column.dataset.page = '1';
+
+                // Giữ nguyên hasMore nếu trước đó còn data
+                // column.dataset.hasMore = 'true';
+
+                // Recreate observer nếu cần
+                const hasMore = column.dataset.hasMore === 'true';
+                if (hasMore && !this.observers.has(statusId)) {
+                    this.setupColumnObserver(column);
+                }
+
+                console.log(`[InfiniteScroll] Refreshed column ${statusId}`);
             }
         } else {
             // Reset all columns
             document.querySelectorAll('.task-column').forEach(column => {
-                const status = column.dataset.status;
-                column.dataset.page = '1';
-                column.dataset.hasMore = 'true';
-                this.destroyObserver(status);
-                this.setupColumnObserver(column);
+                const statusId = column.dataset.statusId;
+                const hasMore = column.dataset.hasMore === 'true';
+
+                if (hasMore && !this.observers.has(statusId)) {
+                    this.setupColumnObserver(column);
+                }
             });
         }
     }
@@ -309,7 +365,7 @@ class InfiniteScrollManager {
     // Destroy all observers
     destroy() {
         console.log('[InfiniteScroll] Destroying all observers');
-        this.observers.forEach((data, status) => {
+        this.observers.forEach((data, statusId) => {
             data.observer.disconnect();
             if (data.sentinel && data.sentinel.parentNode) {
                 data.sentinel.remove();

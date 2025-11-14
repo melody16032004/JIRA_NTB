@@ -4,6 +4,7 @@ using JIRA_NTB.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JIRA_NTB.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251113035911_CreateCheckInTable")]
+    partial class CreateCheckInTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -118,37 +121,6 @@ namespace JIRA_NTB.Migrations
                     b.HasKey("IdLog");
 
                     b.ToTable("LogDevices", (string)null);
-                });
-
-            modelBuilder.Entity("JIRA_NTB.Models.LogStatusUpdate", b =>
-                {
-                    b.Property<string>("LogId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("IdTask")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("IdUserUpdate")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("NewStatusId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PreviousStatusId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("updateAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("LogId");
-
-                    b.HasIndex("IdTask");
-
-                    b.HasIndex("IdUserUpdate");
-
-                    b.ToTable("LogStatusUpdates");
                 });
 
             modelBuilder.Entity("JIRA_NTB.Models.LogTaskModel", b =>
@@ -519,25 +491,6 @@ namespace JIRA_NTB.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("JIRA_NTB.Models.LogStatusUpdate", b =>
-                {
-                    b.HasOne("JIRA_NTB.Models.TaskItemModel", "Task")
-                        .WithMany("LogStatusUpdates")
-                        .HasForeignKey("IdTask")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("JIRA_NTB.Models.UserModel", "User")
-                        .WithMany()
-                        .HasForeignKey("IdUserUpdate")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Task");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("JIRA_NTB.Models.LogTaskModel", b =>
                 {
                     b.HasOne("JIRA_NTB.Models.UserModel", "OldUser")
@@ -710,8 +663,6 @@ namespace JIRA_NTB.Migrations
 
             modelBuilder.Entity("JIRA_NTB.Models.TaskItemModel", b =>
                 {
-                    b.Navigation("LogStatusUpdates");
-
                     b.Navigation("Logs");
                 });
 

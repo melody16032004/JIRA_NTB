@@ -10,6 +10,11 @@
         public string PreviousStatusName { get; set; }
         public string NewStatusName { get; set; }
         public DateTime? PreviousCompletedDate { get; set; }
+        public DateTime? CompletedDate { get; set; }
+        public bool IsCompleted { get; set; } = false;
+        // ✅ Thêm properties mới
+        public int SourceTotalCount { get; set; }
+        public int TargetTotalCount { get; set; }
     }
     // Request Models
     public class UpdateStatusRequest

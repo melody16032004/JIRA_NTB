@@ -142,20 +142,10 @@ class TaskDragDrop {
             const result = await response.json();
 
             if (result.success) {
-                // Di chuyển card đến column mới
-                this.moveCardToColumn(this.draggedElement, dropZone);
-
-                // Cập nhật số lượng tasks sử dụng TaskUtils
-                TaskUtils.updateTaskCounts();
-
-                // Hiển thị thông báo thành công với nút Undo
-                TaskUtils.showSuccessWithUndo(result.message, {
-                    taskId: result.data.taskId,
-                    previousStatusId: result.data.previousStatusId,
-                    originalHTML: originalHTML,
-                    parentStatusId: this.previousStatusId,
-                    previousCompletedDate: result.data.previousCompletedDate  // ✅ thêm
-                });
+                TaskUtils.saveNotificationForReload('✅ ' + result.message, 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
             } else {
                 TaskUtils.showError(result.message);
             }
@@ -167,6 +157,67 @@ class TaskDragDrop {
         }
 
         return false;
+    }
+
+    // ✅ HÀM MỚI: Cập nhật pagination data sau khi drop
+    updatePaginationAfterDrop(sourceColumn, targetColumn) {
+        // Cập nhật SOURCE COLUMN (cột mất đi 1 task)
+        if (sourceColumn) {
+            const sourceTaskList = sourceColumn.querySelector('.task-list');
+            const sourceCurrentCount = sourceTaskList.querySelectorAll('.task-card').length;
+            const sourceCurrentPage = parseInt(sourceColumn.dataset.page) || 1;
+            const sourcePageSize = parseInt(sourceColumn.dataset.pageSize) || 10;
+
+            // Nếu đã load hết tất cả items (hasMore = false)
+            // thì không cần làm gì vì sẽ không có duplicate
+            const sourceHasMore = sourceColumn.dataset.hasMore === 'true';
+
+            if (sourceHasMore) {
+                // Trường hợp còn items chưa load:
+                // Đánh dấu cần refresh để tránh duplicate khi scroll tiếp
+                // Hoặc có thể giảm page đi 1 item
+                console.log(`[Pagination] Source column has more items, current page may have gap`);
+
+                // Option 1: Reset về trang đầu (đơn giản nhất)
+                // sourceColumn.dataset.page = '1';
+
+                // Option 2: Đánh dấu cần bù đắp 1 item từ trang sau
+                sourceColumn.dataset.needsCompensation = 'true';
+            }
+        }
+
+        // Cập nhật TARGET COLUMN (cột nhận thêm 1 task)
+        if (targetColumn) {
+            const targetTaskList = targetColumn.querySelector('.task-list');
+            const targetCurrentCount = targetTaskList.querySelectorAll('.task-card').length;
+            const targetCurrentPage = parseInt(targetColumn.dataset.page) || 1;
+            const targetPageSize = parseInt(targetColumn.dataset.pageSize) || 10;
+            const targetHasMore = targetColumn.dataset.hasMore === 'true';
+
+            if (targetHasMore) {
+                // Trường hợp còn items chưa load:
+                // Item mới này sẽ nằm ở vị trí đầu/cuối danh sách
+                // Khi scroll tiếp, item thứ pageSize sẽ bị duplicate
+                console.log(`[Pagination] Target column received new item, needs adjustment`);
+
+                // Đánh dấu đã có thêm 1 item "ngoài luồng"
+                const extraItems = parseInt(targetColumn.dataset.extraItems || '0');
+                targetColumn.dataset.extraItems = extraItems + 1;
+            }
+        }
+
+        // ✅ Refresh infinite scroll observers
+        if (window.infiniteScrollManager) {
+            const sourceStatusId = sourceColumn?.dataset.statusId;
+            const targetStatusId = targetColumn?.dataset.statusId;
+
+            if (sourceStatusId) {
+                window.infiniteScrollManager.refresh(sourceStatusId);
+            }
+            if (targetStatusId && targetStatusId !== sourceStatusId) {
+                window.infiniteScrollManager.refresh(targetStatusId);
+            }
+        }
     }
 
     moveCardToColumn(card, targetDropZone) {
