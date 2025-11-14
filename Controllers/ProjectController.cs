@@ -4,6 +4,7 @@ using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,6 +17,7 @@ using System.Threading.Tasks;
 
 namespace JIRA_NTB.Controllers
 {
+    [Authorize]
     public class ProjectController : Controller
     {
         private readonly AppDbContext _context;
