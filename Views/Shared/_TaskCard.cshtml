@@ -54,6 +54,14 @@
                         <i data-lucide="edit" class="w-4 h-4 text-blue-400"></i>
                         <span>Chỉnh sửa</span>
                     </button>
+                    <button class="reassign-task-btn w-full px-4 py-2 text-left text-sm text-yellow-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                            data-task-id="@Model.IdTask"
+                            data-task-name="@Model.NameTask"
+                            data-current-user="@Model.Assignee?.FullName"
+                            data-project-id="@Model.ProjectId">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Thay người</span>
+                    </button>
                     <button class="delete-task-btn w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
                             data-task-id="@Model.IdTask">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>

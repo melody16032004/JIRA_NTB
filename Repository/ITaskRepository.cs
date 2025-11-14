@@ -21,5 +21,8 @@ namespace JIRA_NTB.Repository
         Task RefreshOverdueStatusAsync();
         Task AddAsync(TaskItemModel task);
         Task DeleteAsync(string id);
+        Task AddLogAsync(LogTaskModel log);
+        Task SaveChangesAsync();
+        Task AddStatusLog(LogStatusUpdate log);
     }
 }
