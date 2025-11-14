@@ -369,5 +369,24 @@ namespace JIRA_NTB.Controllers
 
             return Json(result);
         }
+        [Authorize(Roles = "ADMIN,LEADER")]
+        public async Task<IActionResult> ReassignUser([FromBody] ReassignTaskDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest("Dữ liệu không hợp lệ.");
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+                return Unauthorized();
+
+            string reassignedById = user.Id;
+
+            var result = await taskService.ReassignTaskAsync(dto, reassignedById);
+
+            if (!result)
+                return NotFound("Task không tồn tại.");
+
+            return Ok(new { message = "Thay người thành công" });
+        }
     }
 }

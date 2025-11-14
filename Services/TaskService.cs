@@ -145,8 +145,16 @@ namespace JIRA_NTB.Services
             }
 
             await _taskRepository.UpdateAsync(task);
-
-    
+            var log = new LogStatusUpdate
+            {
+                IdTask = task.IdTask,
+                IdUserUpdate = user.Id,
+                PreviousStatusId = previousStatusId,
+                NewStatusId = task.StatusId,
+            };
+          
+            await _taskRepository.AddStatusLog(log);
+                
             var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
                 user,
                 roles,
@@ -536,6 +544,36 @@ namespace JIRA_NTB.Services
                 roles,
                 statusId,
                 projectId);
+        }
+        public async Task<bool> ReassignTaskAsync(ReassignTaskDto dto, string reassignedById)
+        {
+            var task = await _taskRepository.GetByIdAsync(dto.TaskId);
+            if (task == null)
+                return false;
+
+            string oldUserId = task.Assignee_Id;
+
+            if (oldUserId == dto.NewUserId)
+                throw new Exception("Người mới phải khác người cũ.");
+
+            // 🔹 Tạo log thay đổi
+            var log = new LogTaskModel
+            {
+                TaskId = dto.TaskId,
+                Progress = dto.Progress,
+                Reason = dto.Reason,
+                OldUserId = oldUserId,
+                ReassignedById = reassignedById
+            };
+
+            await _taskRepository.AddLogAsync(log);
+
+            // 🔹 Cập nhật Task sang người mới
+            task.Assignee_Id = dto.NewUserId;
+
+            await _taskRepository.SaveChangesAsync();
+
+            return true;
         }
     }
 }

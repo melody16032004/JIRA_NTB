@@ -40,6 +40,6 @@ namespace JIRA_NTB.Services
         IList<string> roles,
         string statusId,
         string? projectId = null);
-
+        Task<bool> ReassignTaskAsync(ReassignTaskDto dto, string reassignedById);
     }
 }

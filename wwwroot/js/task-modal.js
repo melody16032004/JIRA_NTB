@@ -442,7 +442,103 @@ document.addEventListener('click', async (e) => {
         TaskUtils.showError('❌ Đã xảy ra lỗi khi xóa nhiệm vụ!');
     }
 });
+// ==========================
+// Xử lý nút Reassign / Thay người
+// ==========================
+document.addEventListener('click', async (e) => {
+    const reassignBtn = e.target.closest('.reassign-task-btn');
+    if (!reassignBtn) return;
 
+    // Lấy dữ liệu từ data-* của button
+    const taskId = reassignBtn.dataset.taskId;
+    const taskName = reassignBtn.dataset.taskName;
+    const currentUser = reassignBtn.dataset.currentUser;
+
+    // Điền vào modal
+    document.getElementById('reassignTaskId').value = taskId;
+    document.getElementById('reassignTaskName').value = taskName || '';
+    document.getElementById('reassignCurrentUser').value = currentUser || '';
+
+    // Reset form: new user, progress, reason
+    const newUserInput = document.getElementById('reassignNewUser');
+    const progressInput = document.getElementById('reassignProgress');
+    const reasonInput = document.getElementById('reassignReason');
+
+    newUserInput.innerHTML = '<option value="">-- Đang tải thành viên --</option>';
+    newUserInput.disabled = true;
+    progressInput.value = '';
+    reasonInput.value = '';
+
+    // Lấy danh sách user theo projectId (cần fetch từ server)
+    const projectId = reassignBtn.dataset.projectId; // nếu bạn thêm data-project-id vào nút
+    if (projectId) {
+        try {
+            const response = await fetch(`/Task/GetMembersByProject?projectId=${projectId}`);
+            if (!response.ok) throw new Error('Không thể load danh sách user');
+
+            const users = await response.json();
+
+            newUserInput.innerHTML = '<option value="">-- Chọn người mới --</option>';
+            users.forEach(u => {
+                const option = document.createElement('option');
+                option.value = u.userId;
+                option.textContent = u.userName;
+                newUserInput.appendChild(option);
+            });
+
+            newUserInput.disabled = false;
+        } catch (err) {
+            console.error('❌ Lỗi load members:', err);
+            newUserInput.innerHTML = '<option value="">-- Lỗi tải dữ liệu --</option>';
+        }
+    } else {
+        newUserInput.innerHTML = '<option value="">-- Không có project --</option>';
+    }
+
+    // Hiển thị modal
+    document.getElementById('reassignModal').classList.remove('hidden');
+});
+document.getElementById('closeReassignModal').addEventListener('click', () => {
+    document.getElementById('reassignModal').classList.add('hidden');
+});
+document.getElementById('reassignForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const taskId = document.getElementById('reassignTaskId').value;
+    const oldUserName = document.getElementById('reassignCurrentUser').value;
+    const newUserId = document.getElementById('reassignNewUser').value;
+    const progress = document.getElementById('reassignProgress').value;
+    const reason = document.getElementById('reassignReason').value;
+
+    if (!newUserId) {
+        alert("Vui lòng chọn người mới.");
+        return;
+    }
+
+    try {
+        const res = await fetch('/Task/ReassignUser', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                taskId,
+                newUserId,
+                progress: Number(progress),
+                reason
+            })
+        });
+
+        if (!res.ok) throw new Error("Lỗi phía server");
+
+        const data = await res.json();
+
+        alert("Thay người thành công!");
+        location.reload();
+
+    } catch (err) {
+        console.error(err);
+        alert("Có lỗi xảy ra khi thay người.");
+    }
+});
 // ==========================
 // Load danh sách user khi chọn Project TRONG MODAL (chỉ cho CREATE)
 // ==========================

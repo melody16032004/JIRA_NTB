@@ -14,6 +14,7 @@ let currentUserRole = '';
 let isProjectToggleAllOpen = false;
 const PAGE_SIZE = 5; // Định nghĩa pageSize ở một nơi
 const TASK_PAGE_SIZE = 3;
+let currentViewMode = 'list';
 const viewTaskNull = `
   <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
     <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
@@ -387,6 +388,22 @@ function renderDashboard(projects) {
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                     Thu gọn tất cả
                 </button>
+
+
+                <div class="flex items-center bg-gray-800 rounded-lg p-1 gap-1">
+                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                            ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
+                            data-view="list"
+                            title="Xem dạng danh sách">
+                        <i data-lucide="layout-list" class="w-4 h-4"></i>
+                    </button>
+                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                            ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
+                            data-view="gantt"
+                            title="Xem dạng Gantt">
+                        <i data-lucide="gantt-chart-square" class="w-4 h-4"></i>
+                    </button>
+                </div>
             </div>
         </div>
     `;
@@ -526,6 +543,27 @@ function renderDashboard(projects) {
         viewProjectContainer += viewProject;
     }
 
+    let mainViewContent = '';
+    if (currentViewMode === 'list') {
+        // Nếu là view "list", dùng code cũ của bạn
+        mainViewContent = `
+            <div class="space-y-4 max-h-[630px] overflow-y-auto custom-scroll">
+                ${viewProjectContainer}
+            </div>
+        `;
+    } else {
+        // Nếu là view "gantt", hiển thị placeholder
+        mainViewContent = `
+            <div id="project-gantt-view" class="space-y-4 max-h-[630px] overflow-y-auto custom-scroll">
+                <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
+                    <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
+                    Chức năng Gantt Chart đang được phát triển.
+                    <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
+                </div>
+            </div>
+        `;
+    }
+
     const leftColumn = `
         <div class="lg:col-span-2 bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-4">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4 md:gap-0">
@@ -553,9 +591,21 @@ function renderDashboard(projects) {
             <div class="space-y-4">
                 ${controllButton}
             </div>
-            <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
-                ${viewProjectContainer}
-            </div>
+            <div id="project-list-view" class="${currentViewMode === 'list' ? '' : 'hidden'}">
+                <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
+                    ${viewProjectContainer}
+                </div>
+            </div>
+
+            <div id="project-gantt-view" class="${currentViewMode === 'gantt' ? '' : 'hidden'}">
+                <div class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
+                    <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
+                        <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
+                        <span>Chức năng Gantt Chart đang được phát triển.</span>
+                        <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
@@ -803,6 +853,64 @@ function attachAllEventListeners(projects, role) {
     //filterHighPrior(); // Gắn lại sự kiện filter
 
     initInfiniteScroll();
+
+    document.querySelectorAll(".view-toggle-btn").forEach(btn => {
+        // Clone để ngăn gán lặp
+        const toggleAllBtn = document.getElementById("toggleAllBtn");
+        const prevPage = document.getElementById("prevPage");
+        const nextPage = document.getElementById("nextPage");
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        newBtn.addEventListener("click", () => {
+            const newView = newBtn.dataset.view;
+            if (newView === currentViewMode) {
+                return; // Đã ở view này, không làm gì
+            }
+
+            // 1. Cập nhật state toàn cục
+            currentViewMode = newView;
+            console.log(`Chuyển sang view: ${currentViewMode}`);
+
+            // 2. Lấy các element
+            const listView = document.getElementById('project-list-view');
+            const ganttView = document.getElementById('project-gantt-view');
+            const listBtn = document.querySelector('.view-toggle-btn[data-view="list"]');
+            const ganttBtn = document.querySelector('.view-toggle-btn[data-view="gantt"]');
+
+            // 3. Tắt/Mở các View (toggle class 'hidden')
+            if (currentViewMode === 'list') {
+                listView?.classList.remove('hidden');
+                ganttView?.classList.add('hidden');
+                toggleAllBtn.classList.remove("hidden");
+                //prevPage.setAttribute("disabled");
+                //nextPage.setAttribute("disabled");
+                prevPage.disabled = false;
+                nextPage.disabled = false;
+            } else {
+                listView?.classList.add('hidden');
+                ganttView?.classList.remove('hidden');
+                toggleAllBtn.classList.add("hidden");
+                //prevPage.removeAttribute("disabled");
+                //nextPage.removeAttribute("disabled");
+                prevPage.disabled = true;
+                nextPage.disabled = true;
+            }
+
+            // 4. Cập nhật style nút (toggle class active)
+            listBtn?.classList.toggle('bg-indigo-600', currentViewMode === 'list');
+            listBtn?.classList.toggle('text-white', currentViewMode === 'list');
+            listBtn?.classList.toggle('shadow-sm', currentViewMode === 'list');
+            listBtn?.classList.toggle('text-gray-400', currentViewMode !== 'list');
+
+            ganttBtn?.classList.toggle('bg-indigo-600', currentViewMode === 'gantt');
+            ganttBtn?.classList.toggle('text-white', currentViewMode === 'gantt');
+            ganttBtn?.classList.toggle('shadow-sm', currentViewMode === 'gantt');
+            ganttBtn?.classList.toggle('text-gray-400', currentViewMode !== 'gantt');
+
+            // 5. KHÔNG GỌI renderDashboard() NỮA
+        });
+    });
 }
 /**
  * Khởi tạo listener 'scroll'
@@ -1147,45 +1255,47 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Gán vào state toàn cục
     currentUserRole = container.dataset.role;
-    console.log("User Role:", currentUserRole);
+    //console.log("User Role:", currentUserRole);
 
-    // --- Gọi API (Tải dữ liệu ban đầu) ---
-    // Sửa lại: Tải projects trang 1 và TẤT CẢ tasks
-    let [me, initialProjects, /*tasks,*/ tasksStat, projectsStat] = await Promise.all([
-        safeFetchJson("/api/user/me", {}),
+    // --- Bước 1: Chỉ fetch thông tin user ---
+    const me = await safeFetchJson("/api/user/me", null);
+    currentUser = me; // Lưu vào state toàn cục
+
+    // --- Bước 2: Kiểm tra User TRƯỚC KHI fetch phần còn lại ---
+    if (!currentUser || currentUser == null) {
+        console.warn("User không hợp lệ hoặc chưa đăng nhập. Đang chuyển hướng...");
+        window.location.href = "/Error/403";
+        return; // Dừng thực thi ngay lập tức
+    }
+
+    // Nếu user OK, log và tiếp tục
+    //console.log("User:", me);
+
+    // --- Bước 3: Fetch các dữ liệu còn lại (vì user đã hợp lệ) ---
+    let [initialProjects, tasksStat, projectsStat] = await Promise.all([
         safeFetchJson(`/api/projects?pageIndex=1&pageSize=${PAGE_SIZE}`, { items: [], pageIndex: 1, totalPages: 1 }), // Trang 1
-        //safeFetchJson("/api/tasks", []), // Tải TẤT CẢ tasks (quan trọng)
         safeFetchJson("/api/tasks/statistics", {}),
         safeFetchJson("/api/projects/statistics", {}),
     ]);
 
-    // --- Lưu vào state toàn cục ---
-    currentUser = me;
-    //allTasks = tasks; // Lưu tất cả task
+    // --- Lưu nốt vào state toàn cục ---
     allTasksStat = tasksStat;
     allProjectsStat = projectsStat;
 
-    // --- Log dữ liệu ban đầu ---
-    console.log("User:", me);
+    // --- Log dữ liệu ban đầu (phần còn lại) ---
     console.log("Projects (Trang 1): ", initialProjects);
-    //console.log("Tasks (Tất cả): ", allTasks);
     console.log("Stats Task: ", tasksStat);
     console.log("Stats Project: ", projectsStat);
 
     // --- Render giao diện LẦN ĐẦU TIÊN ---
     renderDashboard(initialProjects);
 
-    console.log("✅ Dữ liệu đã tải và render xong. Ẩn loader.");
+    //console.log("✅ Dữ liệu đã tải và render xong. Ẩn loader.");
 
     if (fullPageLoader) {
-        // Thêm class opacity-0 để kích hoạt hiệu ứng fade-out
-        //fullPageLoader.classList.add('opacity-0');
-
-        // Sau khi hiệu ứng 500ms kết thúc, xóa loader khỏi DOM
         setTimeout(() => {
             fullPageLoader.classList.add('hidden');
-            //fullPageLoader.remove();
-        }, 500); // Phải khớp với 'duration-500' của Tailwind
+        }, 500);
     }
 });
 
