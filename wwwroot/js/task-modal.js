@@ -430,28 +430,10 @@ document.addEventListener('click', async (e) => {
         const result = await response.json();
 
         if (result.success) {
-            // Ẩn task card với animation
-            if (taskCard) {
-                taskCard.style.transition = 'all 0.18s ease';
-                taskCard.style.opacity = '0';
-                taskCard.style.transform = 'scale(0.96)';
-
-                setTimeout(() => {
-                    taskCard.remove();
-
-                    // Cập nhật UI sử dụng TaskUtils
-                    TaskUtils.updateTaskCounts();
-                    TaskUtils.checkAndAddEmptyState(parentColumn);
-                }, 200);
-            }
-
-            // Hiển thị toast với Undo sử dụng TaskUtils
-            TaskUtils.showSuccessWithUndo('✅ Đã xóa nhiệm vụ', {
-                taskId: taskId,
-                previousStatusId: result.previousStatusId || previousStatusId,
-                originalHTML: originalHTML,
-                parentStatusId: parentStatusId
-            });
+            TaskUtils.saveNotificationForReload('✅ ' + result.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         } else {
             TaskUtils.showError('❌ ' + result.message);
         }
