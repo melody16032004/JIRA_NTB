@@ -555,7 +555,7 @@ function renderDashboard(projects) {
     } else {
         // Nếu là view "gantt", hiển thị placeholder
         mainViewContent = `
-            <div id="project-gantt-view" class="space-y-4 max-h-[630px] overflow-y-auto custom-scroll">
+            <div id="project-gantt-view" class="space-y-4 max-h-[630px] overflow-y-auto overflow-x-hidden custom-scroll">
                 <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
                     <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
                     Chức năng Gantt Chart đang được phát triển.

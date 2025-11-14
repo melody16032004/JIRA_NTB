@@ -185,3 +185,7 @@
     border-radius: 3px;
     font-weight: 600;
 }
+
+.apexcharts-legend-text {
+    color: rgb(200 200 200) !important;
+}
