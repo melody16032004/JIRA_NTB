@@ -156,7 +156,7 @@ namespace JIRA_NTB.Services
             await _taskRepository.AddStatusLog(log);
                 
             var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                 user,
                 roles,
                 previousStatusId,
                 null // projectId - lấy từ session nếu cần filter theo project

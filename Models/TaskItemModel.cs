@@ -24,6 +24,7 @@ namespace JIRA_NTB.Models
 
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public DateTime CreateAt { get; set; } = DateTime.Now;
 
         // Foreign Keys
         public string? Assignee_Id { get; set; }
