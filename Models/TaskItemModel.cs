@@ -44,5 +44,6 @@ namespace JIRA_NTB.Models
         public Status? Status { get; set; }
         // 🔹 Navigation tới Log
         public ICollection<LogTaskModel> Logs { get; set; } = new List<LogTaskModel>();
+        public ICollection<LogStatusUpdate> LogStatusUpdates { get; set; } = new List<LogStatusUpdate>();
     }
 }

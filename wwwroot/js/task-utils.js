@@ -5,19 +5,6 @@
 const TaskUtils = {
     // ====== UI Update Functions ======
 
-    updateTaskCounts() {
-        const columns = document.querySelectorAll('.task-column');
-        columns.forEach(column => {
-            const taskContainer = column.querySelector('[data-status]');
-            const taskCount = taskContainer ? taskContainer.querySelectorAll('.task-card').length : 0;
-
-            const badge = column.querySelector('span.bg-gray-700\\/50');
-            if (badge) {
-                badge.textContent = taskCount;
-            }
-        });
-    },
-
     addEmptyState(container) {
         if (!container) return;
 

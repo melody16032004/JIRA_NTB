@@ -10,7 +10,7 @@ namespace JIRA_NTB.Models
 
         public int Progress { get; set; }
 
-        public DateTime ReassignedAt { get; set; } = DateTime.UtcNow;
+        public DateTime ReassignedAt { get; set; } = DateTime.Now;
 
         public string? Reason { get; set; }
 
