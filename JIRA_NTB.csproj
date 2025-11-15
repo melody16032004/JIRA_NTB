@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3595.46" />
     <PackageReference Include="Polly" Version="8.6.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 
 </Project>
