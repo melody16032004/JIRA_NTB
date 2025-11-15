@@ -9,10 +9,11 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
     <title>@ViewData["Title"] - Ứng Dụng Của Tôi</title>
     <link rel="stylesheet" href="/css/style.css"/>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
 
-
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-gray-100">
     <div class="flex h-screen overflow-hidden">
@@ -73,7 +74,13 @@
                         <span class="ml-3 font-medium">Dự án</span>
                     </a>
                 }
-                
+                <a asp-area="" asp-controller="RankUser" asp-action="Index"
+                     class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
+                      <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
+                            <i data-lucide="award" class="w-4 h-4"></i>
+                      </div>
+                    <span class="ml-3 font-medium">Xếp hạng</span>
+                </a>
                 <a asp-area="" asp-controller="Task" asp-action="Index"
                    class="flex items-center p-3 rounded-lg hover:bg-indigo-600 hover:text-white transition-all group">
                     <div class="w-8 h-8 flex items-center justify-center bg-gray-700 rounded-lg group-hover:bg-indigo-500">
@@ -397,7 +404,11 @@
     </div>
 
     @RenderSection("GlobalModals", required: false)
-    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>lucide.createIcons();</script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/js/site.js"></script>
+    
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const menuItems = document.querySelectorAll("#sidebarMenu .sidebar-item");
@@ -413,9 +424,7 @@
             });
         });
     </script>
-
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script>lucide.createIcons();</script>
-    <script src="/js/site.js"></script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
