@@ -1,0 +1,614 @@
+﻿@model JIRA_NTB.ViewModels.RankUserPageViewModel
+
+<style>
+    .ranking-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 40px 20px;
+    }
+
+    .ranking-header {
+        text-align: center;
+        color: white;
+        margin-bottom: 50px;
+    }
+
+        .ranking-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .ranking-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+    .ranking-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .ranking-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        animation: slideUp 0.6s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .card-title i {
+            color: #667eea;
+        }
+
+    /* User App Rankings - Horizontal Layout */
+    .user-row {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 15px 20px;
+        margin-bottom: 15px;
+        background: #f7fafc;
+        border-radius: 15px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+        .user-row:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+    .user-info-horizontal {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 200px;
+        flex-shrink: 0;
+    }
+
+    .user-avatar {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #667eea;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .user-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .apps-horizontal {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        flex: 1;
+        align-items: center;
+    }
+
+    .app-icon-item {
+        position: relative;
+        width: 55px;
+        height: 55px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        background: white;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+        .app-icon-item svg,
+        .app-icon-item img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .app-icon-item:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .app-icon-item.rank-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-color: #ffd700;
+        }
+
+        .app-icon-item.rank-2 {
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+            border-color: #c0c0c0;
+        }
+
+        .app-icon-item.rank-3 {
+            background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
+            border-color: #cd7f32;
+        }
+
+    .rank-number {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #667eea;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .app-tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(-10px);
+        background: #2d3748;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease;
+        z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+        .app-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #2d3748;
+        }
+
+    .app-icon-item:hover .app-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-5px);
+    }
+
+    .tooltip-name {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .tooltip-stats {
+        font-size: 0.8rem;
+        opacity: 0.9;
+    }
+
+    /* Podium Design for Late Users */
+    .podium-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 15px;
+        padding: 40px 20px 20px;
+        min-height: 350px;
+    }
+
+    .podium-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: podiumRise 0.8s ease-out;
+    }
+
+    @@keyframes podiumRise {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .podium-avatar-container {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .podium-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid white;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    }
+
+    .podium-item:hover .podium-avatar {
+        transform: scale(1.1);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    }
+
+    .late-badge {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 3px solid white;
+        box-shadow: 0 4px 12px rgba(252, 129, 129, 0.4);
+    }
+
+    .podium-rank {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2rem;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .podium-base {
+        width: 120px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .podium-item:hover .podium-base {
+        transform: translateY(-5px);
+    }
+
+    .podium-name {
+        font-weight: 600;
+        color: white;
+        font-size: 0.95rem;
+        text-align: center;
+        margin-top: 10px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Position 1 - Gold */
+    .podium-item.pos-1 .podium-base {
+        height: 180px;
+        background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    }
+
+    .podium-item.pos-1 .podium-avatar {
+        border-color: #ffd700;
+    }
+
+    /* Position 2 - Silver */
+    .podium-item.pos-2 .podium-base {
+        height: 140px;
+        background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+        box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
+    }
+
+    .podium-item.pos-2 .podium-avatar {
+        border-color: #c0c0c0;
+    }
+
+    /* Position 3 - Bronze */
+    .podium-item.pos-3 .podium-base {
+        height: 100px;
+        background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
+        box-shadow: 0 4px 15px rgba(205, 127, 50, 0.4);
+    }
+
+    .podium-item.pos-3 .podium-avatar {
+        border-color: #cd7f32;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #a0aec0;
+        padding: 60px 20px;
+        font-style: italic;
+        font-size: 1.1rem;
+    }
+
+    @@media (max-width: 992px) {
+        .ranking-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .user-info-horizontal {
+            min-width: 150px;
+        }
+
+        .podium-container {
+            gap: 10px;
+        }
+
+        .podium-base {
+            width: 100px;
+        }
+
+        .podium-avatar {
+            width: 60px;
+            height: 60px;
+        }
+    }
+</style>
+
+<div class="ranking-container">
+    <div class="ranking-header">
+        <h1>🏆 Bảng Xếp Hạng</h1>
+        <p>Thống kê hoạt động và hiệu suất làm việc</p>
+    </div>
+
+    <div class="ranking-grid">
+        <!-- LEFT: Top Apps Per User -->
+        <div class="ranking-card">
+            <div class="card-title">
+                <i class="fas fa-chart-line"></i>
+                Top Ứng Dụng Theo Từng User
+            </div>
+
+            @if (Model.TopAppsPerUser != null && Model.TopAppsPerUser.Any())
+            {
+                @foreach (var user in Model.TopAppsPerUser)
+                {
+                    <div class="user-row">
+                        <div class="user-info-horizontal">
+                            <img src="@user.Avt" alt="@user.FullName" class="user-avatar">
+                            <span class="user-name">@user.FullName</span>
+                        </div>
+
+                        <div class="apps-horizontal">
+                            @foreach (var app in user.Apps)
+                            {
+                                <div class="app-icon-item rank-@(app.RankId <= 3 ? app.RankId.ToString() : "other")">
+                                    <span class="rank-number">@app.RankId</span>
+                                    @{
+                                        var iconHtml = GetAppIconHtml(app.AppName);
+                                    }
+                                    @Html.Raw(iconHtml)
+                                    <div class="app-tooltip">
+                                        <span class="tooltip-name">@app.AppName</span>
+                                        <div class="tooltip-stats">
+                                            ⏱️ @app.TotalDurationMinutes phút · 🔄 @app.OpenCount lần
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="no-data">Chưa có dữ liệu</div>
+            }
+        </div>
+
+        <!-- RIGHT: Top Late Users - Podium -->
+        <div class="ranking-card">
+            <div class="card-title">
+                <i class="fas fa-clock"></i>
+                Top Người Đi Muộn
+            </div>
+
+            @if (Model.TopLateUsers != null && Model.TopLateUsers.Any())
+            {
+                <div class="podium-container">
+                    @* Reorder for podium: 2nd, 1st, 3rd *@
+                    @if (Model.TopLateUsers.Count >= 2)
+                    {
+                        var secondPlace = Model.TopLateUsers[1];
+                        <div class="podium-item pos-2">
+                            <div class="podium-avatar-container">
+                                <div class="podium-rank">🥈</div>
+                                <img src="@secondPlace.Avt" alt="@secondPlace.FullName" class="podium-avatar">
+                                <div class="late-badge">@secondPlace.LateCount</div>
+                            </div>
+                            <div class="podium-base">
+                                <div class="podium-name">@secondPlace.FullName</div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.TopLateUsers.Count >= 1)
+                    {
+                        var firstPlace = Model.TopLateUsers[0];
+                        <div class="podium-item pos-1">
+                            <div class="podium-avatar-container">
+                                <div class="podium-rank">🥇</div>
+                                <img src="@firstPlace.Avt" alt="@firstPlace.FullName" class="podium-avatar">
+                                <div class="late-badge">@firstPlace.LateCount</div>
+                            </div>
+                            <div class="podium-base">
+                                <div class="podium-name">@firstPlace.FullName</div>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.TopLateUsers.Count >= 3)
+                    {
+                        var thirdPlace = Model.TopLateUsers[2];
+                        <div class="podium-item pos-3">
+                            <div class="podium-avatar-container">
+                                <div class="podium-rank">🥉</div>
+                                <img src="@thirdPlace.Avt" alt="@thirdPlace.FullName" class="podium-avatar">
+                                <div class="late-badge">@thirdPlace.LateCount</div>
+                            </div>
+                            <div class="podium-base">
+                                <div class="podium-name">@thirdPlace.FullName</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="no-data">Không có dữ liệu đi muộn</div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    public string GetAppIconHtml(string appName)
+    {
+        // Map app names to Simple Icons slugs or custom images
+        var iconMap = new Dictionary<string, (string type, string value, string color)>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Browsers
+            { "chrome", ("simpleicons", "googlechrome", "#4285F4") },
+            { "firefox", ("simpleicons", "firefox", "#FF7139") },
+            { "edge", ("simpleicons", "microsoftedge", "#0078D7") },
+            { "brave", ("simpleicons", "brave", "#FB542B") },
+            { "opera", ("simpleicons", "opera", "#FF1B2D") },
+            { "safari", ("simpleicons", "safari", "#000000") },
+
+            // Development
+            { "devenv", ("simpleicons", "visualstudio", "#5C2D91") },
+            { "vs code", ("simpleicons", "visualstudiocode", "#007ACC") },
+            { "vscode", ("simpleicons", "visualstudiocode", "#007ACC") },
+            { "code", ("simpleicons", "visualstudiocode", "#007ACC") },
+            { "git", ("simpleicons", "git", "#F05032") },
+            { "github", ("simpleicons", "github", "#181717") },
+            { "docker", ("simpleicons", "docker", "#2496ED") },
+            { "postman", ("simpleicons", "postman", "#FF6C37") },
+            { "terminal", ("simpleicons", "windowsterminal", "#4D4D4D") },
+            { "windowsterminal", ("simpleicons", "windowsterminal", "#4D4D4D") },
+            { "cmd", ("simpleicons", "windowsterminal", "#4D4D4D") },
+            { "powershell", ("simpleicons", "powershell", "#5391FE") },
+
+            // Communication
+            { "slack", ("simpleicons", "slack", "#4A154B") },
+            { "teams", ("simpleicons", "microsoftteams", "#6264A7") },
+            { "discord", ("simpleicons", "discord", "#5865F2") },
+            { "zoom", ("simpleicons", "zoom", "#2D8CFF") },
+            { "skype", ("simpleicons", "skype", "#00AFF0") },
+            { "outlook", ("simpleicons", "microsoftoutlook", "#0078D4") },
+            { "telegram", ("simpleicons", "telegram", "#26A5E4") },
+            {"Zalo", ("simpleicons", "zalo", "#0068FF") },
+
+            // Design
+            { "figma", ("simpleicons", "figma", "#F24E1E") },
+            { "photoshop", ("simpleicons", "adobephotoshop", "#31A8FF") },
+            { "illustrator", ("simpleicons", "adobeillustrator", "#FF9A00") },
+            { "canva", ("simpleicons", "canva", "#00C4CC") },
+            { "sketch", ("simpleicons", "sketch", "#F7B500") },
+
+            // Office
+            { "word", ("simpleicons", "microsoftword", "#2B579A") },
+            { "excel", ("simpleicons", "microsoftexcel", "#217346") },
+            { "powerpoint", ("simpleicons", "microsoftpowerpoint", "#B7472A") },
+            { "onenote", ("simpleicons", "microsoftonenote", "#7719AA") },
+            { "notion", ("simpleicons", "notion", "#000000") },
+
+            // System
+            { "settings", ("emoji", "⚙️", "") },
+            { "systemsettings", ("emoji", "⚙️", "") },
+            { "taskmanager", ("emoji", "📊", "") },
+            { "explorer", ("simpleicons", "windowsexplorer", "#0078D7") },
+            { "notepad", ("emoji", "📄", "") },
+            { "calculator", ("emoji", "🔢", "") },
+            { "snipping", ("emoji", "✂️", "") },
+            { "snippingtool", ("emoji", "✂️", "") },
+
+            // Media
+            { "spotify", ("simpleicons", "spotify", "#1DB954") },
+            { "vlc", ("simpleicons", "vlcmediaplayer", "#FF8800") },
+            { "youtube", ("simpleicons", "youtube", "#FF0000") },
+
+            // Database
+            { "sql", ("simpleicons", "microsoftsqlserver", "#CC2927") },
+            { "mongodb", ("simpleicons", "mongodb", "#47A248") },
+            { "redis", ("simpleicons", "redis", "#DC382D") },
+
+            // Additional popular apps
+            { "intellij", ("simpleicons", "intellijidea", "#000000") },
+            { "pycharm", ("simpleicons", "pycharm", "#000000") },
+            { "android studio", ("simpleicons", "androidstudio", "#3DDC84") },
+            { "xcode", ("simpleicons", "xcode", "#147EFB") },
+            { "sublime", ("simpleicons", "sublimetext", "#FF9800") },
+            { "atom", ("simpleicons", "atom", "#66595C") },
+            { "trello", ("simpleicons", "trello", "#0052CC") },
+            { "jira", ("simpleicons", "jira", "#0052CC") },
+            { "confluence", ("simpleicons", "confluence", "#172B4D") }
+        };
+
+        foreach (var kvp in iconMap)
+        {
+            if (appName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                var (type, value, color) = kvp.Value;
+
+                if (type == "simpleicons")
+                {
+                    return $"<img src='https://cdn.simpleicons.org/{value}/{color.TrimStart('#')}' alt='{appName}' />";
+                }
+                else if (type == "emoji")
+                {
+                    return $"<span style='font-size: 32px;'>{value}</span>";
+                }
+            }
+        }
+
+        // Default icon - generic app icon
+        return "<span style='font-size: 32px;'>📱</span>";
+    }
+}
+
+<!-- Optional: Add Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
