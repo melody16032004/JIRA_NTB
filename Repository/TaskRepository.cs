@@ -230,6 +230,19 @@ namespace JIRA_NTB.Repository
                 await _context.SaveChangesAsync();
             }
         }
-   
+        public async Task AddLogAsync(LogTaskModel log)
+        {
+            await _context.LogTasks.AddAsync(log);
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+        public async Task AddStatusLog(LogStatusUpdate log)
+        {
+            await _context.LogStatusUpdates.AddAsync(log);
+            await _context.SaveChangesAsync();
+        }
     }
 }

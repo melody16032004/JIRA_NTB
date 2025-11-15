@@ -1,0 +1,191 @@
+﻿/* === CSS CHO GANTT CHART TỰ CHẾ (Bản Nâng Cấp) === */
+
+/* Container chính, không còn dùng Grid */
+.gantt-chart {
+    border: 1px solid #374151;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #1F2937; /* Nền sidebar */
+}
+
+/* --- Header (Dòng tiêu đề) --- */
+.gantt-header-container {
+    display: flex;
+    position: sticky; /* Dính khi cuộn dọc */
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid #4B5563;
+}
+
+.gantt-header-sidebar {
+    width: 250px; /* PHẢI BẰNG .gantt-sidebar-cell */
+    min-width: 250px;
+    padding: 10px;
+    font-weight: 600;
+    background-color: #374151;
+    border-right: 1px solid #4B5563;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gantt-header-timeline {
+    width: 100%;
+    overflow: hidden; /* Header không cuộn */
+    background-color: #374151;
+    position: relative; /* Chứa vạch tháng + "Hôm nay" */
+}
+/* Div nội dung của header (div này sẽ di chuyển khi cuộn) */
+.gantt-header-timeline-content {
+    display: flex;
+    position: relative;
+    height: 100%;
+}
+
+.gantt-month-marker {
+    height: 100%;
+    border-right: 1px dashed #556375;
+    position: absolute;
+    box-sizing: border-box;
+    padding-left: 5px;
+    color: #9CA3AF;
+    font-size: 12px;
+    padding-top: 10px;
+}
+
+/* Nút Zoom */
+.gantt-zoom-controls {
+    display: flex;
+    gap: 4px;
+    background-color: #1F2937;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.gantt-zoom-btn {
+    background-color: transparent;
+    border: none;
+    color: #9CA3AF;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+    .gantt-zoom-btn:hover {
+        background-color: #4B5563;
+        color: white;
+    }
+
+    .gantt-zoom-btn.active {
+        background-color: #6366F1; /* Màu Indigo */
+        color: white;
+    }
+
+/* --- Body (Nơi cuộn chính) --- */
+.gantt-body-container {
+    max-height: 590px; /* (630px - 40px header) */
+    overflow-y: auto;
+    overflow-x: auto; /* CUỘN NGANG QUAN TRỌNG */
+    position: relative;
+}
+/* Dùng Grid cho body */
+.gantt-body-grid {
+    display: grid;
+    /* Cột 1 (Sidebar) 250px, Cột 2 (Timeline) 1fr */
+    grid-template-columns: 250px 1fr;
+    /* Chiều rộng TỔNG của timeline (ví dụ 3000px) sẽ được set ở đây */
+    /* width: 3000px; */
+}
+
+/* --- Các Cell (Ô) --- */
+.gantt-sidebar-cell {
+    padding: 8px 10px;
+    font-size: 13px;
+    background-color: #1F2937;
+    border-bottom: 1px solid #374151;
+    border-right: 1px solid #374151;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5rem; /* ~24px */
+    position: sticky; /* Dính bên trái khi cuộn ngang */
+    left: 0;
+    z-index: 10;
+}
+    /* Highlight hàng khi hover */
+    .gantt-sidebar-cell:hover {
+        background-color: #2b3a4f;
+    }
+
+.gantt-timeline-cell {
+    position: relative;
+    background-color: #111827;
+    border-bottom: 1px solid #374151;
+    min-height: 39px;
+    box-sizing: border-box;
+}
+
+/* Thanh Bar (Task/Project) */
+.gantt-bar {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 24px;
+    line-height: 24px;
+    background-color: #4338CA;
+    border-radius: 4px;
+    padding: 0 8px;
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+    .gantt-bar:hover {
+        opacity: 0.8;
+    }
+
+.gantt-bar-task {
+    background-color: #008FFB;
+}
+/* Custom màu cho project/task trễ hạn */
+.gantt-bar-overdue {
+    background-color: #B91C1C; /* Đỏ */
+    border-color: #F87171;
+}
+
+/* Đường "Hôm nay" (BÊN TRONG TIMELINE HEADER) */
+.gantt-today-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #FF4560;
+    z-index: 10;
+}
+
+.gantt-today-marker-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FF4560;
+    color: white;
+    padding: 2px 6px;
+    font-size: 10px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.apexcharts-legend-text {
+    color: rgb(200 200 200) !important;
+}
