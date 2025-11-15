@@ -30,7 +30,7 @@ namespace JIRA_NTB.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
             var isRole = "";
             if (User.IsInRole("ADMIN"))
@@ -446,7 +446,73 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region
+        #region GET: api/projects/{projectId}/all-tasks
+        [HttpGet("api/projects/{projectId}/all-tasks")]
+        public async Task<IActionResult> GetAllTasksForProject(string projectId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            // --- 1. Kiểm tra bảo mật (Giữ nguyên) ---
+            bool canViewProject = false;
+            if (User.IsInRole("ADMIN"))
+            {
+                canViewProject = true;
+            }
+            else if (User.IsInRole("LEADER"))
+            {
+                canViewProject = await _context.Projects
+                    .AnyAsync(p => p.IdProject == projectId && p.UserId == user.Id);
+            }
+            else
+            { // "EMPLOYEE"
+                canViewProject = await _context.ProjectManagers
+                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == user.Id);
+            }
+
+            if (!canViewProject)
+            {
+                return Forbid(); // 403 - Không có quyền
+            }
+
+            // --- 2. Xây dựng Query (chỉ cho project này) ---
+            IQueryable<TaskItemModel> query = _context.Tasks
+                .Where(t => t.ProjectId == projectId);
+
+            if (User.IsInRole("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            // --- 3. Lấy TẤT CẢ task (Không phân trang) ---
+            var tasks = await query
+                .OrderBy(t => t.StartDate) // Sắp xếp theo ngày bắt đầu
+                .Include(t => t.Status)
+                .Include(t => t.Assignee)
+                .Select(t => new
+                {
+                    t.IdTask,
+                    t.NameTask,
+                    t.Priority,
+                    t.Overdue,
+                    // Bổ sung StatusId/Name để tính %
+                    StatusId = t.Status.StatusName, // (Giả sử IdStatus là 1, 2, 3)
+                    t.FileNote,
+                    t.Note,
+                    t.StartDate,
+                    t.EndDate,
+                    t.Assignee_Id,
+                    t.ProjectId,
+                    StatusName = t.Status.StatusName,
+                    NameAssignee = t.Assignee.FullName
+                })
+                .ToListAsync();
+
+            // --- 4. Trả về một mảng task ---
+            return Ok(tasks);
+        }
+        #endregion
+
+        #region GET: api/projects/list
         [HttpGet("api/projects/list")]
         public async Task<IActionResult> GetProjectList()
         {
