@@ -30,7 +30,7 @@ namespace JIRA_NTB.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
             var isRole = "";
             if (User.IsInRole("ADMIN"))
@@ -49,7 +49,7 @@ namespace JIRA_NTB.Controllers
             return View();
         }
 
-        #region GET: api/user/me
+        #region GET: api/user/me -> Lấy người dùng hiện tại
         [HttpGet("api/user/me")]
         public async Task<IActionResult> GetCurrentUser()
         {
@@ -60,7 +60,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/tasks/statistics
+        #region GET: api/tasks/statistics -> Thống kê task theo role
         [HttpGet("api/tasks/statistics")]
         public async Task<IActionResult> GetTasksStatistics()
         {
@@ -114,7 +114,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/projects/statistics
+        #region GET: api/projects/statistics -> Thống kê project
         [HttpGet("api/projects/statistics")]
         public async Task<IActionResult> GetProjectsStatistics()
         {
@@ -142,7 +142,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/projects/deadline - *Phân trang theo tháng*
+        #region GET: api/projects/deadline -> Lấy danh sách deadline project
         [HttpGet("api/projects/deadline")]
         public async Task<IActionResult> GetProjectsDeadline()
         {
@@ -157,7 +157,8 @@ namespace JIRA_NTB.Controllers
                         p.ProjectName,
                         p.EndDay,
                         p.Manager.FullName,
-                        p.Status.StatusName
+                        p.Status.StatusName,
+                        p.Note,
                     })
                     .ToListAsync();
                 return Ok(deadlines);
@@ -171,7 +172,8 @@ namespace JIRA_NTB.Controllers
                         p.ProjectName,
                         p.EndDay,
                         p.Manager.FullName,
-                        p.Status.StatusName
+                        p.Status.StatusName,
+                        p.Note,
                     }).ToListAsync();
                 return Ok(deadlines);
             }
@@ -179,7 +181,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/tasks/deadline  - *Phân trang theo tháng*
+        #region GET: api/tasks/deadline  -> Lấy danh sách deadline task
         [HttpGet("api/tasks/deadline")]
         public async Task<IActionResult> GetTasksDeadline()
         {
@@ -196,6 +198,7 @@ namespace JIRA_NTB.Controllers
                         t.EndDate,
                         t.Status.StatusName,
                         t.Project.ProjectName,
+                        t.Note,
                     })
                     .ToListAsync();
 
@@ -213,6 +216,7 @@ namespace JIRA_NTB.Controllers
                         t.EndDate,
                         t.Status.StatusName,
                         t.Project.ProjectName,
+                        t.Note,
                     })
                     .ToListAsync();
 
@@ -221,13 +225,13 @@ namespace JIRA_NTB.Controllers
             else if (User.IsInRole("ADMIN"))
             {
 
-                return Ok();
+                return Ok(null);
             }
             return Ok();
         }
         #endregion
 
-        #region GET: api/projects
+        #region GET: api/projects -> Lấy danh sách project theo role với phân trang
         [HttpGet("api/projects")]
         public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5)
         {
@@ -287,7 +291,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/projects/{idProject}/members
+        #region GET: api/projects/:idProject/members -> Lấy thành viên theo project
         [HttpGet("api/projects/{idProject}/members")]
         public async Task<IActionResult> GetMembersByProject(string idProject)
         {
@@ -304,7 +308,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/tasks
+        #region GET: api/tasks -> Lấy danh sách task theo role có phân trang
         [HttpGet("api/tasks")]
         public async Task<IActionResult> GetTasks()
         {
@@ -364,7 +368,7 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region GET: api/projects/{projectId}/tasks?pageIndex=1&pageSize=10
+        #region GET: api/projects/{projectId}/tasks?pageIndex=1&pageSize=10 -> Lấy danh sách task theo project với phân trang
         [HttpGet("api/projects/{projectId}/tasks")]
         public async Task<IActionResult> GetTasksForProject(string projectId, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
@@ -446,7 +450,73 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region
+        #region GET: api/projects/{projectId}/all-tasks -> Lấy tất cả task theo project (không phân trang)
+        [HttpGet("api/projects/{projectId}/all-tasks")]
+        public async Task<IActionResult> GetAllTasksForProject(string projectId)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            // --- 1. Kiểm tra bảo mật (Giữ nguyên) ---
+            bool canViewProject = false;
+            if (User.IsInRole("ADMIN"))
+            {
+                canViewProject = true;
+            }
+            else if (User.IsInRole("LEADER"))
+            {
+                canViewProject = await _context.Projects
+                    .AnyAsync(p => p.IdProject == projectId && p.UserId == user.Id);
+            }
+            else
+            { // "EMPLOYEE"
+                canViewProject = await _context.ProjectManagers
+                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == user.Id);
+            }
+
+            if (!canViewProject)
+            {
+                return Forbid(); // 403 - Không có quyền
+            }
+
+            // --- 2. Xây dựng Query (chỉ cho project này) ---
+            IQueryable<TaskItemModel> query = _context.Tasks
+                .Where(t => t.ProjectId == projectId);
+
+            if (User.IsInRole("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            // --- 3. Lấy TẤT CẢ task (Không phân trang) ---
+            var tasks = await query
+                .OrderBy(t => t.StartDate) // Sắp xếp theo ngày bắt đầu
+                .Include(t => t.Status)
+                .Include(t => t.Assignee)
+                .Select(t => new
+                {
+                    t.IdTask,
+                    t.NameTask,
+                    t.Priority,
+                    t.Overdue,
+                    // Bổ sung StatusId/Name để tính %
+                    StatusId = t.Status.StatusName, // (Giả sử IdStatus là 1, 2, 3)
+                    t.FileNote,
+                    t.Note,
+                    t.StartDate,
+                    t.EndDate,
+                    t.Assignee_Id,
+                    t.ProjectId,
+                    StatusName = t.Status.StatusName,
+                    NameAssignee = t.Assignee.FullName
+                })
+                .ToListAsync();
+
+            // --- 4. Trả về một mảng task ---
+            return Ok(tasks);
+        }
+        #endregion
+
+        #region GET: api/projects/list -> Lấy danh sách project cho dropdown
         [HttpGet("api/projects/list")]
         public async Task<IActionResult> GetProjectList()
         {
@@ -618,7 +688,7 @@ namespace JIRA_NTB.Controllers
         //}
         #endregion
 
-        #region POST: Home/SaveTask
+        #region POST: Home/SaveTask -> Cập nhật hoặc Thêm mới Task
         // ==================== API: Thêm hoặc Cập nhật Task ====================
         [HttpPost]
         public async Task<IActionResult> SaveTask([FromBody] TaskObjectViewModel model)
@@ -678,7 +748,128 @@ namespace JIRA_NTB.Controllers
         }
         #endregion
 
-        #region DELETE: Home/DeleteTask
+        #region PATCH: api/task/:idTask/status/todo -> Cập nhật trạng thái task thành "Todo"
+        [HttpPatch("api/task/{idTask}/status/todo")]
+        public async Task<IActionResult> HandleTodoTask(string idTask)
+        {
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.IdTask == idTask);
+            if (task == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy task." });
+            }
+            var statusTodo = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.Todo);
+            if (statusTodo == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'Todo' không tồn tại." });
+            }
+            task.StatusId = statusTodo.StatusId;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region PATCH: api/task/:idTask/status/inprogress -> Cập nhật trạng thái task thành "In Progress"
+        [HttpPatch("api/task/{idTask}/status/inprogress")]
+        public async Task<IActionResult> HandleInProgressTask(string idTask)
+        {
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.IdTask == idTask);
+            if (task == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy task." });
+            }
+            var statusInProgress = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.InProgress);
+            if (statusInProgress == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'In Progress' không tồn tại." });
+            }
+            task.StatusId = statusInProgress.StatusId;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region PATCH: api/task/:idTask/status/done -> Cập nhật trạng thái task thành "Done"
+        [HttpPatch("api/task/{idTask}/status/done")]
+        public async Task<IActionResult> HandleDoneTask(string idTask)
+        {
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.IdTask == idTask);
+            if (task == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy task." });
+            }
+            var statusDone = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.Done);
+            if (statusDone == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'Done' không tồn tại." });
+            }
+            task.StatusId = statusDone.StatusId;
+            task.CompletedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region PATCH: api/project/:idProject/status/todo -> Cập nhật trạng thái project thành "Todo"
+        [HttpPatch("api/project/{idProject}/status/todo")]
+        public async Task<IActionResult> HandleTodoProject(string idProject)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.IdProject == idProject);
+            if (project == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy project." });
+            }
+            var statusTodo = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.Todo);
+            if (statusTodo == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'Todo' không tồn tại." });
+            }
+            project.StatusId = statusTodo.StatusId;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region PATCH: api/project/:idProject/status/inprogress -> Cập nhật trạng thái project thành "In Progress"
+        [HttpPatch("api/project/{idProject}/status/inprogress")]
+        public async Task<IActionResult> HandleInProgressProject(string idProject)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.IdProject == idProject);
+            if (project == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy project." });
+            }
+            var statusInProgress = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.InProgress);
+            if (statusInProgress == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'In Progress' không tồn tại." });
+            }
+            project.StatusId = statusInProgress.StatusId;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region PATCH: api/project/:idProject/status/done -> Cập nhật trạng thái project thành "Done"
+        [HttpPatch("api/project/{idProject}/status/done")]
+        public async Task<IActionResult> HandleDoneProject(string idProject)
+        {
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.IdProject == idProject);
+            if (project == null)
+            {
+                return NotFound(new { success = false, message = "Không tìm thấy project." });
+            }
+            var statusDone = await _context.Statuses.FirstOrDefaultAsync(s => s.StatusName == TaskStatusModel.Done);
+            if (statusDone == null)
+            {
+                return NotFound(new { success = false, message = "Trạng thái 'Done' không tồn tại." });
+            }
+            project.StatusId = statusDone.StatusId;
+            await _context.SaveChangesAsync();
+            return Ok(new { success = true, message = "Cập nhật trạng thái thành công." });
+        }
+        #endregion
+
+        #region DELETE: Home/DeleteTask -> Xóa Task
         [HttpDelete]
         public async Task<IActionResult> DeleteTask(string id)
         {
