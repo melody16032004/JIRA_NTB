@@ -124,17 +124,19 @@ function renderTaskCard(t) {
                         </div>
                     </div>
                     <span class="text-gray-400 hidden md:inline">•</span>
-                    <div class="relative group cursor-pointer text-xs">
-                        <div class="flex gap-1 items-center">
-                            <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
-                            <span>${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                    <div class="flex items-center gap-2">
+                        <div class="relative group cursor-pointer text-xs">
+                            <div class="flex gap-1 items-center">
+                                <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
+                                <span>${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                            </div>
                         </div>
-                    </div>
-                    <span class="text-gray-400 hidden md:inline">•</span>
-                    <div class="relative group cursor-pointer text-xs">
-                        <div class="flex gap-1 items-center">
-                            <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
-                            <span>${t.endDate ? new Date(t.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                        <span class="text-gray-400 hidden md:inline">•</span>
+                        <div class="relative group cursor-pointer text-xs">
+                            <div class="flex gap-1 items-center">
+                                <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
+                                <span>${t.endDate ? new Date(t.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -346,8 +348,8 @@ function renderDashboard(projects) {
 
     // QUAN TRỌNG: Cập nhật pageIndex/totalPages từ object 'projects' được truyền vào
     const controllButton = `
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3 gap-4 md:gap-0">
+            <div class="flex items-center justify-center md:justify-start gap-3">
                 <button id="prevPage"
                     class="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -356,58 +358,32 @@ function renderDashboard(projects) {
                 <span id="pageIndicator" class="text-xs font-medium text-gray-200 select-none">
                     Trang <span id="currentPage">${projects.pageIndex || 1}</span>/<span id="totalPages">${projects.totalPages || 1}</span>
                 </span>
-
                 <button id="nextPage"
                     class="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
-                <!--
-                <div class="relative group cursor-pointer">
-                    <div
-                        class="flex items-center gap-2 bg-gray-800/90 border border-red-500 rounded-lg px-3 py-2 hover:bg-red-600/10 transition-all duration-200">
-                        <input type="checkbox" id="priorityHigh" class="hidden peer" />
-                        <span
-                            class="w-4 h-4 border-2 border-gray-400 rounded peer-checked:bg-red-500 peer-checked:border-red-500 transition-all"></span>
-                        <label for="priorityHigh"
-                            class="text-xs text-red-400 font-medium flex items-center gap-1 cursor-pointer select-none">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
-                            Ưu tiên cao
-                        </label>
-                    </div>
-                    <span
-                        class="absolute left-[12rem] top-0 -translate-y-[1.5rem] -translate-x-full mr-2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-                        Lọc nhiệm vụ có độ ưu tiên cao
-                    </span>
-                </div>
-                -->
-
+            <div class="flex items-center justify-between gap-3">
                 <button id="toggleAllBtn"
-                    class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition-all">
+                    class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition-all w-full md:w-auto">
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                     Thu gọn tất cả
                 </button>
 
-
-                <div class="flex items-center bg-gray-800 rounded-lg p-1 gap-1">
-                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                            ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
-                            data-view="list"
-                            title="Xem dạng danh sách">
+                <div class="hidden md:flex items-center bg-gray-800 rounded-lg p-1 gap-1">
+                    <button data-view="list" title="Xem dạng danh sách"
+                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
                         <i data-lucide="layout-list" class="w-4 h-4"></i>
                     </button>
-                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                            ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
-                            data-view="gantt"
-                            title="Xem dạng Gantt">
+                    <button data-view="gantt" title="Xem dạng Gantt"
+                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
                         <i data-lucide="gantt-chart-square" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
-        </div>
-    `;
+         </div>
+        `;
     const viewProjectNull = `
         <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg flex flex-col items-center justify-center gap-3">
             <i data-lucide="folder-x" class="w-[80px] h-[80px] text-gray-500"></i>
@@ -439,24 +415,28 @@ function renderDashboard(projects) {
                                 <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                             </div>
                         </div>
-                        <div class="mt-5 flex flex-col md:flex-row md:items-center gap-3 items-start md:items-center">
-                            <div class="flex gap-1 items-center  bg-gray-700/50 px-4 py-1.5 rounded-full">
+                        <div class="w-full mt-5 flex flex-col md:flex-row md:items-center gap-3">
+                            <!-- Manager -->
+                            <div class="flex gap-1 items-center bg-gray-700/50 px-4 py-1.5 rounded-full whitespace-nowrap">
                                 <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
                                 <span class="text-xs">${p.manager ?? "Unknown"}</span>
                             </div>
 
-                            <div class="flex gap-1 items-center  bg-green-900/50 px-4 py-1.5 rounded-full">
-                                <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
-                                <span class="text-xs">
-                                    ${p.startDay ? new Date(p.startDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-                                </span>
-                            </div>
+                            <!-- Thời gian (Start + End) -->
+                            <div class="w-full flex flex-row items-center justify-start md:justify-start gap-3">
+                                <div class="flex gap-1 items-center bg-green-900/50 px-4 py-1.5 rounded-full">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
+                                    <span class="text-xs">
+                                        ${p.startDay ? new Date(p.startDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
+                                    </span>
+                                </div>
 
-                            <div class="flex gap-1 items-center  bg-red-900/50 px-4 py-1.5 rounded-full ">
-                                <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
-                                <span class="text-xs">
-                                    ${p.endDay ? new Date(p.endDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-                                </span>
+                                <div class="flex gap-1 items-center bg-red-900/50 px-4 py-1.5 rounded-full">
+                                    <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
+                                    <span class="text-xs">
+                                        ${p.endDay ? new Date(p.endDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

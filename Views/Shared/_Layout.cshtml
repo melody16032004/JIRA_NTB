@@ -6,7 +6,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Ứng Dụng Của Tôi</title>
     <link rel="stylesheet" href="/css/style.css"/>
 
@@ -110,30 +110,39 @@
         <main class="main-content flex-1 overflow-y-hidden divide-y divide-gray-700 scroll-smooth bg-gradient-to-b from-gray-950 to-gray-900 text-gray-200 shadow-inner relative ">
             <!-- Header -->
             <header class="bg-gray-900 border-b border-gray-700 shadow-md sticky top-0 z-30">
-                <div class="px-6 py-4 flex items-center justify-between">
+                <div class="px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
                     <!-- THAY ĐỔI: Bọc nút toggle và tiêu đề trong 1 div -->
                     <div class="flex items-center">
                         <!-- THÊM MỚI: Nút Hamburger (chỉ hiện trên di động) -->
-                        <button id="sidebarToggle" class="lg:hidden p-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mr-3 -ml-2 transition-colors">
+                        <button id="sidebarToggle"
+                                class="lg:hidden p-2 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mr-2 -ml-1 transition-colors">
                             <i data-lucide="menu" class="w-6 h-6"></i>
                         </button>
 
-                        <div class="flex flex-col align-items-center">
-                            <h2 class="text-2xl font-semibold text-white tracking-wide">
-                                @ViewData["Title"] <!-- Giả sử đây là Razor syntax -->
+                        <div class="flex flex-col items-start leading-tight">
+                            <h2 class="text-lg sm:text-xl md:text-2xl font-semibold text-white tracking-wide">
+                                @ViewData["Title"]
                             </h2>
-                            <div class="flex items-center gap-[5px]">
-                                <span class="text-xs text-gray-400">Xin chào,</span>
-                                <span id="me" class="text-xs text-gray-200 bg-indigo-800 rounded-full px-3 py-[2px] inline-flex items-center justify-center">
+                            <div class="flex items-center gap-1 md:gap-[5px]">
+                                <span class="text-[10px] sm:text-xs text-gray-400">Xin chào,</span>
+                                <span id="me"
+                                      class="text-[10px] sm:text-xs text-gray-200 bg-indigo-800 rounded-full px-2 sm:px-3 py-[1px] sm:py-[2px]
+                                     inline-flex items-center justify-center">
+
                                     @if (User.IsInRole("ADMIN"))
                                     {
-                                        <i data-lucide="crown" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
-                                    }else if (User.IsInRole("LEADER"))
+                                        <i data-lucide="crown"
+                                           class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }
+                                    else if (User.IsInRole("LEADER"))
                                     {
-                                        <i data-lucide="briefcase" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
-                                    }else if (User.IsInRole("EMPLOYEE"))
+                                        <i data-lucide="briefcase"
+                                           class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                    }
+                                    else if (User.IsInRole("EMPLOYEE"))
                                     {
-                                        <i data-lucide="user" class="w-3.5 h-3.5 text-yellow-500 inline-block mr-1"></i>
+                                        <i data-lucide="user"
+                                           class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-500 inline-block mr-1"></i>
                                     }
                                 </span>
                             </div>
@@ -141,7 +150,7 @@
                     </div>
 
                     <!-- Action buttons -->
-                    <div class="flex items-center space-x-3 relative">
+                    <div class="flex items-center space-x-2 md:space-x-3 relative">
                         <!-- Theme -->
                         <!--
                         <div class="relative group">
@@ -158,24 +167,25 @@
                         <!-- Notify -->
                         <div class="relative group">
                             <button id="notifyButton"
-                                    class="w-10 h-10 z-30 flex items-center justify-center rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md relative">
+                                    class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md relative">
                                 <i data-lucide="bell" class="w-5 h-5 text-gray-300"></i>
 
                                 <!-- Badge -->
                                 <span id="notifyBadge"
-                                      class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-gray-900 shadow-sm">
+                                      class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] sm:text-xs font-bold w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full border-2 border-gray-900 shadow-sm">
                                     3
                                 </span>
                             </button>
 
                             <!-- Tooltip -->
-                            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg hidden sm:block">
                                 Thông báo
                             </span>
 
                             <!-- Notification Dropdown -->
                             <div id="notifyDropdown"
-                                 class="absolute right-0 mt-3 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
+                                 class="absolute -right-8 sm:right-0 mt-3 w-[20rem] sm:w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
+                                
                                 <div class="px-4 py-3 border-b border-gray-700 flex justify-between items-center">
                                     <h3 class="text-sm font-semibold text-gray-100">Thông báo</h3>
                                     <button id="clearNotify" class="text-xs text-indigo-400 hover:text-indigo-300 transition">
@@ -263,18 +273,18 @@
                         <!-- User -->
                         <div class="relative group">
                             <button id="userMenuButton"
-                                    class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md">
+                                    class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md">
                                 <i data-lucide="user" class="w-5 h-5 text-gray-300"></i>
                             </button>
 
                             <!-- Tooltip -->
-                            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
+                            <span class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg hidden sm:block">
                                 Người dùng
                             </span>
 
                             <!-- Dropdown -->
                             <div id="userDropdown"
-                                 class="absolute right-0 mt-3 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
+                                 class="absolute right-0 mt-3 w-48 sm:w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 opacity-0 scale-95 pointer-events-none transition-all duration-200 ease-out transform origin-top-right">
 
                                 @if (User.Identity != null && User.Identity.IsAuthenticated)
                                 {
@@ -285,7 +295,6 @@
                                     </div>
                                     <ul class="py-2 text-sm text-gray-200">
                                         <li>
-                                            <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
                                             <form asp-area="" asp-controller="Account" asp-action="Profile" method="get" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
@@ -295,8 +304,8 @@
                                                 </button>
                                             </form>
                                         </li>
+
                                         <li>
-                                            <!-- Form POST cho Logout (bắt buộc dùng POST, không dùng GET) -->
                                             <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit"
@@ -335,7 +344,8 @@
             </header>
 
             <!-- Content -->
-            <div class="p-4 bg-gray-900/60 rounded-b-xl backdrop-blur-md max-h-[90vh] custom-scroll overflow-y-auto">
+            <div class="p-4 pb-[100px] md:pb-[30px] bg-gray-900/60 rounded-b-xl backdrop-blur-md 
+                        max-h-[100svh] md:max-h-[90vh] custom-scroll overflow-y-auto">
                 @RenderBody()
             </div>
         </main>
