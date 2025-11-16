@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // load remote data
-    const [taskDeadline, projectDeadline] = await Promise.all([
+    const [taskDeadline = [], projectDeadline] = await Promise.all([
         safeFetchJson("/api/tasks/deadline", []),
         safeFetchJson("/api/projects/deadline", [])
     ]);
@@ -539,8 +539,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const allItems = calendarItems[key] || [];
 
-            const tasks = allItems.filter(it => it.type === 'task' && it.statusName != 3);
-            const projects = allItems.filter(it => it.type === 'project' && it.statusName != 3);
+            const tasks = allItems.filter(it => it.type === 'task' && it.statusName != 3 && it.statusName != 4);
+            const projects = allItems.filter(it => it.type === 'project' && it.statusName != 3 && it.statusName != 4);
 
 
             if (projects.length > 0) {
