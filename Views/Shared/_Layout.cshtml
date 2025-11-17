@@ -171,10 +171,7 @@
                                 <i data-lucide="bell" class="w-5 h-5 text-gray-300"></i>
 
                                 <!-- Badge -->
-                                <span id="notifyBadge"
-                                      class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] sm:text-xs font-bold w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full border-2 border-gray-900 shadow-sm">
-                                    3
-                                </span>
+                                <span id="notifyBadge" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] sm:text-xs font-bold w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full border-2 border-gray-900 shadow-sm"></span>
                             </button>
 
                             <!-- Tooltip -->
@@ -193,77 +190,8 @@
                                     </button>
                                 </div>
 
-                                <div class="relative max-h-80 overflow-y-auto" id="notifyDropdownContainer">
-                                    <ul class="max-h-80 overflow-y-auto divide-y divide-gray-700 scroll-smooth">
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3 unread cursor-pointer">
-                                            <div class="relative">
-                                                <i data-lucide="alert-circle" class="w-5 h-5 text-indigo-400 mt-0.5"></i>
-                                                <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Hệ thống sẽ bảo trì vào lúc 22:00 tối nay.</p>
-                                                <span class="text-xs text-gray-400">10 phút trước</span>
-                                            </div>
-                                        </li>
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3 unread cursor-pointer">
-                                            <div class="relative">
-                                                <i data-lucide="user-plus" class="w-5 h-5 text-green-400 mt-0.5"></i>
-                                                <span class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                                            </div>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Người dùng mới vừa đăng ký: <b>Nguyễn Văn A</b>.</p>
-                                                <span class="text-xs text-gray-400">30 phút trước</span>
-                                            </div>
-                                        </li>
-
-                                        <!-- Các thông báo đã đọc (không có class unread, không có chấm đỏ) -->
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3 cursor-pointer">
-                                            <i data-lucide="check-circle-2" class="w-5 h-5 text-blue-400 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-300">Dự án “Quản lý công việc” đã được hoàn thành.</p>
-                                                <span class="text-xs text-gray-500">1 giờ trước</span>
-                                            </div>
-                                        </li>
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3">
-                                            <i data-lucide="message-square" class="w-5 h-5 text-yellow-400 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Bạn có tin nhắn mới từ <b>Phòng Kỹ thuật</b>.</p>
-                                                <span class="text-xs text-gray-400">2 giờ trước</span>
-                                            </div>
-                                        </li>
-
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3">
-                                            <i data-lucide="calendar-days" class="w-5 h-5 text-pink-400 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Cuộc họp định kỳ sẽ diễn ra vào lúc <b>9:00 sáng mai</b>.</p>
-                                                <span class="text-xs text-gray-400">3 giờ trước</span>
-                                            </div>
-                                        </li>
-
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3">
-                                            <i data-lucide="upload-cloud" class="w-5 h-5 text-cyan-400 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Tệp báo cáo tháng 10 đã được tải lên thành công.</p>
-                                                <span class="text-xs text-gray-400">5 giờ trước</span>
-                                            </div>
-                                        </li>
-
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3">
-                                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-500 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Phát hiện lỗi đồng bộ dữ liệu trong hệ thống.</p>
-                                                <span class="text-xs text-gray-400">6 giờ trước</span>
-                                            </div>
-                                        </li>
-
-                                        <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3">
-                                            <i data-lucide="star" class="w-5 h-5 text-amber-400 mt-0.5"></i>
-                                            <div>
-                                                <p class="text-sm text-gray-200">Chúc mừng! Bạn đã đạt danh hiệu <b>Nhân viên xuất sắc tuần này</b>.</p>
-                                                <span class="text-xs text-gray-400">8 giờ trước</span>
-                                            </div>
-                                        </li>
-                                    </ul>
+                                <div class="relative max-h-[30rem] overflow-y-auto" id="notifyDropdownContainer">
+                                    <ul id="notifyList" class="max-h-[30rem] overflow-y-auto divide-y divide-gray-700 scroll-smooth"></ul>
 
                                     <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
                                 </div>
@@ -421,8 +349,10 @@
 
     <script>lucide.createIcons();</script>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="/js/site.js"></script>
     <script src="/js/calendar.js"></script>
+    <script src="/js/notification.js"></script>
     
     <script>
         document.addEventListener("DOMContentLoaded", function() {

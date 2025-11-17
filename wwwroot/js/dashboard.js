@@ -1452,9 +1452,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     allProjectsStat = projectsStat;
 
     // --- Log dữ liệu ban đầu (phần còn lại) ---
-    console.log("Projects (Trang 1): ", initialProjects);
-    console.log("Stats Task: ", tasksStat);
-    console.log("Stats Project: ", projectsStat);
+    //console.log("Projects (Trang 1): ", initialProjects);
+    //console.log("Stats Task: ", tasksStat);
+    //console.log("Stats Project: ", projectsStat);
 
     // --- Render giao diện LẦN ĐẦU TIÊN ---
     renderDashboard(initialProjects);
@@ -1697,7 +1697,7 @@ function formTask(task = null, projects = [], members = [], role) {
                                 class="${role == "EMPLOYEE" ? "hidden" : ""} px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xóa
                             </button>
-                            <button type="submit" id="confirmUploadBtn"
+                            <button type="button" id="confirmUploadBtn"
                                 class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xác nhận
                             </button>
@@ -2101,15 +2101,25 @@ function filterHighPrior() {
         });
     });
 }
-function handleConfirm(task) {
-    document.getElementById("confirmUploadBtn").addEventListener("click", async () => {
-        // Gọi hàm xử lý cập nhật
-        const updatedTask = getUpdatedTaskFromForm(task);
-        console.log("Dữ liệu mới:", updatedTask);
 
+/**
+ * Cắt chuỗi và thêm dấu "..."
+ * @param {string} str - Chuỗi cần cắt
+ * @param {number} maxLength - Độ dài tối đa
+ */
+function truncateString(str, maxLength = 50) {
+    if (!str) return ""; // Xử lý nếu chuỗi bị null
+    if (str.length <= maxLength) {
+        return str;
+    }
+    return str.slice(0, maxLength) + "...";
+}
+function handleConfirm(task) { // 'task' ở đây là object task GỐC (trước khi sửa)
+    document.getElementById("confirmUploadBtn").addEventListener("click", async () => {
+        const updatedTask = getUpdatedTaskFromForm(task); // Lấy data MỚI từ form
         if (!updatedTask) return;
 
-        // Kiểm tra các field quan trọng khác trước khi gửi
+        // ... (phần kiểm tra requiredFields giữ nguyên) ...
         const requiredFields = ["Name", "IdPrj", "Start", "End"];
         for (const field of requiredFields) {
             if (!updatedTask[field] || updatedTask[field].trim() === "") {
@@ -2118,14 +2128,13 @@ function handleConfirm(task) {
             }
         }
 
-        // Gọi API hoặc xử lý lưu ở đây
-        const uploadOverlay = document.getElementById(`uploadOverlay`);
         const loadingOverlay = document.getElementById(`loadingOverlay`);
         try {
             loadingOverlay.classList.remove("hidden");
             const res = await fetch("/Home/SaveTask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: 'include',
                 body: JSON.stringify(updatedTask)
             });
 
@@ -2133,13 +2142,74 @@ function handleConfirm(task) {
 
             if (data.success) {
                 closeFormModal();
-                location.reload();
+
+                // ======================================================
+                // SỬA: LOGIC GỬI NOTIFY THÔNG MINH HƠN
+                // ======================================================
+                const newAssigneeId = updatedTask["IdAss"];
+
+                // Lấy ID assignee CŨ (nếu là task CŨ và có 'idAss')
+                const oldAssigneeId = (task && task.idAss) ? task.idAss : null;
+
+                // Chỉ gửi notify nếu:
+                // 1. Có assignee mới (không rỗng)
+                // 2. Assignee mới KHÁC assignee cũ
+                if (newAssigneeId && newAssigneeId.trim() !== "" && newAssigneeId !== oldAssigneeId) {
+                    // --- SỬA: Lấy tên Project (3 bước) ---
+                    let projectName = "Không rõ"; // Giá trị mặc định
+                    try {
+                        // 1. Fetch (thêm credentials)
+                        const projectRes = await fetch(`/api/projects/${updatedTask["IdPrj"]}/name`, {
+                            credentials: 'include'
+                        });
+
+                        // 2. Kiểm tra OK và lấy JSON
+                        if (projectRes.ok) {
+                            const projectData = await projectRes.json();
+                            projectName = projectData.projectName; // 3. Lấy tên
+                        }
+                    } catch (e) {
+                        console.warn("Không thể lấy tên project.", e);
+                    }
+                    console.log("Tên project để gửi notify:", projectName);
+                    // --- Hết phần sửa lấy tên project ---
+
+                    const truncatedProjectName = truncateString(projectName, 50);
+                    const truncatedTaskName = truncateString(updatedTask.Name, 50);
+
+                    try {
+                        await fetch("/api/notification/push", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                UserId: newAssigneeId,
+                                Title: `Giao công việc`,
+                                Message: `
+                                    Bạn được giao nhiệm vụ mới 🔔
+                                    <br/>
+                                    <span class="text-green-500"><strong>Dự án</strong></span>: ${truncatedProjectName}
+                                    <br/>
+                                    <span class="text-green-500"><strong>Nhiệm vụ</strong></span>: ${truncatedTaskName}
+                                `
+                            })
+                        });
+                    } catch (notifyErr) {
+                        console.error("🔥 Lỗi gửi notify:", notifyErr);
+                    }
+                }
+                // ======================================================
+
+                location.reload(); // Chỉ reload khi thành công
+
             } else {
                 alert("❌ Lưu thất bại: " + (data.message || "Không rõ lỗi"));
+                loadingOverlay.classList.add("hidden");
             }
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi gửi dữ liệu:", e);
+            alert("❌ Đã xảy ra lỗi nghiêm trọng. Vui lòng thử lại.");
         }
     });
 }
