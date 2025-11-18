@@ -1,12 +1,14 @@
 ﻿using JIRA_NTB.Models;
 using JIRA_NTB.Services;
 using JIRA_NTB.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 
 namespace JIRA_NTB.Controllers
 {
+    [Authorize]
     public class RankUserController : Controller
     {
         private readonly RankingService _rankingService;
