@@ -165,7 +165,7 @@
             lucide.createIcons(); 
             }); 
     </script>
-    <script>
+    @* <script>
         document.addEventListener("DOMContentLoaded", function () {
             var timelineData = @Html.Raw(Json.Serialize(Model.TaskTimelineData));
             console.log("TimelineData:", timelineData);
@@ -399,6 +399,229 @@
                         ganttOptions.tooltip.theme = isDark ? 'dark' : 'light';
                         chart = new ApexCharts(document.querySelector("#taskTimelineChart"), ganttOptions);
                         chart.render();
+                    }
+                });
+            });
+            observer.observe(document.body, { attributes: true });
+        });
+    </script> *@
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var timelineData = @Html.Raw(Json.Serialize(Model.TaskTimelineData));
+
+            // 1. Xử lý dữ liệu
+            if (!timelineData || timelineData.length === 0) {
+                document.querySelector("#taskTimelineChart").innerHTML =
+                    "<p class='text-gray-500 text-sm text-center py-8'>Không có dữ liệu biểu đồ</p>";
+                return;
+            }
+
+            // Hàm màu sắc cũ của bạn giữ nguyên
+            function getPriorityColor(priority) {
+                switch (priority) {
+                    case 'high': return '#dc2626';
+                    case 'medium': return '#f59e0b';
+                    case 'low': return '#10b981';
+                    default: return '#8b5cf6';
+                }
+            }
+
+            // Tạo dữ liệu series (đã filter task hoàn thành như logic cũ)
+            var filteredData = timelineData
+                .filter(t => t.status !== "Hoàn thành")
+                .map(t => ({
+                    x: t.name,
+                    y: [t.start, t.end],
+                    fillColor: getPriorityColor(t.priority.toLowerCase()),
+                    assignee: t.assignee,
+                    priority: t.priority,
+                    status: t.status,
+                    overdue: t.overdue
+                }));
+
+            var ganttSeries = [{ data: filteredData }];
+
+            // 2. Tính toán chiều cao động (Dynamic Height)
+            // Mỗi task cho khoảng 50px, cộng thêm 100px cho header/x-axis.
+            // Tối thiểu là 420px.
+            var rowHeight = 50;
+            var minHeight = 420;
+            var dynamicHeight = Math.max(minHeight, (filteredData.length * rowHeight) + 100);
+
+            var isDark = document.body.classList.contains('dark');
+
+            var ganttOptions = {
+                chart: {
+                    type: 'rangeBar',
+                    height: dynamicHeight, // Áp dụng chiều cao động
+                    fontFamily: 'Inter, sans-serif',
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true,
+                            reset: true
+                        }
+                    },
+                    foreColor: isDark ? '#D1D5DB' : '#374151',
+                    background: 'transparent'
+                },
+                series: ganttSeries,
+                // 3. Cấu hình Grid (Lưới) - Tối ưu tầm nhìn
+                grid: {
+                    borderColor: isDark ? '#374151' : '#E5E7EB',
+                    strokeDashArray: 4, // Nét đứt thưa hơn một chút cho đỡ rối
+                    xaxis: {
+                        lines: {
+                            show: true // Giữ nét đứt dọc (chia ngày)
+                        }
+                    },
+                    yaxis: {
+                        lines: {
+                            show: false // TẮT nét đứt ngang (chia task) để thoáng mắt
+                        }
+                    },
+                    padding: {
+                        top: 0,
+                        right: 15,
+                        bottom: 0,
+                        left: 10
+                    }
+                },
+                // 4. Thêm Line đánh dấu ngày hôm nay
+                annotations: {
+                    xaxis: [
+                        {
+                            x: new Date().getTime(), // Lấy thời gian hiện tại
+                            strokeDashArray: 0,
+                            borderColor: '#6366f1', // Màu Indigo-500
+                            label: {
+                                borderColor: '#6366f1',
+                                style: {
+                                    color: '#fff',
+                                    background: '#6366f1',
+                                    fontSize: '12px',
+                                    fontWeight: 'bold',
+                                    padding: {
+                                        left: 5,
+                                        right: 5,
+                                        top: 2,
+                                        bottom: 2
+                                    }
+                                },
+                                text: 'Hôm nay',
+                                orientation: 'horizontal',
+                                offsetY: -20 // Đẩy label lên trên cùng
+                            }
+                        }
+                    ]
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: true,
+                        barHeight: '60%', // Tăng độ dày thanh bar lên một chút vì đã giãn chiều cao
+                        borderRadius: 6,
+                        rangeBarGroupRows: true
+                    }
+                },
+                // ... Các cấu hình tooltip, xaxis, yaxis giữ nguyên ...
+                dataLabels: {
+                    enabled: true,
+                    formatter: function(val, opts) {
+                        var name = opts.w.config.series[0].data[opts.dataPointIndex].x;
+                        return name.length > 30 ? name.substring(0, 30) + '...' : name;
+                    },
+                    style: {
+                        colors: ['#ffffff'],
+                        fontSize: '12px',
+                        fontWeight: 500
+                    },
+                    background: { enabled: false }
+                },
+                xaxis: {
+                    type: 'datetime',
+                    labels: {
+                        datetimeUTC: false,
+                        style: { colors: isDark ? '#9CA3AF' : '#6B7280' },
+                        datetimeFormatter: {
+                            year: 'yyyy',
+                            month: "MMM 'yy",
+                            day: 'dd MMM',
+                        }
+                    },
+                    axisBorder: { show: true, color: isDark ? '#4B5563' : '#E5E7EB' },
+                    axisTicks: { show: true, color: isDark ? '#4B5563' : '#E5E7EB' }
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            colors: isDark ? '#D1D5DB' : '#D1D5DB',
+                            fontSize: '13px',
+                            fontWeight: 500
+                        },
+                        maxWidth: 200
+                    }
+                },
+                tooltip: {
+                    theme: isDark ? 'dark' : 'light',
+                    custom: function({ dataPointIndex, w }) {
+                        var t = w.config.series[0].data[dataPointIndex];
+                        var priorityColor = getPriorityColor(t.priority);
+                        // Format ngày tháng
+                        const sDate = new Date(t.y[0]).toLocaleDateString('vi-VN');
+                        const eDate = new Date(t.y[1]).toLocaleDateString('vi-VN');
+
+                        return `
+                            <div class="px-3 py-2 shadow-lg rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}">
+                                <div class="font-semibold mb-2 text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}">
+                                    ${t.x}
+                                </div>
+                                <div class="space-y-1 text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="opacity-70">👤</span>
+                                        <span class="${isDark ? 'text-gray-300' : 'text-gray-600'}">${t.assignee || 'Chưa phân công'}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="opacity-70">🎯</span>
+                                        <span style="color: ${priorityColor}; font-weight: 600;">${t.priority}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="opacity-70">📅</span>
+                                        <span class="${isDark ? 'text-gray-400' : 'text-gray-500'}">
+                                            ${sDate} - ${eDate}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#taskTimelineChart"), ganttOptions);
+            chart.render();
+
+            // Observer cho Dark Mode
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === "class") {
+                        isDark = document.body.classList.contains('dark');
+
+                        // Cập nhật màu sắc
+                        chart.updateOptions({
+                            chart: { foreColor: isDark ? '#D1D5DB' : '#374151' },
+                            grid: { borderColor: isDark ? '#374151' : '#E5E7EB' },
+                            xaxis: {
+                                labels: { style: { colors: isDark ? '#9CA3AF' : '#6B7280' } },
+                                axisBorder: { color: isDark ? '#4B5563' : '#E5E7EB' },
+                                axisTicks: { color: isDark ? '#4B5563' : '#E5E7EB' }
+                            },
+                            yaxis: { labels: { style: { colors: isDark ? '#D1D5DB' : '#374151' } } },
+                            tooltip: { theme: isDark ? 'dark' : 'light' }
+                        });
                     }
                 });
             });
