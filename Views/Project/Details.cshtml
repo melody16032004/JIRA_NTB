@@ -178,9 +178,9 @@
 
             function getPriorityColor(priority) {
                 switch (priority) {
-                    case 'High': return '#dc2626';      // Red-600
-                    case 'Medium': return '#f59e0b';    // Amber-500
-                    case 'Low': return '#10b981';       // Emerald-500
+                    case 'high': return '#dc2626';      // Red-600
+                    case 'medium': return '#f59e0b';    // Amber-500
+                    case 'low': return '#10b981';       // Emerald-500
                     default: return '#8b5cf6';          // Violet-500
                 }
             }
@@ -200,7 +200,7 @@
                 .map(t => ({
                     x: t.name,
                     y: [t.start, t.end],
-                    fillColor: getPriorityColor(t.priority),
+                    fillColor: getPriorityColor(t.priority.toLowerCase()),
                     assignee: t.assignee,
                     priority: t.priority,
                     status: t.status,
