@@ -148,12 +148,12 @@ namespace JIRA_NTB.Controllers
             });
         }
         [HttpGet]
-        public async Task<IActionResult> GetMembersByProject(string projectId)
+        public async Task<IActionResult> GetMembersByProject(string projectId, string? userId)
         {
             if (string.IsNullOrEmpty(projectId))
                 return BadRequest("Thiếu projectId.");
 
-            var members = await taskService.GetAllMemberProjectAsync(projectId);
+            var members = await taskService.GetAllMemberProjectAsync(projectId, userId);
 
             return Json(members.Select(m => new
             {

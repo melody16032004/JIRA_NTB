@@ -453,6 +453,7 @@ document.addEventListener('click', async (e) => {
     const taskId = reassignBtn.dataset.taskId;
     const taskName = reassignBtn.dataset.taskName;
     const currentUser = reassignBtn.dataset.currentUser;
+    const currentUserId = reassignBtn.dataset.currentUserId;
 
     // Điền vào modal
     document.getElementById('reassignTaskId').value = taskId;
@@ -473,7 +474,7 @@ document.addEventListener('click', async (e) => {
     const projectId = reassignBtn.dataset.projectId; // nếu bạn thêm data-project-id vào nút
     if (projectId) {
         try {
-            const response = await fetch(`/Task/GetMembersByProject?projectId=${projectId}`);
+            const response = await fetch(`/Task/GetMembersByProject?projectId=${projectId}&userId=${currentUserId}`);
             if (!response.ok) throw new Error('Không thể load danh sách user');
 
             const users = await response.json();

@@ -6,7 +6,7 @@ namespace JIRA_NTB.Repository
     {
         Task<List<UserModel>> GetAllAsync();
         Task<UserModel> GetUserById(string id);
-        Task<IEnumerable<UserModel>> GetMembersByProjectAsync(string projectId);
+        Task<IEnumerable<UserModel>> GetMembersByProjectAsync(string projectId, string? userId);
 
     }
 }

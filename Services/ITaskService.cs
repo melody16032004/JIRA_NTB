@@ -32,7 +32,7 @@ namespace JIRA_NTB.Services
             DateTime? previousCompletedDate,
             UserModel user,
             IList<string> roles);
-        Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId);
+        Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId, string? userId);
         Task<(bool success, string message, string? taskId)> CreateTaskAsync(CreateTaskRequest request);
         Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles);
         Task<int> GetTotalTaskCountByStatusAsync(

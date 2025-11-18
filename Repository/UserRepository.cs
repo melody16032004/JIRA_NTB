@@ -22,10 +22,11 @@ namespace JIRA_NTB.Repository
             return await _context.Users
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
-        public async Task<IEnumerable<UserModel>> GetMembersByProjectAsync(string projectId)
+        public async Task<IEnumerable<UserModel>> GetMembersByProjectAsync(string projectId, string? userId)
         {
             return await _context.ProjectManagers
-                .Where(up => up.ProjectId == projectId)
+                .Where(up => up.ProjectId == projectId
+                    && (userId == null || up.UserId != userId))
                 .Include(up => up.User)
                 .Select(up => new UserModel
                 {
