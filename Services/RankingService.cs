@@ -33,7 +33,7 @@ namespace JIRA_NTB.Services
                         SUM(SessionDuration) AS TotalDurationMinutes,
                         COUNT(*) AS OpenCount
                     FROM RawData
-                    GROUP BY FullName, Avt, AppName    -- ✅ BẮT BUỘC CÓ Avt
+                    GROUP BY FullName, Avt, AppName    
                 ),
                 RankedApps AS (
                     SELECT 
