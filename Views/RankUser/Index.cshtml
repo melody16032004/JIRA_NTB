@@ -1,505 +1,321 @@
 ﻿@model JIRA_NTB.ViewModels.RankUserPageViewModel
 
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        darkMode: 'media',
+        theme: {
+            extend: {
+                animation: {
+                    'float': 'float 3s ease-in-out infinite',
+                    'glow': 'glow 2s ease-in-out infinite',
+                    'slide-up': 'slideUp 0.5s ease-out',
+                },
+                keyframes: {
+                    float: {
+                        '0%, 100%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-10px)' },
+                    },
+                    glow: {
+                        '0%, 100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)' },
+                        '50%': { boxShadow: '0 0 40px rgba(139, 92, 246, 0.8)' },
+                    },
+                    slideUp: {
+                        'from': { opacity: '0', transform: 'translateY(30px)' },
+                        'to': { opacity: '1', transform: 'translateY(0)' },
+                    }
+                }
+            }
+        }
+    }
+</script>
+
 <style>
-    .ranking-container {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 40px 20px;
+    @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    .ranking-header {
-        text-align: center;
-        color: white;
-        margin-bottom: 50px;
-    }
-
-        .ranking-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .ranking-header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-    .ranking-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 30px;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .ranking-card {
-        background: white;
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        animation: slideUp 0.6s ease-out;
-    }
-
-    @@keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .card-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 25px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-        .card-title i {
-            color: #667eea;
-        }
-
-    /* User App Rankings - Horizontal Layout */
-    .user-row {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 15px 20px;
-        margin-bottom: 15px;
-        background: #f7fafc;
-        border-radius: 15px;
-        border: 2px solid #e2e8f0;
-        transition: all 0.3s ease;
-    }
-
-        .user-row:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
-            border-color: #667eea;
-        }
-
-    .user-info-horizontal {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 200px;
-        flex-shrink: 0;
-    }
-
-    .user-avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #667eea;
-        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-    }
-
-    .user-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #2d3748;
-    }
-
-    .apps-horizontal {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        flex: 1;
-        align-items: center;
-    }
-
-    .app-icon-item {
+    .gradient-border {
         position: relative;
-        width: 55px;
-        height: 55px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        background: white;
-        border: 2px solid #e2e8f0;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
     }
 
-        .app-icon-item svg,
-        .app-icon-item img {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-        }
+    @@keyframes gradient-shift {
+        0%, 100%
 
-        .app-icon-item:hover {
-            transform: translateY(-5px) scale(1.1);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .app-icon-item.rank-1 {
-            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-            border-color: #ffd700;
-        }
-
-        .app-icon-item.rank-2 {
-            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-            border-color: #c0c0c0;
-        }
-
-        .app-icon-item.rank-3 {
-            background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
-            border-color: #cd7f32;
-        }
-
-    .rank-number {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #667eea;
-        color: white;
-        font-size: 0.75rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    {
+        background-position: 0% 50%;
     }
 
-    .app-tooltip {
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%) translateY(-10px);
-        background: #2d3748;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 0.85rem;
-        white-space: nowrap;
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.3s ease;
-        z-index: 100;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    50% {
+        background-position: 100% 50%;
     }
 
-        .app-tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 6px solid transparent;
-            border-top-color: #2d3748;
-        }
-
-    .app-icon-item:hover .app-tooltip {
-        opacity: 1;
-        transform: translateX(-50%) translateY(-5px);
     }
 
-    .tooltip-name {
-        font-weight: 600;
-        display: block;
-        margin-bottom: 4px;
+    .glass-effect {
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
     }
 
-    .tooltip-stats {
-        font-size: 0.8rem;
-        opacity: 0.9;
-    }
-
-    /* Podium Design for Late Users */
-    .podium-container {
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        gap: 15px;
-        padding: 40px 20px 20px;
-        min-height: 350px;
-    }
-
-    .podium-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        animation: podiumRise 0.8s ease-out;
-    }
-
-    @@keyframes podiumRise {
-        from {
-            opacity: 0;
-            transform: translateY(50px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .podium-avatar-container {
-        position: relative;
-        margin-bottom: 15px;
-    }
-
-    .podium-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid white;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        transition: all 0.3s ease;
-    }
-
-    .podium-item:hover .podium-avatar {
-        transform: scale(1.1);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-    }
-
-    .late-badge {
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        background: linear-gradient(135deg, #fc8181 0%, #f56565 100%);
-        color: white;
-        width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 0.9rem;
-        border: 3px solid white;
-        box-shadow: 0 4px 12px rgba(252, 129, 129, 0.4);
-    }
-
-    .podium-rank {
-        position: absolute;
-        top: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 2rem;
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-    }
-
-    .podium-base {
-        width: 120px;
-        border-radius: 12px 12px 0 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 15px;
-        position: relative;
-        transition: all 0.3s ease;
-    }
-
-    .podium-item:hover .podium-base {
-        transform: translateY(-5px);
-    }
-
-    .podium-name {
-        font-weight: 600;
-        color: white;
-        font-size: 0.95rem;
-        text-align: center;
-        margin-top: 10px;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    /* Position 1 - Gold */
-    .podium-item.pos-1 .podium-base {
-        height: 180px;
+    .rank-badge-1 {
         background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        box-shadow: 0 8px 32px rgba(255, 215, 0, 0.6);
     }
 
-    .podium-item.pos-1 .podium-avatar {
-        border-color: #ffd700;
-    }
-
-    /* Position 2 - Silver */
-    .podium-item.pos-2 .podium-base {
-        height: 140px;
+    .rank-badge-2 {
         background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
-        box-shadow: 0 6px 20px rgba(192, 192, 192, 0.4);
+        box-shadow: 0 8px 32px rgba(192, 192, 192, 0.6);
     }
 
-    .podium-item.pos-2 .podium-avatar {
-        border-color: #c0c0c0;
-    }
-
-    /* Position 3 - Bronze */
-    .podium-item.pos-3 .podium-base {
-        height: 100px;
+    .rank-badge-3 {
         background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%);
-        box-shadow: 0 4px 15px rgba(205, 127, 50, 0.4);
+        box-shadow: 0 8px 32px rgba(205, 127, 50, 0.6);
     }
 
-    .podium-item.pos-3 .podium-avatar {
-        border-color: #cd7f32;
+    .neon-text {
+        text-shadow: 0 0 10px rgba(139, 92, 246, 0.8), 0 0 20px rgba(139, 92, 246, 0.6), 0 0 30px rgba(139, 92, 246, 0.4);
     }
 
-    .no-data {
-        text-align: center;
-        color: #a0aec0;
-        padding: 60px 20px;
-        font-style: italic;
-        font-size: 1.1rem;
+    .app-icon-hover {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @@media (max-width: 992px) {
-        .ranking-grid {
-            grid-template-columns: 1fr;
+        .app-icon-hover:hover {
+            transform: translateY(-8px) scale(1.1) rotate(5deg);
         }
 
-        .user-info-horizontal {
-            min-width: 150px;
-        }
+    .podium-shadow-1 {
+        box-shadow: 0 20px 60px rgba(255, 215, 0, 0.5);
+    }
 
-        .podium-container {
-            gap: 10px;
-        }
+    .podium-shadow-2 {
+        box-shadow: 0 20px 60px rgba(192, 192, 192, 0.5);
+    }
 
-        .podium-base {
-            width: 100px;
-        }
-
-        .podium-avatar {
-            width: 60px;
-            height: 60px;
-        }
+    .podium-shadow-3 {
+        box-shadow: 0 20px 60px rgba(205, 127, 50, 0.5);
     }
 </style>
 
-<div class="ranking-container">
-    <div class="ranking-header">
-        <h1>🏆 Bảng Xếp Hạng</h1>
-        <p>Thống kê hoạt động và hiệu suất làm việc</p>
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900 py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Header with animated gradient -->
+    <div class="max-w-7xl mx-auto mb-12 text-center animate-slide-up">
+        <div class="inline-block">
+            <h1 class="text-5xl sm:text-6xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 dark:from-purple-400 dark:via-pink-400 dark:to-indigo-400 bg-clip-text text-transparent mb-4 neon-text">
+                🏆 Bảng Xếp Hạng
+            </h1>
+            <div class="h-1.5 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 rounded-full animate-pulse"></div>
+        </div>
     </div>
 
-    <div class="ranking-grid">
-        <!-- LEFT: Top Apps Per User -->
-        <div class="ranking-card">
-            <div class="card-title">
-                <i class="fas fa-chart-line"></i>
-                Top Ứng Dụng Theo Từng User
-            </div>
-
-            @if (Model.TopAppsPerUser != null && Model.TopAppsPerUser.Any())
-            {
-                @foreach (var user in Model.TopAppsPerUser)
-                {
-                    <div class="user-row">
-                        <div class="user-info-horizontal">
-                            <img src="@user.Avt" alt="@user.FullName" class="user-avatar">
-                            <span class="user-name">@user.FullName</span>
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- LEFT: Top Apps Per User (2 columns) -->
+        <div class="lg:col-span-2 animate-slide-up" style="animation-delay: 0.1s">
+            <div class="glass-effect bg-white/80 dark:bg-gray-800/80 rounded-3xl shadow-2xl border border-purple-200/50 dark:border-purple-700/50 overflow-hidden transform hover:scale-[1.01] transition-all duration-300">
+                <!-- Card Header -->
+                <div class="gradient-border p-1">
+                    <div class="bg-white dark:bg-gray-800 rounded-t-3xl px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-chart-line text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Top Ứng Dụng</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Theo từng người dùng</p>
+                            </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="apps-horizontal">
-                            @foreach (var app in user.Apps)
-                            {
-                                <div class="app-icon-item rank-@(app.RankId <= 3 ? app.RankId.ToString() : "other")">
-                                    <span class="rank-number">@app.RankId</span>
-                                    @{
-                                        var iconHtml = GetAppIconHtml(app.AppName);
-                                    }
-                                    @Html.Raw(iconHtml)
-                                    <div class="app-tooltip">
-                                        <span class="tooltip-name">@app.AppName</span>
-                                        <div class="tooltip-stats">
-                                            ⏱️ @app.TotalDurationMinutes phút · 🔄 @app.OpenCount lần
+                <!-- Content -->
+                <div class="p-6 space-y-4 max-h-[600px] overflow-y-auto">
+                    @if (Model.TopAppsPerUser != null && Model.TopAppsPerUser.Any())
+                    {
+                        @foreach (var user in Model.TopAppsPerUser)
+                        {
+                            <div class="group bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-700 rounded-2xl p-5 border-2 border-transparent hover:border-purple-400 dark:hover:border-purple-500 transition-all duration-300 hover:shadow-xl">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <div class="relative">
+                                        <img src="@user.Avt" alt="@user.FullName"
+                                             class="w-14 h-14 rounded-full border-4 border-purple-300 dark:border-purple-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 animate-pulse"></div>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">@user.FullName</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">@user.Apps.Count ứng dụng</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-wrap gap-3">
+                                    @foreach (var app in user.Apps)
+                                    {
+                                        <div class="relative group/app">
+                                            <div class="app-icon-hover w-16 h-16 @(app.RankId == 1 ? "rank-badge-1" : app.RankId == 2 ? "rank-badge-2" : app.RankId == 3 ? "rank-badge-3" : "bg-white dark:bg-gray-600") rounded-2xl flex items-center justify-center border-2 border-gray-200 dark:border-gray-500 shadow-lg cursor-pointer relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover/app:opacity-100 transition-opacity"></div>
+                                                @{
+                                                    var iconHtml = GetAppIconHtml(app.AppName);
+                                                }
+                                                @Html.Raw(iconHtml)
+
+                                                <!-- Rank Badge -->
+                                                <div class="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg border-2 border-white dark:border-gray-800">
+                                                    @app.RankId
+                                                </div>
+
+                                                @if (app.RankId <= 3)
+                                                {
+                                                    <div class="absolute -top-3 -left-3 text-2xl animate-float">
+                                                        @(app.RankId == 1 ? "🥇" : app.RankId == 2 ? "🥈" : "🥉")
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            <!-- Enhanced Tooltip -->
+                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover/app:opacity-100 transition-all duration-300 pointer-events-none z-50">
+                                                <div class="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-3 rounded-xl shadow-2xl whitespace-nowrap">
+                                                    <p class="font-bold text-sm mb-1">@app.AppName</p>
+                                                    <div class="flex gap-3 text-xs">
+                                                        <span>⏱️ @app.TotalDurationMinutes phút</span>
+                                                        <span>🔄 @app.OpenCount lần</span>
+                                                    </div>
+                                                    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+                                                        <div class="border-8 border-transparent border-t-gray-900 dark:border-t-white"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-20">
+                            <div class="text-6xl mb-4 animate-bounce">📊</div>
+                            <p class="text-gray-400 dark:text-gray-500 text-lg">Chưa có dữ liệu</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Top Late Users - Podium (1 column) -->
+        <div class="animate-slide-up" style="animation-delay: 0.2s">
+            <div class="glass-effect bg-white/80 dark:bg-gray-800/80 rounded-3xl shadow-2xl border border-pink-200/50 dark:border-pink-700/50 overflow-hidden transform hover:scale-[1.01] transition-all duration-300">
+                <!-- Card Header -->
+                <div class="gradient-border p-1">
+                    <div class="bg-white dark:bg-gray-800 rounded-t-3xl px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-clock text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Đi Muộn</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Hall of Fame</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Form -->
+                <div class="p-6">
+                    <form method="get" asp-controller="RankUser" asp-action="Index"
+                          class="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-gray-700 dark:to-gray-700 rounded-2xl p-4 space-y-3 border-2 border-purple-200 dark:border-purple-600">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                            🕐 Chọn mốc thời gian:
+                        </label>
+                        <input type="datetime-local" name="fromTime" id="fromTime"
+                               value="@(Model.FromTime?.ToString("yyyy-MM-ddTHH:mm"))"
+                               class="w-full px-4 py-3 rounded-xl border-2 border-purple-300 dark:border-purple-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-700 focus:border-purple-500 transition-all outline-none shadow-sm" />
+                        <button type="submit"
+                                class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                            🔍 Lọc Ngay
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Podium -->
+                <div class="p-6">
+                    @if (Model.TopLateUsers != null && Model.TopLateUsers.Any())
+                    {
+                        <div class="flex items-end justify-center gap-4 min-h-[400px] pb-8">
+                            @* Position 2 - Silver *@
+                            @if (Model.TopLateUsers.Count >= 2)
+                            {
+                                var secondPlace = Model.TopLateUsers[1];
+                                <div class="flex flex-col items-center animate-slide-up" style="animation-delay: 0.3s">
+                                    <div class="text-4xl mb-3 animate-float" style="animation-delay: 0.1s">🥈</div>
+                                    <div class="relative mb-4 group">
+                                        <img src="@secondPlace.Avt" alt="@secondPlace.FullName"
+                                             class="w-20 h-20 rounded-full border-4 border-gray-300 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white dark:border-gray-800 animate-pulse">
+                                            @secondPlace.LateCount
+                                        </div>
+                                    </div>
+                                    <div class="rank-badge-2 w-28 h-32 rounded-t-2xl flex flex-col items-center justify-center text-white font-bold shadow-2xl podium-shadow-2 transform hover:scale-105 transition-transform">
+                                        <span class="text-xs mb-1 opacity-80">Hạng 2</span>
+                                        <span class="text-sm text-center px-2 leading-tight">@secondPlace.FullName</span>
+                                    </div>
+                                </div>
+                            }
+
+                            @* Position 1 - Gold *@
+                            @if (Model.TopLateUsers.Count >= 1)
+                            {
+                                var firstPlace = Model.TopLateUsers[0];
+                                <div class="flex flex-col items-center animate-slide-up" style="animation-delay: 0.2s">
+                                    <div class="text-5xl mb-3 animate-float">🥇</div>
+                                    <div class="relative mb-4 group">
+                                        <img src="@firstPlace.Avt" alt="@firstPlace.FullName"
+                                             class="w-24 h-24 rounded-full border-4 border-yellow-400 shadow-xl group-hover:scale-110 transition-transform duration-300 animate-glow">
+                                        <div class="absolute -top-2 -right-2 w-9 h-9 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white dark:border-gray-800 animate-pulse">
+                                            @firstPlace.LateCount
+                                        </div>
+                                    </div>
+                                    <div class="rank-badge-1 w-32 h-44 rounded-t-2xl flex flex-col items-center justify-center text-white font-bold shadow-2xl podium-shadow-1 transform hover:scale-105 transition-transform">
+                                        <span class="text-xs mb-1 opacity-80">🏆 Quán Quân</span>
+                                        <span class="text-base text-center px-2 leading-tight">@firstPlace.FullName</span>
+                                    </div>
+                                </div>
+                            }
+
+                            @* Position 3 - Bronze *@
+                            @if (Model.TopLateUsers.Count >= 3)
+                            {
+                                var thirdPlace = Model.TopLateUsers[2];
+                                <div class="flex flex-col items-center animate-slide-up" style="animation-delay: 0.4s">
+                                    <div class="text-4xl mb-3 animate-float" style="animation-delay: 0.2s">🥉</div>
+                                    <div class="relative mb-4 group">
+                                        <img src="@thirdPlace.Avt" alt="@thirdPlace.FullName"
+                                             class="w-20 h-20 rounded-full border-4 border-orange-400 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg border-2 border-white dark:border-gray-800 animate-pulse">
+                                            @thirdPlace.LateCount
+                                        </div>
+                                    </div>
+                                    <div class="rank-badge-3 w-28 h-28 rounded-t-2xl flex flex-col items-center justify-center text-white font-bold shadow-2xl podium-shadow-3 transform hover:scale-105 transition-transform">
+                                        <span class="text-xs mb-1 opacity-80">Hạng 3</span>
+                                        <span class="text-sm text-center px-2 leading-tight">@thirdPlace.FullName</span>
                                     </div>
                                 </div>
                             }
                         </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="no-data">Chưa có dữ liệu</div>
-            }
-        </div>
-
-        <!-- RIGHT: Top Late Users - Podium -->
-        <div class="ranking-card">
-            <div class="card-title">
-                <i class="fas fa-clock"></i>
-                Top Người Đi Muộn
-            </div>
-
-            @if (Model.TopLateUsers != null && Model.TopLateUsers.Any())
-            {
-                <div class="podium-container">
-                    @* Reorder for podium: 2nd, 1st, 3rd *@
-                    @if (Model.TopLateUsers.Count >= 2)
-                    {
-                        var secondPlace = Model.TopLateUsers[1];
-                        <div class="podium-item pos-2">
-                            <div class="podium-avatar-container">
-                                <div class="podium-rank">🥈</div>
-                                <img src="@secondPlace.Avt" alt="@secondPlace.FullName" class="podium-avatar">
-                                <div class="late-badge">@secondPlace.LateCount</div>
-                            </div>
-                            <div class="podium-base">
-                                <div class="podium-name">@secondPlace.FullName</div>
-                            </div>
-                        </div>
                     }
-
-                    @if (Model.TopLateUsers.Count >= 1)
+                    else
                     {
-                        var firstPlace = Model.TopLateUsers[0];
-                        <div class="podium-item pos-1">
-                            <div class="podium-avatar-container">
-                                <div class="podium-rank">🥇</div>
-                                <img src="@firstPlace.Avt" alt="@firstPlace.FullName" class="podium-avatar">
-                                <div class="late-badge">@firstPlace.LateCount</div>
-                            </div>
-                            <div class="podium-base">
-                                <div class="podium-name">@firstPlace.FullName</div>
-                            </div>
-                        </div>
-                    }
-
-                    @if (Model.TopLateUsers.Count >= 3)
-                    {
-                        var thirdPlace = Model.TopLateUsers[2];
-                        <div class="podium-item pos-3">
-                            <div class="podium-avatar-container">
-                                <div class="podium-rank">🥉</div>
-                                <img src="@thirdPlace.Avt" alt="@thirdPlace.FullName" class="podium-avatar">
-                                <div class="late-badge">@thirdPlace.LateCount</div>
-                            </div>
-                            <div class="podium-base">
-                                <div class="podium-name">@thirdPlace.FullName</div>
-                            </div>
+                        <div class="text-center py-20">
+                            <div class="text-6xl mb-4 animate-bounce">⏰</div>
+                            <p class="text-gray-400 dark:text-gray-500 text-lg">Không có dữ liệu đi muộn</p>
                         </div>
                     }
                 </div>
-            }
-            else
-            {
-                <div class="no-data">Không có dữ liệu đi muộn</div>
-            }
+            </div>
         </div>
     </div>
 </div>
@@ -507,85 +323,84 @@
 @functions {
     public string GetAppIconHtml(string appName)
     {
-        // Map app names to Simple Icons slugs or custom images
         var iconMap = new Dictionary<string, (string type, string value, string color)>(StringComparer.OrdinalIgnoreCase)
         {
             // Browsers
-            { "chrome", ("simpleicons", "googlechrome", "#4285F4") },
-            { "firefox", ("simpleicons", "firefox", "#FF7139") },
-            { "edge", ("simpleicons", "microsoftedge", "#0078D7") },
-            { "brave", ("simpleicons", "brave", "#FB542B") },
-            { "opera", ("simpleicons", "opera", "#FF1B2D") },
-            { "safari", ("simpleicons", "safari", "#000000") },
+            { "chrome", ("simpleicons", "googlechrome", "4285F4") },
+            { "firefox", ("simpleicons", "firefox", "FF7139") },
+            { "edge", ("simpleicons", "microsoftedge", "0078D7") },
+            { "brave", ("simpleicons", "brave", "FB542B") },
+            { "opera", ("simpleicons", "opera", "FF1B2D") },
+            { "safari", ("simpleicons", "safari", "000000") },
 
             // Development
-            { "devenv", ("simpleicons", "visualstudio", "#5C2D91") },
-            { "vs code", ("simpleicons", "visualstudiocode", "#007ACC") },
-            { "vscode", ("simpleicons", "visualstudiocode", "#007ACC") },
-            { "code", ("simpleicons", "visualstudiocode", "#007ACC") },
-            { "git", ("simpleicons", "git", "#F05032") },
-            { "github", ("simpleicons", "github", "#181717") },
-            { "docker", ("simpleicons", "docker", "#2496ED") },
-            { "postman", ("simpleicons", "postman", "#FF6C37") },
-            { "terminal", ("simpleicons", "windowsterminal", "#4D4D4D") },
-            { "windowsterminal", ("simpleicons", "windowsterminal", "#4D4D4D") },
-            { "cmd", ("simpleicons", "windowsterminal", "#4D4D4D") },
-            { "powershell", ("simpleicons", "powershell", "#5391FE") },
+            { "devenv", ("simpleicons", "visualstudio", "5C2D91") },
+            { "vs code", ("simpleicons", "visualstudiocode", "007ACC") },
+            { "vscode", ("simpleicons", "visualstudiocode", "007ACC") },
+            { "code", ("simpleicons", "visualstudiocode", "007ACC") },
+            { "git", ("simpleicons", "git", "F05032") },
+            { "github", ("simpleicons", "github", "181717") },
+            { "docker", ("simpleicons", "docker", "2496ED") },
+            { "postman", ("simpleicons", "postman", "FF6C37") },
+            { "terminal", ("simpleicons", "windowsterminal", "4D4D4D") },
+            { "windowsterminal", ("simpleicons", "windowsterminal", "4D4D4D") },
+            { "cmd", ("simpleicons", "windowsterminal", "4D4D4D") },
+            { "powershell", ("simpleicons", "powershell", "5391FE") },
 
             // Communication
-            { "slack", ("simpleicons", "slack", "#4A154B") },
-            { "teams", ("simpleicons", "microsoftteams", "#6264A7") },
-            { "discord", ("simpleicons", "discord", "#5865F2") },
-            { "zoom", ("simpleicons", "zoom", "#2D8CFF") },
-            { "skype", ("simpleicons", "skype", "#00AFF0") },
-            { "outlook", ("simpleicons", "microsoftoutlook", "#0078D4") },
-            { "telegram", ("simpleicons", "telegram", "#26A5E4") },
-            {"Zalo", ("simpleicons", "zalo", "#0068FF") },
+            { "slack", ("simpleicons", "slack", "4A154B") },
+            { "teams", ("simpleicons", "microsoftteams", "6264A7") },
+            { "discord", ("simpleicons", "discord", "5865F2") },
+            { "zoom", ("simpleicons", "zoom", "2D8CFF") },
+            { "skype", ("simpleicons", "skype", "00AFF0") },
+            { "outlook", ("simpleicons", "microsoftoutlook", "0078D4") },
+            { "telegram", ("simpleicons", "telegram", "26A5E4") },
+            {"Zalo", ("simpleicons", "zalo", "0068FF") },
 
             // Design
-            { "figma", ("simpleicons", "figma", "#F24E1E") },
-            { "photoshop", ("simpleicons", "adobephotoshop", "#31A8FF") },
-            { "illustrator", ("simpleicons", "adobeillustrator", "#FF9A00") },
-            { "canva", ("simpleicons", "canva", "#00C4CC") },
-            { "sketch", ("simpleicons", "sketch", "#F7B500") },
+            { "figma", ("simpleicons", "figma", "F24E1E") },
+            { "photoshop", ("simpleicons", "adobephotoshop", "31A8FF") },
+            { "illustrator", ("simpleicons", "adobeillustrator", "FF9A00") },
+            { "canva", ("simpleicons", "canva", "00C4CC") },
+            { "sketch", ("simpleicons", "sketch", "F7B500") },
 
             // Office
-            { "word", ("simpleicons", "microsoftword", "#2B579A") },
-            { "excel", ("simpleicons", "microsoftexcel", "#217346") },
-            { "powerpoint", ("simpleicons", "microsoftpowerpoint", "#B7472A") },
-            { "onenote", ("simpleicons", "microsoftonenote", "#7719AA") },
-            { "notion", ("simpleicons", "notion", "#000000") },
+            { "word", ("simpleicons", "microsoftword", "2B579A") },
+            { "excel", ("simpleicons", "microsoftexcel", "217346") },
+            { "powerpoint", ("simpleicons", "microsoftpowerpoint", "B7472A") },
+            { "onenote", ("simpleicons", "microsoftonenote", "7719AA") },
+            { "notion", ("simpleicons", "notion", "000000") },
 
             // System
             { "settings", ("emoji", "⚙️", "") },
             { "systemsettings", ("emoji", "⚙️", "") },
             { "taskmanager", ("emoji", "📊", "") },
-            { "explorer", ("simpleicons", "windowsexplorer", "#0078D7") },
+            { "explorer", ("simpleicons", "windowsexplorer", "0078D7") },
             { "notepad", ("emoji", "📄", "") },
             { "calculator", ("emoji", "🔢", "") },
             { "snipping", ("emoji", "✂️", "") },
             { "snippingtool", ("emoji", "✂️", "") },
 
             // Media
-            { "spotify", ("simpleicons", "spotify", "#1DB954") },
-            { "vlc", ("simpleicons", "vlcmediaplayer", "#FF8800") },
-            { "youtube", ("simpleicons", "youtube", "#FF0000") },
+            { "spotify", ("simpleicons", "spotify", "1DB954") },
+            { "vlc", ("simpleicons", "vlcmediaplayer", "FF8800") },
+            { "youtube", ("simpleicons", "youtube", "FF0000") },
 
             // Database
-            { "sql", ("simpleicons", "microsoftsqlserver", "#CC2927") },
-            { "mongodb", ("simpleicons", "mongodb", "#47A248") },
-            { "redis", ("simpleicons", "redis", "#DC382D") },
+            { "sql", ("simpleicons", "microsoftsqlserver", "CC2927") },
+            { "mongodb", ("simpleicons", "mongodb", "47A248") },
+            { "redis", ("simpleicons", "redis", "DC382D") },
 
             // Additional popular apps
-            { "intellij", ("simpleicons", "intellijidea", "#000000") },
-            { "pycharm", ("simpleicons", "pycharm", "#000000") },
-            { "android studio", ("simpleicons", "androidstudio", "#3DDC84") },
-            { "xcode", ("simpleicons", "xcode", "#147EFB") },
-            { "sublime", ("simpleicons", "sublimetext", "#FF9800") },
-            { "atom", ("simpleicons", "atom", "#66595C") },
-            { "trello", ("simpleicons", "trello", "#0052CC") },
-            { "jira", ("simpleicons", "jira", "#0052CC") },
-            { "confluence", ("simpleicons", "confluence", "#172B4D") }
+            { "intellij", ("simpleicons", "intellijidea", "000000") },
+            { "pycharm", ("simpleicons", "pycharm", "000000") },
+            { "android studio", ("simpleicons", "androidstudio", "3DDC84") },
+            { "xcode", ("simpleicons", "xcode", "147EFB") },
+            { "sublime", ("simpleicons", "sublimetext", "FF9800") },
+            { "atom", ("simpleicons", "atom", "66595C") },
+            { "trello", ("simpleicons", "trello", "0052CC") },
+            { "jira", ("simpleicons", "jira", "0052CC") },
+            { "confluence", ("simpleicons", "confluence", "172B4D") }
         };
 
         foreach (var kvp in iconMap)
@@ -596,19 +411,17 @@
 
                 if (type == "simpleicons")
                 {
-                    return $"<img src='https://cdn.simpleicons.org/{value}/{color.TrimStart('#')}' alt='{appName}' />";
+                    return $"<img src='https://cdn.simpleicons.org/{value}/{color}' alt='{appName}' class='w-8 h-8 relative z-10' />";
                 }
                 else if (type == "emoji")
                 {
-                    return $"<span style='font-size: 32px;'>{value}</span>";
+                    return $"<span class='text-3xl relative z-10'>{value}</span>";
                 }
             }
         }
 
-        // Default icon - generic app icon
-        return "<span style='font-size: 32px;'>📱</span>";
+        return "<span class='text-3xl relative z-10'>📱</span>";
     }
 }
 
-<!-- Optional: Add Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
