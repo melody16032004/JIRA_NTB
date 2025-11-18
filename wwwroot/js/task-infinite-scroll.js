@@ -229,7 +229,7 @@ class InfiniteScrollManager {
         });
 
         // Re-attach event listeners
-        this.attachTaskEventListeners(taskList);
+        //this.attachTaskEventListeners(taskList);
         if (window.taskDragDrop) {
             window.taskDragDrop.refresh();
             console.log('[InfiniteScroll] Drag & Drop listeners refreshed');
