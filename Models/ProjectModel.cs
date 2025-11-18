@@ -34,5 +34,6 @@ namespace JIRA_NTB.Models
 
         [NotMapped]
         public string? MembersInput { get; set; }
+        public DateTime CreateAt { get; set; } = DateTime.Now;
     }
 }

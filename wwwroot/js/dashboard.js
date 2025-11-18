@@ -124,17 +124,19 @@ function renderTaskCard(t) {
                         </div>
                     </div>
                     <span class="text-gray-400 hidden md:inline">•</span>
-                    <div class="relative group cursor-pointer text-xs">
-                        <div class="flex gap-1 items-center">
-                            <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
-                            <span>${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                    <div class="flex items-center gap-2">
+                        <div class="relative group cursor-pointer text-xs">
+                            <div class="flex gap-1 items-center">
+                                <i data-lucide="calendar" class="w-4 h-4 text-green-600"></i>
+                                <span>${t.startDate ? new Date(t.startDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                            </div>
                         </div>
-                    </div>
-                    <span class="text-gray-400 hidden md:inline">•</span>
-                    <div class="relative group cursor-pointer text-xs">
-                        <div class="flex gap-1 items-center">
-                            <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
-                            <span>${t.endDate ? new Date(t.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                        <span class="text-gray-400 hidden md:inline">•</span>
+                        <div class="relative group cursor-pointer text-xs">
+                            <div class="flex gap-1 items-center">
+                                <i data-lucide="calendar-check" class="w-4 h-4 text-red-600"></i>
+                                <span>${t.endDate ? new Date(t.endDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -346,8 +348,8 @@ function renderDashboard(projects) {
 
     // QUAN TRỌNG: Cập nhật pageIndex/totalPages từ object 'projects' được truyền vào
     const controllButton = `
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-3 gap-4 md:gap-0">
+            <div class="flex items-center justify-center md:justify-start gap-3">
                 <button id="prevPage"
                     class="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                     <i data-lucide="chevron-left" class="w-4 h-4"></i>
@@ -356,58 +358,32 @@ function renderDashboard(projects) {
                 <span id="pageIndicator" class="text-xs font-medium text-gray-200 select-none">
                     Trang <span id="currentPage">${projects.pageIndex || 1}</span>/<span id="totalPages">${projects.totalPages || 1}</span>
                 </span>
-
                 <button id="nextPage"
                     class="flex items-center justify-center w-9 h-9 rounded-lg bg-gray-800 text-gray-300 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
                     <i data-lucide="chevron-right" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
-                <!--
-                <div class="relative group cursor-pointer">
-                    <div
-                        class="flex items-center gap-2 bg-gray-800/90 border border-red-500 rounded-lg px-3 py-2 hover:bg-red-600/10 transition-all duration-200">
-                        <input type="checkbox" id="priorityHigh" class="hidden peer" />
-                        <span
-                            class="w-4 h-4 border-2 border-gray-400 rounded peer-checked:bg-red-500 peer-checked:border-red-500 transition-all"></span>
-                        <label for="priorityHigh"
-                            class="text-xs text-red-400 font-medium flex items-center gap-1 cursor-pointer select-none">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
-                            Ưu tiên cao
-                        </label>
-                    </div>
-                    <span
-                        class="absolute left-[12rem] top-0 -translate-y-[1.5rem] -translate-x-full mr-2 bg-gray-900 text-white text-xs rounded-md px-2 py-1 opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 whitespace-nowrap shadow-lg">
-                        Lọc nhiệm vụ có độ ưu tiên cao
-                    </span>
-                </div>
-                -->
-
+            <div class="flex items-center justify-between gap-3">
                 <button id="toggleAllBtn"
-                    class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition-all">
+                    class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-sm transition-all w-full md:w-auto">
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                     Thu gọn tất cả
                 </button>
 
-
-                <div class="flex items-center bg-gray-800 rounded-lg p-1 gap-1">
-                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                            ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
-                            data-view="list"
-                            title="Xem dạng danh sách">
+                <div class="hidden md:flex items-center bg-gray-800 rounded-lg p-1 gap-1">
+                    <button data-view="list" title="Xem dạng danh sách"
+                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
                         <i data-lucide="layout-list" class="w-4 h-4"></i>
                     </button>
-                    <button class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-                            ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}"
-                            data-view="gantt"
-                            title="Xem dạng Gantt">
+                    <button data-view="gantt" title="Xem dạng Gantt"
+                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
                         <i data-lucide="gantt-chart-square" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
-        </div>
-    `;
+         </div>
+        `;
     const viewProjectNull = `
         <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg flex flex-col items-center justify-center gap-3">
             <i data-lucide="folder-x" class="w-[80px] h-[80px] text-gray-500"></i>
@@ -439,24 +415,28 @@ function renderDashboard(projects) {
                                 <i data-lucide="hourglass" class="w-9 h-9" style="color: orange;"></i>
                             </div>
                         </div>
-                        <div class="mt-5 flex flex-col md:flex-row md:items-center gap-3 items-start md:items-center">
-                            <div class="flex gap-1 items-center  bg-gray-700/50 px-4 py-1.5 rounded-full">
+                        <div class="w-full mt-5 flex flex-col md:flex-row md:items-center gap-3">
+                            <!-- Manager -->
+                            <div class="flex gap-1 items-center bg-gray-700/50 px-4 py-1.5 rounded-full whitespace-nowrap">
                                 <i data-lucide="circle-user-round" class="w-4 h-4 text-white"></i>
                                 <span class="text-xs">${p.manager ?? "Unknown"}</span>
                             </div>
 
-                            <div class="flex gap-1 items-center  bg-green-900/50 px-4 py-1.5 rounded-full">
-                                <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
-                                <span class="text-xs">
-                                    ${p.startDay ? new Date(p.startDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-                                </span>
-                            </div>
+                            <!-- Thời gian (Start + End) -->
+                            <div class="w-full flex flex-row items-center justify-start md:justify-start gap-3">
+                                <div class="flex gap-1 items-center bg-green-900/50 px-4 py-1.5 rounded-full">
+                                    <i data-lucide="calendar" class="w-4 h-4 text-white"></i>
+                                    <span class="text-xs">
+                                        ${p.startDay ? new Date(p.startDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
+                                    </span>
+                                </div>
 
-                            <div class="flex gap-1 items-center  bg-red-900/50 px-4 py-1.5 rounded-full ">
-                                <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
-                                <span class="text-xs">
-                                    ${p.endDay ? new Date(p.endDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
-                                </span>
+                                <div class="flex gap-1 items-center bg-red-900/50 px-4 py-1.5 rounded-full">
+                                    <i data-lucide="calendar-check" class="w-4 h-4 text-white"></i>
+                                    <span class="text-xs">
+                                        ${p.endDay ? new Date(p.endDay).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "--/--/----"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1472,9 +1452,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     allProjectsStat = projectsStat;
 
     // --- Log dữ liệu ban đầu (phần còn lại) ---
-    console.log("Projects (Trang 1): ", initialProjects);
-    console.log("Stats Task: ", tasksStat);
-    console.log("Stats Project: ", projectsStat);
+    //console.log("Projects (Trang 1): ", initialProjects);
+    //console.log("Stats Task: ", tasksStat);
+    //console.log("Stats Project: ", projectsStat);
 
     // --- Render giao diện LẦN ĐẦU TIÊN ---
     renderDashboard(initialProjects);
@@ -1717,7 +1697,7 @@ function formTask(task = null, projects = [], members = [], role) {
                                 class="${role == "EMPLOYEE" ? "hidden" : ""} px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xóa
                             </button>
-                            <button type="submit" id="confirmUploadBtn"
+                            <button type="button" id="confirmUploadBtn"
                                 class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
                                 Xác nhận
                             </button>
@@ -2121,15 +2101,25 @@ function filterHighPrior() {
         });
     });
 }
-function handleConfirm(task) {
-    document.getElementById("confirmUploadBtn").addEventListener("click", async () => {
-        // Gọi hàm xử lý cập nhật
-        const updatedTask = getUpdatedTaskFromForm(task);
-        console.log("Dữ liệu mới:", updatedTask);
 
+/**
+ * Cắt chuỗi và thêm dấu "..."
+ * @param {string} str - Chuỗi cần cắt
+ * @param {number} maxLength - Độ dài tối đa
+ */
+function truncateString(str, maxLength = 50) {
+    if (!str) return ""; // Xử lý nếu chuỗi bị null
+    if (str.length <= maxLength) {
+        return str;
+    }
+    return str.slice(0, maxLength) + "...";
+}
+function handleConfirm(task) { // 'task' ở đây là object task GỐC (trước khi sửa)
+    document.getElementById("confirmUploadBtn").addEventListener("click", async () => {
+        const updatedTask = getUpdatedTaskFromForm(task); // Lấy data MỚI từ form
         if (!updatedTask) return;
 
-        // Kiểm tra các field quan trọng khác trước khi gửi
+        // ... (phần kiểm tra requiredFields giữ nguyên) ...
         const requiredFields = ["Name", "IdPrj", "Start", "End"];
         for (const field of requiredFields) {
             if (!updatedTask[field] || updatedTask[field].trim() === "") {
@@ -2138,14 +2128,13 @@ function handleConfirm(task) {
             }
         }
 
-        // Gọi API hoặc xử lý lưu ở đây
-        const uploadOverlay = document.getElementById(`uploadOverlay`);
         const loadingOverlay = document.getElementById(`loadingOverlay`);
         try {
             loadingOverlay.classList.remove("hidden");
             const res = await fetch("/Home/SaveTask", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: 'include',
                 body: JSON.stringify(updatedTask)
             });
 
@@ -2153,13 +2142,74 @@ function handleConfirm(task) {
 
             if (data.success) {
                 closeFormModal();
-                location.reload();
+
+                // ======================================================
+                // SỬA: LOGIC GỬI NOTIFY THÔNG MINH HƠN
+                // ======================================================
+                const newAssigneeId = updatedTask["IdAss"];
+
+                // Lấy ID assignee CŨ (nếu là task CŨ và có 'idAss')
+                const oldAssigneeId = (task && task.idAss) ? task.idAss : null;
+
+                // Chỉ gửi notify nếu:
+                // 1. Có assignee mới (không rỗng)
+                // 2. Assignee mới KHÁC assignee cũ
+                if (newAssigneeId && newAssigneeId.trim() !== "" && newAssigneeId !== oldAssigneeId) {
+                    // --- SỬA: Lấy tên Project (3 bước) ---
+                    let projectName = "Không rõ"; // Giá trị mặc định
+                    try {
+                        // 1. Fetch (thêm credentials)
+                        const projectRes = await fetch(`/api/projects/${updatedTask["IdPrj"]}/name`, {
+                            credentials: 'include'
+                        });
+
+                        // 2. Kiểm tra OK và lấy JSON
+                        if (projectRes.ok) {
+                            const projectData = await projectRes.json();
+                            projectName = projectData.projectName; // 3. Lấy tên
+                        }
+                    } catch (e) {
+                        console.warn("Không thể lấy tên project.", e);
+                    }
+                    console.log("Tên project để gửi notify:", projectName);
+                    // --- Hết phần sửa lấy tên project ---
+
+                    const truncatedProjectName = truncateString(projectName, 50);
+                    const truncatedTaskName = truncateString(updatedTask.Name, 50);
+
+                    try {
+                        await fetch("/api/notification/push", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                                UserId: newAssigneeId,
+                                Title: `Giao công việc`,
+                                Message: `
+                                    Bạn được giao nhiệm vụ mới 🔔
+                                    <br/>
+                                    <span class="text-green-500"><strong>Dự án</strong></span>: ${truncatedProjectName}
+                                    <br/>
+                                    <span class="text-green-500"><strong>Nhiệm vụ</strong></span>: ${truncatedTaskName}
+                                `
+                            })
+                        });
+                    } catch (notifyErr) {
+                        console.error("🔥 Lỗi gửi notify:", notifyErr);
+                    }
+                }
+                // ======================================================
+
+                location.reload(); // Chỉ reload khi thành công
+
             } else {
                 alert("❌ Lưu thất bại: " + (data.message || "Không rõ lỗi"));
+                loadingOverlay.classList.add("hidden");
             }
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi gửi dữ liệu:", e);
+            alert("❌ Đã xảy ra lỗi nghiêm trọng. Vui lòng thử lại.");
         }
     });
 }

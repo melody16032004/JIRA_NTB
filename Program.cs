@@ -1,4 +1,5 @@
-﻿using JIRA_NTB.Data;
+﻿using JIRA_NTB.Controllers.Hubs;
+using JIRA_NTB.Data;
 using JIRA_NTB.Middleware;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
@@ -62,8 +63,13 @@ builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 
 // Đăng ký background service để tự động xóa tài khoản chưa xác nhận
 builder.Services.AddHostedService<UnconfirmedAccountCleanupService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<NotificationService>();
 
 var app = builder.Build();
+
+app.MapHub<NotifyHub>("/notifyHub");
+
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
@@ -151,6 +157,11 @@ app.UseRouting();
 app.UseStatusCodePagesWithReExecute("/Error/{0}");
 
 app.UseAuthentication();
+
+// ===================================================
+// THÊM DÒNG NÀY ĐỂ KÍCH HOẠT API CONTROLLERS
+app.MapControllers();
+// ===================================================
 
 // Middleware kiểm tra user còn tồn tại trong database
 app.UseMiddleware<ValidateUserExistsMiddleware>();
