@@ -269,12 +269,12 @@ namespace JIRA_NTB.Services
             }
             return (true, "OK");
         }
-        public async Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId)
+        public async Task<IEnumerable<UserModel>> GetAllMemberProjectAsync(string projectId, string? userId)
         {
             if (string.IsNullOrEmpty(projectId))
                 return Enumerable.Empty<UserModel>();
 
-            return await _userRepo.GetMembersByProjectAsync(projectId);
+            return await _userRepo.GetMembersByProjectAsync(projectId, userId);
         }
         public async Task<(bool success, string message, string? taskId)> CreateTaskAsync(CreateTaskRequest request)
         {

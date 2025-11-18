@@ -2,6 +2,24 @@
 // -----| /js/calendar.js |-------
 // ===============================
 document.addEventListener("DOMContentLoaded", async () => {
+    if (!me) {
+        try {
+            const meRes = await fetch("/api/user/me");
+
+            if (meRes.ok) {
+                me = await meRes.json();
+            }
+
+        } catch (e) {
+            console.error("Fetch failed:", e);
+        }
+    }
+
+    if (!me || me == null) {
+        window.location.href = "/Error/403";
+    }
+
+    //console.log(me);
     // ==============================
     // ========== Calendar ==========
     // ==============================
@@ -16,6 +34,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const taskDetailContainer = document.getElementById("task-detail");
     const calendarHeader = document.getElementById("calendar-header");
     const weekHeader = taskDetailContainer.previousElementSibling;
+    //console.log("Me: ", me);
 
     // helper
     const pad = n => n.toString().padStart(2, "0");
@@ -55,13 +74,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // load remote data
-    const [taskDeadline, projectDeadline] = await Promise.all([
+    const [taskDeadline = [], projectDeadline] = await Promise.all([
         safeFetchJson("/api/tasks/deadline", []),
         safeFetchJson("/api/projects/deadline", [])
     ]);
 
-    console.log("Task/deadline: ", taskDeadline);
-    console.log("Project/deadline: ", projectDeadline);
+    //console.log("Task/deadline: ", taskDeadline);
+    //console.log("Project/deadline: ", projectDeadline);
 
     // build calendarItems map: { 'YYYY-MM-DD': [items...] }
     const calendarItems = {};
@@ -186,8 +205,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const buttons = taskDetailContainer.querySelectorAll('.status-toggle-btn');
         buttons.forEach(b => b.disabled = true);
 
-        console.log(`Đang PATCH ${item.type} [${id}] sang status ${newStatus} tại URL ${url}`);
-
         // 4. Gọi API
         try {
             const res = await fetch(url, {
@@ -195,6 +212,29 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             if (!res.ok) throw new Error(await res.text() || res.statusText);
+
+            if (me.leaderId != null && me.leaderId != "") {
+                try {
+                    await fetch("/api/notification/push", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            UserId: me.leaderId,
+                            Title: `Cập nhật trạng thái công việc`,
+                            Message: `
+                                ${me.fullName} vừa cập nhật trạng thái công việc!
+                                <br/>
+                                <span class="text-green-500"><strong>Dự án</strong></span>: ${item.projectName}
+                                <br/>
+                                <span class="text-green-500"><strong>Nhiệm vụ</strong></span>: ${item.nameTask}
+                            `
+                        })
+                    });
+                } catch (notifyErr) {
+                    console.error("🔥 Lỗi gửi notify:", notifyErr);
+                }
+            }
 
             buttons.forEach(b => b.disabled = false);
             return true;
@@ -406,13 +446,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
 
             noDataMessage = `
-                <div class="w-full flex flex-col items-center justify-center gap-1 py-8">
-                    <i data-lucide="check-circle-2" class="w-5 h-5 text-gray-500"></i>
-                    <div class="text-sm text-center text-gray-500 mt-2">
-                        Không có việc nào sắp/quá hạn
-                    </div>
-                </div>
-            `;
+                <div class="w-full flex flex-col items-center justify-center gap-1 py-4 md:py-8">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 md:w-5 md:h-5 text-gray-500"></i>
+                    <div class="text-xs md:text-sm text-center text-gray-500 mt-2">
+                        Không có việc nào sắp/quá hạn
+                    </div>
+                </div>
+            `;
         }
 
         // 3. Sắp xếp: (SỬA ĐỔI LOGIC SẮP XẾP)
@@ -539,8 +579,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             const allItems = calendarItems[key] || [];
 
-            const tasks = allItems.filter(it => it.type === 'task' && it.statusName != 3);
-            const projects = allItems.filter(it => it.type === 'project' && it.statusName != 3);
+            const tasks = allItems.filter(it => it.type === 'task' && it.statusName != 3 && it.statusName != 4);
+            const projects = allItems.filter(it => it.type === 'project' && it.statusName != 3 && it.statusName != 4);
 
 
             if (projects.length > 0) {

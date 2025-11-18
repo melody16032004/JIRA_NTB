@@ -54,8 +54,43 @@ namespace JIRA_NTB.Controllers
         public async Task<IActionResult> GetCurrentUser()
         {
             var user = await _userManager.GetUserAsync(User);
-            return Ok(new {
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            UserModel leader = null;
+
+            // Chỉ tìm Leader nếu người dùng hiện tại là EMPLOYEE và có phòng ban
+            if (User.IsInRole("EMPLOYEE") && !string.IsNullOrEmpty(user.IdDepartment))
+            {
+                // 1. Tìm ID của vai trò (Role) "LEADER"
+                // (Giả sử tên Role của bạn là "LEADER", 
+                // dựa theo code `User.IsInRole("LEADER")` bạn gửi trước đó)
+                var leaderRole = await _context.Roles
+              .FirstOrDefaultAsync(r => r.Name == "LEADER");
+
+                if (leaderRole != null)
+                {
+                    // 2. Tìm người dùng (User)
+                    //    - Cùng phòng ban VỚI BẠN (user.IdDepartment)
+                    //    - VÀ có RoleId là "LEADER"
+                    leader = await (from u in _context.Users
+                                    join ur in _context.UserRoles on u.Id equals ur.UserId
+                                    where u.IdDepartment == user.IdDepartment && ur.RoleId == leaderRole.Id
+                                    select u)
+                      .FirstOrDefaultAsync();
+                }
+            }
+            // Nếu bạn là LEADER hoặc ADMIN, 'leader' sẽ là null (vì bạn không có Leader)
+            // Nếu bạn là EMPLOYEE mà phòng ban chưa có ai là LEADER, 'leader' cũng là null
+
+            return Ok(new
+            {
                 user.FullName,
+                user.Id,
+                LeaderId = leader?.Id,
+                LeaderName = leader?.FullName
             });
         }
         #endregion
@@ -305,6 +340,25 @@ namespace JIRA_NTB.Controllers
                 })
                 .ToListAsync();
             return Ok(members);
+        }
+        #endregion
+
+        #region GET: api/projects/:idProject/name -> Lấy tên project theo ID
+        [HttpGet("api/projects/{idProject}/name")]
+        public async Task<IActionResult> GetProjectNameById(string idProject)
+        {
+            var project = await _context.Projects
+                .Where(p => p.IdProject == idProject)
+                .Select(p => new
+                {
+                    p.ProjectName
+                })
+                .FirstOrDefaultAsync();
+            if (project == null)
+            {
+                return NotFound(new { message = "Không tìm thấy project." });
+            }
+            return Ok(project);
         }
         #endregion
 

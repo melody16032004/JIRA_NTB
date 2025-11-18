@@ -20,7 +20,8 @@ namespace JIRA_NTB.Data
         public DbSet<LogStatusUpdate> LogStatusUpdates { get; set; }
         public DbSet<LogDevice> logDevices { get; set; }
         public DbSet<CheckIn> checkIns { get; set; }
-		protected override void OnModelCreating(ModelBuilder builder)
+        public DbSet<NotificationsModel> Notifications { get; set; }
+        protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 

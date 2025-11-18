@@ -5,6 +5,7 @@ using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -22,16 +23,20 @@ namespace JIRA_NTB.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IProjectService _projectService;
-
-        public ProjectController(AppDbContext context, IProjectService projectService)
+        private readonly UserManager<UserModel> _userManager;
+        public ProjectController(UserManager<UserModel> userManager,AppDbContext context, IProjectService projectService)
         {
             _context = context; // Dùng cho Index và các action cũ
             _projectService = projectService; // Dùng cho Details
+            _userManager = userManager;
         }
 
         // GET: Project
+        [Authorize(Roles = "ADMIN,LEADER")]
         public async Task<IActionResult> Index(string searchQuery, string filterStatusId)
         {
+            var user = await _userManager.GetUserAsync(User);
+            var role = await _userManager.GetRolesAsync(user);
             var query = _context.Projects
                 .Include(p => p.Status)
                 .Include(p => p.Manager)
@@ -40,6 +45,11 @@ namespace JIRA_NTB.Controllers
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Status)
                 .AsQueryable();
+            if (role.Contains("LEADER"))
+            {
+                // Nếu là Leader, chỉ xem dự án trong phòng ban của mình
+                query = query.Where(p => p.UserId == user.Id);
+            }
             query = query.Where(p => p.StatusId != "Deleted");
             // Tìm kiếm theo tên
             if (!string.IsNullOrWhiteSpace(searchQuery))
