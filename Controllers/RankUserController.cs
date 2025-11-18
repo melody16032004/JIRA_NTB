@@ -39,7 +39,8 @@ namespace JIRA_NTB.Controllers
             var model = new RankUserPageViewModel
             {
                 TopAppsPerUser = grouped,
-                TopLateUsers = lateUsers
+                TopLateUsers = lateUsers,
+                FromTime = fromTime
             };
 
             return View(model);
