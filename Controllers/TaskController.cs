@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
 {
-    [Authorize]
+ 
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
@@ -387,6 +387,12 @@ namespace JIRA_NTB.Controllers
                 return NotFound("Task không tồn tại.");
 
             return Ok(new { message = "Thay người thành công" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> CheckSchedule(string userId, DateTime startDate, DateTime endDate)
+        {
+            var result = await taskService.CheckUserScheduleAsync(userId, startDate, endDate);
+            return Json(result);
         }
     }
 }
