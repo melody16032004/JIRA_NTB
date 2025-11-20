@@ -244,5 +244,15 @@ namespace JIRA_NTB.Repository
             await _context.LogStatusUpdates.AddAsync(log);
             await _context.SaveChangesAsync();
         }
+        public async Task<List<TaskItemModel>> GetSchedule(string userId)
+        {
+            return await _context.Tasks
+                .Where(t => t.Assignee_Id == userId &&
+                            t.StartDate != null &&
+                            t.EndDate != null && (t.Status.StatusName != TaskStatusModel.Done 
+                                || t.Status.StatusName != TaskStatusModel.Deleted))
+                .OrderBy(t => t.StartDate)
+                .ToListAsync();
+        }
     }
 }

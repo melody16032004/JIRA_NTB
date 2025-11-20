@@ -24,5 +24,6 @@ namespace JIRA_NTB.Repository
         Task AddLogAsync(LogTaskModel log);
         Task SaveChangesAsync();
         Task AddStatusLog(LogStatusUpdate log);
+        Task<List<TaskItemModel>> GetSchedule(string userId);
     }
 }

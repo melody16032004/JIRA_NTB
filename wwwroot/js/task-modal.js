@@ -15,6 +15,13 @@ const btnSaveTask = document.getElementById('btnSaveTask');
 const form = document.getElementById('formCreateTask');
 const taskIdField = document.getElementById('taskId');
 
+//Biến DOM check lịch
+const assigneeField = document.getElementById('taskAssignee');
+const startField = document.getElementById('taskStartDate');
+const endField = document.getElementById('taskDeadline');
+const scheduleMessage = document.getElementById('scheduleMessage');
+
+let scheduleDebounce = null;
 // Upload file
 const fileUploadArea = document.getElementById('fileUploadArea');
 const fileInput = document.getElementById('taskFiles');
@@ -540,6 +547,82 @@ document.getElementById('reassignForm').addEventListener('submit', async (e) => 
         alert("Có lỗi xảy ra khi thay người.");
     }
 });
+// ========= Hàm gọi API check lịch ===========
+async function checkUserSchedule() {
+
+    const userId = assigneeField.value;
+    const startDate = startField.value;
+    const endDate = endField.value;
+
+    // Nếu chưa đủ dữ liệu → xóa thông báo
+    if (!userId || !startDate || !endDate) {
+        scheduleMessage.classList.add('hidden');
+        scheduleMessage.textContent = '';
+        return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+        scheduleMessage.classList.remove('hidden');
+
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-yellow-500 bg-yellow-500/20 text-yellow-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>⚠ Ngày không hợp lệ!</strong><br>
+            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
+        `;
+        return;
+    }
+    try { 
+        const params = new URLSearchParams({
+            userId: userId,
+            startDate: startDate,
+            endDate: endDate
+        });
+
+        const response = await fetch(`/Task/CheckSchedule?${params}`);
+        const result = await response.json();
+
+        displayScheduleMessage(result);
+
+    } catch (err) {
+        console.error("Lỗi gọi API CheckSchedule", err);
+    }
+}
+
+// ========= Hiển thị message sau khi check ===========
+function displayScheduleMessage(result) {
+    scheduleMessage.classList.remove('hidden');
+
+    if (result.hasOverlap) {
+        // màu đỏ
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-red-500 bg-red-500/20 text-red-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>⚠ Trùng lịch!</strong><br>
+            ${result.message}
+        `;
+    } else {
+        // màu xanh
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-green-500 bg-green-500/20 text-green-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>✔ Không trùng lịch</strong><br>
+            ${result.message}
+        `;
+    }
+}
+
+// ========= Debounce và event listener ===========
+function triggerScheduleCheck() {
+    if (scheduleDebounce) clearTimeout(scheduleDebounce);
+    scheduleDebounce = setTimeout(checkUserSchedule, 500);
+}
+
+assigneeField.addEventListener('change', triggerScheduleCheck);
+startField.addEventListener('change', triggerScheduleCheck);
+endField.addEventListener('change', triggerScheduleCheck);
 // ==========================
 // Load danh sách user khi chọn Project TRONG MODAL (chỉ cho CREATE)
 // ==========================

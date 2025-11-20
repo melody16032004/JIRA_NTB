@@ -3,6 +3,7 @@ using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Polly;
 
 namespace JIRA_NTB.Services
 {
@@ -582,6 +583,106 @@ namespace JIRA_NTB.Services
             await _taskRepository.SaveChangesAsync();
 
             return true;
+        }
+        public async Task<UserScheduleResult> CheckUserScheduleAsync(
+    string userId,
+    DateTime newStart,
+    DateTime newEnd)
+        {
+            var tasks = await _taskRepository.GetSchedule(userId);
+
+            var merged = new List<(DateTime Start, DateTime End)>();
+
+            foreach (var t in tasks)
+            {
+                var start = t.StartDate.Value.Date;
+                var end = t.EndDate.Value.Date;
+
+                if (merged.Count == 0)
+                {
+                    merged.Add((start, end));
+                    continue;
+                }
+
+                var last = merged.Last();
+
+                // Nếu giao nhau hoặc sát nhau (không tạo khoảng trống)
+                if (start <= last.End)
+                {
+                    merged[merged.Count - 1] =
+                        (last.Start, end > last.End ? end : last.End);
+                }
+                else
+                {
+                    merged.Add((start, end));
+                }
+            }
+
+            // --- KIỂM TRA TRÙNG LỊCH ---
+            var overlappingTasks = tasks
+                .Where(t =>
+                    newStart <= t.EndDate.Value.Date &&
+                    newEnd >= t.StartDate.Value.Date
+                ).ToList();
+
+            // ❗ Chỉ báo nếu trùng từ 2 task trở lên
+            if (overlappingTasks.Any())
+            {
+                var minStart = overlappingTasks.Min(o => o.StartDate.Value.Date);
+                var maxEnd = overlappingTasks.Max(o => o.EndDate.Value.Date);
+
+                return new UserScheduleResult
+                {
+                    HasOverlap = true,
+                    OverlapCount = overlappingTasks.Count,
+                    OverlapStart = minStart,
+                    OverlapEnd = maxEnd,
+                    Message =
+                        $"Nhân viên đang bận từ {minStart:dd/MM} đến {maxEnd:dd/MM}. " +
+                        $"Task mới của bạn ({newStart:dd/MM} – {newEnd:dd/MM}) " +
+                        $"trùng với {overlappingTasks.Count} công việc trong khoảng thời gian này."
+                };
+            }
+
+            // --- KHÔNG TRÙNG LỊCH → TÌM KHOẢNG TRỐNG ---
+            var lastBefore = merged.LastOrDefault(m => m.End <= newStart);
+
+            if (lastBefore.End != default)
+            {
+                var gapDays = (newStart - lastBefore.End).TotalDays;
+
+                // ❗ Khoảng cách 1 ngày → coi như hợp lệ, không báo
+                if (gapDays <= 1)
+                {
+                    return new UserScheduleResult
+                    {
+                        HasOverlap = false,
+                        FreeDays = 0,
+                        Message =
+                            "Lịch hợp lệ"
+                    };
+                }
+
+                // Gap > 1 ngày → thông báo
+                return new UserScheduleResult
+                {
+                    HasOverlap = false,
+                    FreeDays = gapDays,
+                    FreeFrom = lastBefore.End,
+                    FreeTo = newStart,
+                    Message =
+                        $"Nhân viên đang rảnh {gapDays} ngày trước task mới. " +
+                        $"Khoảng trống từ {lastBefore.End:dd/MM} đến {newStart:dd/MM}."
+                };
+            }
+
+            // ❗ Nhân viên không có task nào trước newStart
+            return new UserScheduleResult
+            {
+                HasOverlap = false,
+                Message =
+                    $"Nhân viên không có công việc nào trước thời điểm {newStart:dd/MM}."
+            };
         }
     }
 }
