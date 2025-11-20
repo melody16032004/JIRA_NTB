@@ -779,12 +779,17 @@ function renderDashboard(projects) {
                         <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
                         Tiến độ theo nhân sự
                     </h3>
-                    <button id="gantt-expand" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Mở rộng">
-                        <i data-lucide="maximize-2" class="w-4 h-4"></i>
-                    </button>
+                    <div>
+                        <button id="gantt-reload" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Làm mới">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        </button>
+                        <button id="gantt-expand" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Mở rộng">
+                            <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div id="assignee-gantt-scroll-wrapper" class="max-h-[350px] overflow-y-auto custom-scroll pr-2">
+                <div id="assignee-gantt-scroll-wrapper" class="max-h-[280px] overflow-y-auto custom-scroll pr-2">
                     <div id="assignee-gantt-chart"></div>
                 </div>
                 
@@ -979,9 +984,10 @@ function handleTaskScroll(event) {
 /* ================ HELPER =================== */
 /* =========================================== */
 let assigneeGanttChart = null;
+let ganttExpandedUsers = new Set();
 
 /**
- * Vẽ biểu đồ Gantt theo nhân sự
+ * Vẽ biểu đồ Gantt theo nhân sự (Full chức năng: Accordion, Scroll, Toolbar, Colors, Tooltip)
  * @param {Array} projects - Danh sách dự án đang hiển thị ở trang hiện tại
  */
 async function renderAssigneeGantt(projects) {
@@ -993,109 +999,135 @@ async function renderAssigneeGantt(projects) {
         return;
     }
 
-    // 1. Hiển thị loader
-    if (loaderEl) loaderEl.classList.remove("hidden");
+    // 1. Hiển thị loader (chỉ khi init lần đầu hoặc reload)
+    if (!assigneeGanttChart && loaderEl) loaderEl.classList.remove("hidden");
 
     try {
-        // 2. Fetch tất cả task của các project đang hiển thị
-        const promises = projects.map(p =>
-            safeFetchJson(`/api/projects/${p.idProject}/tasks?pageIndex=1&pageSize=100`, { items: [] })
-        );
+        // 2. Fetch dữ liệu
+        //const promises = projects.map(p =>
+        //    safeFetchJson(`/api/projects/${p.idProject}/tasks?pageIndex=1&pageSize=100`, { items: [] })
+        //);
 
-        const results = await Promise.all(promises);
+        //const results = await Promise.all(promises);
+        const response = await safeFetchJson(`/api/tasks/all?pageIndex=1&pageSize=100`, { items: [] });
+        const allTasks = response.items || [];
 
         // 3. Xử lý dữ liệu & Tính toán Min/Max Date
         const tasksByUser = {};
         let minDate = new Date().getTime();
         let maxDate = new Date().getTime();
+        let hasData = false;
 
-        results.forEach((res, index) => {
-            const projectName = projects[index].projectName;
-            const tasks = res.items || [];
+        //results.forEach((res, index) => {
+        //    const projectName = projects[index].projectName;
+        //    const tasks = res.items || [];
 
-            tasks.forEach(t => {
-                // Nhóm user
+            allTasks.forEach(t => {
+                hasData = true;
                 const assignee = t.nameAssignee || "Chưa phân công";
                 if (!tasksByUser[assignee]) tasksByUser[assignee] = [];
 
-                // Màu sắc
-                let color = '#3B82F6'; // Blue (Doing)
-
+                let color = '#3B82F6'; // Default Blue
                 if (assignee === "Chưa phân công") {
-                    color = '#6366F1'; // Màu CAM nổi bật cho chưa phân công
+                    color = '#6366F1'; // Indigo
                 } else {
-                    // Các nhân viên khác thì theo trạng thái
                     if (t.statusName === 1) color = '#6B7280'; // Gray (Todo)
                     if (t.statusName === 3) color = '#10B981'; // Green (Done)
                     if (t.overdue) color = '#EF4444'; // Red (Overdue)
                 }
 
-                // --- SỬA LỖI LỆCH DÒNG & LỐ NGÀY ---
                 const startDateObj = new Date(t.startDate);
                 const endDateObj = new Date(t.endDate);
-
-                // Start: Đầu ngày (00:00:00)
                 startDateObj.setHours(0, 0, 0, 0);
+                endDateObj.setHours(23, 59, 59, 0); // Cuối ngày
 
-                // End: Đặt về 16:00:00 (4h chiều) thay vì 23:59:59
-                // Giúp thanh bar dừng lại trước vạch kẻ ngày hôm sau
-                endDateObj.setHours(23, 59, 59, 0);
-
-                // Trường hợp đặc biệt: Nếu data lỗi (Start > End) hoặc task quá ngắn
-                // Đảm bảo End luôn >= Start để không bị lỗi biểu đồ
                 if (startDateObj.getTime() > endDateObj.getTime()) {
-                    endDateObj.setTime(startDateObj.getTime() ); // Cộng thêm 1 giờ
+                    endDateObj.setTime(startDateObj.getTime());
                 }
 
                 const start = startDateObj.getTime();
                 const end = endDateObj.getTime();
-                // -------------------------
 
-                // Cập nhật Min/Max để khóa khung nhìn
-                if (start < minDate) minDate = start;
-                if (end > maxDate) maxDate = end;
+                // Cập nhật Min/Max thực tế
+                if (!hasData || start < minDate) minDate = start;
+                if (!hasData || end > maxDate) maxDate = end;
 
                 tasksByUser[assignee].push({
+                    userKey: assignee, // Key gốc cho logic expand
                     x: assignee,
                     y: [start, end],
                     fillColor: color,
                     meta: {
                         taskName: t.nameTask,
-                        projectName: projectName,
+                        projectName: t.projectName,
                         status: t.statusName,
                         s: new Date(t.startDate),
                         e: new Date(t.endDate)
                     }
                 });
             });
-        });
+        //});
 
-        // Thêm đệm (buffer) cho thời gian (trừ 2 ngày, cộng 2 ngày)
+        // Nếu không có task nào
+        if (!hasData) {
+            minDate = new Date().getTime();
+            maxDate = new Date().getTime() + 86400000;
+        }
+
         const bufferTime = 2 * 24 * 60 * 60 * 1000;
-        minDate -= bufferTime;
-        maxDate += bufferTime;
+        const realMinDate = minDate - bufferTime;
+        const realMaxDate = maxDate + bufferTime;
 
-        // 1. Lấy danh sách tên
+        // --- [VIEWPORT: Hiển thị tối đa 45 ngày, còn lại scroll] ---
+        const VIEW_RANGE_DAYS = 15;
+        const msInDay = 24 * 60 * 60 * 1000;
+        const currentViewDuration = VIEW_RANGE_DAYS * msInDay;
+        const viewMaxDate = Math.min(realMaxDate, realMinDate + currentViewDuration);
+
+        // --- TÍNH SỐ NGÀY ĐỂ CHIA VẠCH (Dựa trên Viewport) ---
+        const tickCount = VIEW_RANGE_DAYS; // Cố định số vạch hiển thị
+        // -------------------------------------------------
+
+        // Logic Sắp xếp
         let userKeys = Object.keys(tasksByUser);
-
-        // 2. Sort: "Chưa phân công" lên đầu, còn lại Alphabet
         userKeys.sort((a, b) => {
-            if (a === "Chưa phân công") return -1; // a lên đầu
-            if (b === "Chưa phân công") return 1;  // b lên đầu
-            return a.localeCompare(b, 'vi', { sensitivity: 'base' }); // A-Z tiếng Việt
+            if (a === "Chưa phân công") return -1;
+            if (b === "Chưa phân công") return 1;
+            return a.localeCompare(b, 'vi', { sensitivity: 'base' });
         });
 
-        const labelColors = userKeys.map(u => u === "Chưa phân công" ? '#F43F5E' : '#E5E7EB');
-
-        // 3. Đẩy vào seriesData theo thứ tự đã sort
+        // Logic Expand/Collapse
         const seriesData = [];
+        const labelColors = [];
+        let rowCount = 0;
+
         userKeys.forEach(user => {
-            seriesData.push(...tasksByUser[user]);
+            const tasks = tasksByUser[user];
+            const isExpanded = ganttExpandedUsers.has(user);
+            const mainColor = (user === "Chưa phân công") ? '#F43F5E' : '#E5E7EB';
+
+            if (isExpanded) {
+                tasks.forEach((task, index) => {
+                    const t = { ...task };
+                    t.x = `${user}__${index}`; // Key unique
+                    seriesData.push(t);
+
+                    if (index === 0) labelColors.push(mainColor);
+                    else labelColors.push('#6B7280');
+                    rowCount++;
+                });
+            } else {
+                tasks.forEach(task => {
+                    const t = { ...task };
+                    t.x = user;
+                    seriesData.push(t);
+                });
+                labelColors.push(mainColor);
+                rowCount++;
+            }
         });
 
-        // 4. TÍNH CHIỀU CAO ĐỘNG
-        const userCount = Object.keys(tasksByUser).length;
-        const dynamicHeight = Math.max(350, userCount * 60);
+        const dynamicHeight = Math.max(350, rowCount * 50);
 
         const options = {
             series: [{ name: 'Tasks', data: seriesData }],
@@ -1103,86 +1135,97 @@ async function renderAssigneeGantt(projects) {
                 height: dynamicHeight,
                 type: 'rangeBar',
                 background: 'transparent',
-                zoom: {
-                    enabled: true, // Phải bật cái này mới Pan được
-                    type: 'x',     // Chỉ tương tác trục ngang
-                    autoScaleYaxis: false
-                },
+                animations: { enabled: false },
+                zoom: { enabled: true, type: 'x', autoScaleYaxis: false },
                 toolbar: {
                     show: true,
                     autoSelected: 'pan',
                     tools: {
+                        selection: false, zoom: false, zoomin: false, zoomout: false,
                         download: true,
-                        selection: false,
-                        zoom: false,
-                        zoomin: false,
-                        zoomout: false,
                         pan: true,
                         reset: true
+                    }
+                },
+                // EVENT CLICK EXPAND
+                events: {
+                    // 1. Logic Click Expand (Giữ nguyên)
+                    dataPointSelection: function (event, chartContext, config) {
+                        const dataPoint = config.w.config.series[config.seriesIndex].data[config.dataPointIndex];
+                        const userKey = dataPoint.userKey;
+                        if (userKey) {
+                            if (ganttExpandedUsers.has(userKey)) ganttExpandedUsers.delete(userKey);
+                            else ganttExpandedUsers.add(userKey);
+                            renderAssigneeGantt(projects);
+                        }
+                    },
+
+                    // 2. Logic Snap to Day (Đã thêm Debounce và Làm tròn)
+                    scrolled: function (chartContext, { xaxis }) {
+                        if (!xaxis) return;
+
+                        // Xóa timeout cũ nếu người dùng vẫn đang kéo
+                        if (chartContext.snapTimeout) {
+                            clearTimeout(chartContext.snapTimeout);
+                        }
+
+                        // Đợi 100ms sau khi dừng kéo mới thực hiện Snap
+                        chartContext.snapTimeout = setTimeout(() => {
+                            const currentMin = xaxis.min;
+                            const date = new Date(currentMin);
+
+                            // SỬA: Logic làm tròn đến ngày GẦN NHẤT
+                            // Nếu đã kéo qua 12h trưa -> tính sang ngày hôm sau
+                            if (date.getHours() >= 12) {
+                                date.setDate(date.getDate() + 1);
+                            }
+                            // Reset về 00:00:00
+                            date.setHours(0, 0, 0, 0);
+                            const snappedMin = date.getTime();
+
+                            // Chỉ zoom nếu vị trí lệch đáng kể (> 1 phút)
+                            if (Math.abs(currentMin - snappedMin) > 60000) {
+                                const snappedMax = snappedMin + currentViewDuration;
+                                chartContext.zoomX(snappedMin, snappedMax);
+                            }
+                        }, 100); // Độ trễ 100ms
                     }
                 }
             },
             plotOptions: {
-                bar: {
-                    horizontal: true,
-                    barHeight: '60%',
-                    rangeBarGroupRows: true,
-                    borderRadius: 4,
-                    borderRadiusApplication: 'around',
-                }
+                bar: { horizontal: true, barHeight: '60%', rangeBarGroupRows: true, borderRadius: 4, borderRadiusApplication: 'around' }
             },
             dataLabels: {
-                enabled: true,
-                textAnchor: 'middle', // Căn giữa text
-                style: {
-                    colors: ['#fff'],
-                    fontSize: '11px',
-                    fontWeight: '600',
-                },
+                enabled: true, textAnchor: 'middle',
+                style: { colors: ['#fff'], fontSize: '11px', fontWeight: '600' },
                 formatter: function (val, opt) {
-                    const meta = opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].meta;
-                    return meta.taskName;
+                    return opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].meta.taskName;
                 }
             },
-            stroke: {
-                width: 1, // Độ dày viền
-                colors: ['#fff'] // Màu viền (trắng hoặc xám nhạt tùy theme)
-            },
-            fill: {
-                type: 'solid',
-                opacity: 0.8 // Giảm độ đậm màu nền chút để viền nổi bật hơn
-            },
+            stroke: { width: 1, colors: ['#fff'] },
+            fill: { type: 'solid', opacity: 0.8 },
             annotations: {
-                xaxis: [
-                    {
-                        x: new Date().getTime(), // Thời gian hiện tại
-                        strokeDashArray: 4,      // Nét đứt
-                        borderColor: '#F43F5E',  // Màu đỏ hồng nổi bật
-                        borderWidth: 2,
-                        label: {
-                            borderColor: '#F43F5E',
-                            style: {
-                                color: '#fff',
-                                background: '#F43F5E',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                padding: { left: 5, right: 5, top: 2, bottom: 2 }
-                            },
-                            text: 'Hôm nay',
-                            position: 'top',
-                            offsetY: 5 // Đẩy nhãn xuống một chút
-                        }
-                    }
-                ]
+                xaxis: [{
+                    x: new Date().getTime(), strokeDashArray: 4, borderColor: '#F43F5E', borderWidth: 2,
+                    label: { borderColor: '#F43F5E', style: { color: '#fff', background: '#F43F5E', fontSize: '12px', fontWeight: 'bold', padding: { left: 5, right: 5, top: 2, bottom: 2 } }, text: 'Hôm nay', position: 'top', offsetY: 5 }
+                }]
             },
             xaxis: {
                 type: 'datetime',
-                min: minDate,
-                max: maxDate,
+                min: realMinDate,
+                max: viewMaxDate,
+                tickAmount: tickCount, // Cố định số vạch
                 labels: {
+                    rotate: -10,
+                    rotateAlways: true,
+                    offsetX: -33,
                     style: { colors: '#9CA3AF' },
-                    datetimeFormatter: { year: 'yyyy', month: 'MM', day: 'dd' },
-                    datetimeUTC: false // Dùng giờ Local
+                    datetimeUTC: false,
+                    formatter: function (value) {
+                        const date = new Date(value);
+                        if (isNaN(date.getTime())) return value;
+                        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    }
                 },
                 axisBorder: { show: false },
                 axisTicks: { show: true, color: '#374151' },
@@ -1190,38 +1233,34 @@ async function renderAssigneeGantt(projects) {
             },
             yaxis: {
                 labels: {
-                    align: 'left', // Căn chữ sang trái
-                    style: {
-                        colors: labelColors,
-                        fontSize: '13px',
-                        fontWeight: 600
-                    },
-                    offsetX: -30,
-                    // Đặt chiều rộng cố định cho cột tên để nó thẳng hàng
-                    minWidth: 150,
-                    maxWidth: 150
+                    align: 'left',
+                    style: { colors: labelColors, fontSize: '13px', fontWeight: 600 },
+                    offsetX: -40, minWidth: 180, maxWidth: 180,
+                    formatter: function (value) {
+                        const valStr = String(value);
+                        if (valStr.includes('__')) {
+                            const parts = valStr.split('__');
+                            const user = parts[0];
+                            const idx = parseInt(parts[1]);
+                            if (idx === 0) return `[-] ${user}`;
+                            return ``;
+                        }
+                        return `[+] ${valStr}`;
+                    }
                 }
             },
-            grid: {
-                borderColor: '#374151',
-                xaxis: { lines: { show: true } },
-                yaxis: { lines: { show: true } },
-                strokeDashArray: 0
-            },
+            grid: { borderColor: '#374151', xaxis: { lines: { show: true } }, yaxis: { lines: { show: true } }, strokeDashArray: 0 },
             theme: { mode: 'dark' },
             tooltip: {
                 custom: function ({ series, seriesIndex, dataPointIndex, w }) {
                     const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                    // Lấy date gốc từ meta để hiển thị đúng ngày
                     const startStr = data.meta.s.toLocaleDateString('vi-VN');
                     const endStr = data.meta.e.toLocaleDateString('vi-VN');
                     return `
                         <div class="px-3 py-2 bg-gray-900 border border-gray-600 rounded shadow-lg z-50 text-left">
                             <div class="text-xs text-gray-400 mb-1 truncate max-w-[200px]">${data.meta.projectName}</div>
                             <div class="text-sm font-bold text-white mb-1">${data.meta.taskName}</div>
-                            <div class="text-xs text-indigo-300 font-mono mt-1">
-                                📅 ${startStr} - ${endStr}
-                            </div>
+                            <div class="text-xs text-indigo-300 font-mono mt-1">📅 ${startStr} - ${endStr}</div>
                         </div>
                     `;
                 }
@@ -1234,44 +1273,16 @@ async function renderAssigneeGantt(projects) {
         assigneeGanttChart.render().then(() => {
             const chartContainer = document.querySelector("#assignee-gantt-chart");
             if (chartContainer) {
-                // 1. Chặn lăn chuột (Mouse Wheel) để không bị Zoom nhầm
-                chartContainer.addEventListener('wheel', function (e) {
-                    e.stopPropagation();
-                }, { capture: true });
-
-                // 2. Xử lý con trỏ Grab/Grabbing "Tuyệt đối"
+                chartContainer.addEventListener('wheel', function (e) { e.stopPropagation(); }, { capture: true });
                 const canvas = chartContainer.querySelector('.apexcharts-canvas');
                 if (canvas) {
-                    // Luôn set con trỏ mặc định của chart là 'grab'
                     canvas.style.cursor = 'grab';
-
-                    // Tạo một thẻ style để ép buộc cursor trên toàn trang
                     const cssId = 'force-grabbing-cursor';
                     const style = document.createElement('style');
                     style.id = cssId;
-                    // Dùng * để ép tất cả mọi thứ đều thành grabbing
                     style.innerHTML = `* { cursor: grabbing !important; user-select: none !important; }`;
-
-                    // Kéo (MouseDown): Kích hoạt chế độ "Siêu dính"
-                    canvas.addEventListener('mousedown', (e) => {
-                        canvas.style.cursor = 'grabbing';
-                        // Chèn CSS ép buộc vào head
-                        if (!document.getElementById(cssId)) {
-                            document.head.appendChild(style);
-                        }
-                        // Ngăn chặn hành vi bôi đen văn bản mặc định
-                        e.preventDefault();
-                    });
-
-                    // Thả (MouseUp): Gỡ bỏ chế độ (Gắn vào window để bắt sự kiện dù thả chuột ở đâu)
-                    window.addEventListener('mouseup', () => {
-                        canvas.style.cursor = 'grab';
-                        // Gỡ bỏ CSS ép buộc
-                        const existingStyle = document.getElementById(cssId);
-                        if (existingStyle) {
-                            existingStyle.remove();
-                        }
-                    });
+                    canvas.addEventListener('mousedown', (e) => { canvas.style.cursor = 'grabbing'; if (!document.getElementById(cssId)) document.head.appendChild(style); e.preventDefault(); });
+                    window.addEventListener('mouseup', () => { canvas.style.cursor = 'grab'; const existingStyle = document.getElementById(cssId); if (existingStyle) existingStyle.remove(); });
                 }
             }
         });
@@ -1279,36 +1290,39 @@ async function renderAssigneeGantt(projects) {
         if (loaderEl) loaderEl.classList.add("hidden");
         setTimeout(() => lucide.createIcons(), 500);
 
+        // --- EVENT LISTENERS (TOOLBAR) ---
+        const reloadBtn = document.getElementById('gantt-reload');
         const expandBtn = document.getElementById('gantt-expand');
         const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
-        let isGanttExpanded = false;
+
+        if (reloadBtn) {
+            const newBtn = reloadBtn.cloneNode(true);
+            reloadBtn.parentNode.replaceChild(newBtn, reloadBtn);
+            newBtn.addEventListener('click', async () => {
+                const icon = newBtn.querySelector("svg");
+                if (icon) icon.classList.add("animate-spin");
+                await renderAssigneeGantt(projects);
+                if (icon) icon.classList.remove("animate-spin");
+            });
+        }
 
         if (expandBtn && scrollWrapper) {
-            // Clone nút để xóa event cũ
             const newBtn = expandBtn.cloneNode(true);
             expandBtn.parentNode.replaceChild(newBtn, expandBtn);
-
+            let isGanttExpanded = scrollWrapper.classList.contains("max-h-[85vh]");
             newBtn.addEventListener('click', () => {
                 isGanttExpanded = !isGanttExpanded;
                 const icon = newBtn.querySelector("svg");
-
                 if (isGanttExpanded) {
-                    // Mở rộng: Xóa max-h-350px, thêm max-h-[85vh]
-                    scrollWrapper.classList.remove("max-h-[350px]");
-                    scrollWrapper.classList.add("max-h-[85vh]");
-                    newBtn.setAttribute("title", "Thu gọn");
-                    // Đổi icon
+                    scrollWrapper.classList.remove("max-h-[280px]"); scrollWrapper.classList.add("max-h-[85vh]"); newBtn.setAttribute("title", "Thu gọn");
                     if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="minimize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
                 } else {
-                    // Thu gọn: Về mặc định
-                    scrollWrapper.classList.remove("max-h-[85vh]");
-                    scrollWrapper.classList.add("max-h-[350px]");
-                    newBtn.setAttribute("title", "Mở rộng");
-                    // Đổi icon
+                    scrollWrapper.classList.remove("max-h-[85vh]"); scrollWrapper.classList.add("max-h-[280px]"); newBtn.setAttribute("title", "Mở rộng");
                     if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="maximize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
                 }
             });
         }
+
     } catch (e) {
         console.error("Lỗi vẽ Gantt Chart:", e);
         if (loaderEl) loaderEl.innerHTML = '<span class="text-red-500 text-sm">Lỗi tải dữ liệu biểu đồ.</span>';

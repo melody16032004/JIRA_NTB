@@ -85,10 +85,12 @@ namespace JIRA_NTB.Controllers.Hubs
         // Lấy danh sách user nhàn rỗi
         public async Task<object> GetIdleUsersAsync(string leaderId)
         {
-            // Lấy ngày hiện tại (bỏ qua giờ phút để tính toán chính xác)
             var today = DateTime.Now.Date;
-            var now = DateTime.Now; // Vẫn giữ biến này để so sánh logic query
-            var threshold = DateTime.Now.AddDays(2);
+            var now = DateTime.Now;
+
+            // [SỬA] Ngưỡng: Hôm nay + 1 ngày tới (tức là hết ngày mai)
+            // Ví dụ: Nay 20/11. AddDays(2) -> 22/11 00:00 -> AddTicks(-1) -> 21/11 23:59:59
+            var threshold = DateTime.Now.Date.AddDays(2).AddTicks(-1);
 
             // 1. Tìm thông tin của Leader
             var leader = await _db.Users
@@ -100,34 +102,45 @@ namespace JIRA_NTB.Controllers.Hubs
                 return new List<object>();
             }
 
-            // 2. Lấy ID của Role ADMIN
+            // 2. Lấy Role ADMIN
             var adminRoleId = await _db.Roles
                 .Where(r => r.Name == "ADMIN" || r.NormalizedName == "ADMIN")
                 .Select(r => r.Id)
                 .FirstOrDefaultAsync();
 
-            // 3. Truy vấn User (Phần này giữ nguyên để lọc đúng người)
+            // 3. Truy vấn User
             var idleUsers = await _db.Users
                 .Where(u =>
                     u.IdDepartment == leader.IdDepartment &&
                     u.Id != leaderId &&
                     !_db.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == adminRoleId) &&
-                    !u.Tasks.Any(t => t.EndDate > threshold && t.Status.StatusName != TaskStatusModel.Done)
+
+                    // [LOGIC CHÍNH]: Lọc những người KHÔNG CÓ task nào chen vào khoảng [Hiện tại -> Hết ngày mai]
+                    !u.Tasks.Any(t =>
+                        // Task chưa bắt đầu hoặc đang làm mà Deadline vẫn còn hạn trong tương lai
+                        t.StartDate <= threshold &&
+                        t.EndDate >= now
+                    // (Lưu ý: Đã bỏ điều kiện !Done để tính cả các task Done nhưng chưa hết hạn giữ chỗ)
+                    )
                 )
                 .Select(u => new
                 {
                     u.Id,
                     u.FullName,
                     u.Email,
-                    LastTaskEnd = u.Tasks.OrderByDescending(t => t.EndDate).Select(t => (DateTime?)t.EndDate).FirstOrDefault()
+                    // Lấy task kết thúc gần nhất trong quá khứ
+                    LastTaskEnd = u.Tasks
+                        .Where(t => t.EndDate < now)
+                        .OrderByDescending(t => t.EndDate)
+                        .Select(t => (DateTime?)t.EndDate)
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 
-            // 4. Sắp xếp và Format kết quả (SỬA ĐỔI Ở ĐÂY)
+            // 4. Sắp xếp: Người rảnh lâu nhất lên đầu (LastTaskEnd càng bé càng tốt)
             var result = idleUsers
                 .OrderBy(u => u.LastTaskEnd)
                 .Select(u => {
-                    // Xử lý ngày kết thúc: Lấy phần Date để tránh lệch giờ
                     var endDate = u.LastTaskEnd?.Date;
 
                     return new
@@ -135,15 +148,11 @@ namespace JIRA_NTB.Controllers.Hubs
                         u.Id,
                         u.FullName,
                         u.Email,
-                        FreeSince = u.LastTaskEnd.HasValue ? u.LastTaskEnd.Value.ToString("dd/MM/yyyy") : "Chưa có dự án",
+                        // Ngày bắt đầu rảnh = Ngày kết thúc task cũ + 1
+                        FreeSince = u.LastTaskEnd.HasValue ? u.LastTaskEnd.Value.AddDays(1).ToString("dd/MM/yyyy") : "Chưa có công việc",
                         IsNew = !u.LastTaskEnd.HasValue,
-
-                        // SỬA: Tính số ngày đã rảnh
-                        // Công thức: (Hôm nay - Ngày kết thúc)
-                        // Ví dụ: Xong ngày 18, Nay ngày 20 -> Rảnh 2 ngày.
-                        DayLeft = endDate.HasValue
-                            ? (int)(endDate.Value - today).TotalDays
-                            : (int?)null
+                        // Số ngày đã rảnh = Hôm nay - Ngày kết thúc
+                        DayLeft = endDate.HasValue ? (int)(endDate.Value - today).TotalDays : (int?)null
                     };
                 })
                 .ToList();
