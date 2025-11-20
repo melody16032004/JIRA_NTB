@@ -17,6 +17,10 @@ namespace JIRA_NTB.Models
         public DateTime updateAt { get; set; } = DateTime.Now;
         public string? PreviousStatusId { get; set; }
         public string? NewStatusId { get; set; }
+        [ForeignKey("PreviousStatusId")]
+        public Status? PreviousStatus { get; set; }
 
+        [ForeignKey("NewStatusId")]
+        public Status? NewStatus { get; set; }
     }
 }

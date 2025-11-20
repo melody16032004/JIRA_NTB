@@ -5,13 +5,14 @@ namespace JIRA_NTB.Services
 {
     public class Helper
     {
-        public string GetStatusDisplay(TaskStatusModel status)
+        public static string GetStatusDisplay(TaskStatusModel status)
         {
             return status switch
             {
                 TaskStatusModel.Todo => "Chưa bắt đầu",
                 TaskStatusModel.InProgress => "Đang thực hiện",
                 TaskStatusModel.Done => "Hoàn thành",
+                TaskStatusModel.Deleted => "Đã xóa",
                 _ => "Không xác định"
             };
         }
