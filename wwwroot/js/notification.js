@@ -436,10 +436,18 @@ async function loadIdleUsers() {
             }
 
             let leftDays = ``;
-            if (u.dayLeft <= 0 || u.dayLeft == null || !u.dayLeft) {
-                leftDays = `<span class="${colorText}">[Đang rảnh]</span>`;
-            } else {
-                leftDays = `<span class="${colorText} font-bold">(${u.dayLeft} ngày nữa)</span>`;
+            if (u.dayLeft < 0 || u.dayLeft == null) {
+                // Số âm -> Đã rảnh từ lâu
+                leftDays = `<span class="text-green-400 font-bold">[Đang rảnh]</span>`;
+            }
+            else if (u.dayLeft === 0) {
+                leftDays = `<span class="text-yellow-400 font-bold">(Rảnh vào ngày mai)</span>`;
+            }
+            else if (u.dayLeft === 1) {
+                leftDays = `<span class="text-orange-400 font-bold">(Rảnh vào ngày kia)</span>`;
+            }
+            else {
+                leftDays = `<span class="text-red-400 font-bold">(Bận thêm ${u.dayLeft} ngày)</span>`;
             }
             const html = `
                 <li class="p-3 hover:bg-gray-700/50 transition flex items-start space-x-3 cursor-pointer group">
