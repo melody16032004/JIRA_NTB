@@ -45,5 +45,7 @@ namespace JIRA_NTB.Services
     string userId,
     DateTime newStart,
     DateTime newEnd);
+        Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+      int page, int pageSize);
     }
 }
