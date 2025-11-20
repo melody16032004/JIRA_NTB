@@ -626,7 +626,7 @@ namespace JIRA_NTB.Services
                 ).ToList();
 
             // ❗ Chỉ báo nếu trùng từ 2 task trở lên
-            if (overlappingTasks.Count >= 2)
+            if (overlappingTasks.Any())
             {
                 var minStart = overlappingTasks.Min(o => o.StartDate.Value.Date);
                 var maxEnd = overlappingTasks.Max(o => o.EndDate.Value.Date);

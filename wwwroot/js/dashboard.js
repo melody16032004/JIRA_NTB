@@ -1,4 +1,5 @@
-﻿/* =========================================== */
+﻿
+/* =========================================== */
 /* ============= STATE TOÀN CỤC ============== */
 /* =========================================== */
 // Các biến này lưu trữ dữ liệu "tĩnh"
@@ -754,7 +755,7 @@ function renderDashboard(projects) {
     const rightColumn = `
         <div class="space-y-6">
             ${chart1}
-            ${chart2}
+            ${role == "EMPLOYEE" ? `` : chart2}
         </div>
     `;
     /*
@@ -770,9 +771,36 @@ function renderDashboard(projects) {
             ${card4}
         </div>
 
-        <div class="font-mono tracking-wide grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-screen text-gray-200">
-            ${leftColumn}
-            ${rightColumn}
+        <div class="flex flex-col items-center gap-4 h-[fit-content]">
+            <div id="assignee-gantt-container" class="w-full bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-4 relative min-h-[400px] overflow-hidden">
+                
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
+                        Tiến độ theo nhân sự
+                    </h3>
+                    <button id="gantt-expand" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Mở rộng">
+                        <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div id="assignee-gantt-scroll-wrapper" class="max-h-[350px] overflow-y-auto custom-scroll pr-2">
+                    <div id="assignee-gantt-chart"></div>
+                </div>
+                
+                <div id="gantt-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/90 z-10">
+                    <svg class="animate-spin w-8 h-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span class="text-gray-400 text-sm">Đang tải dữ liệu...</span>
+                </div>
+            </div>
+
+            <div class="w-full font-mono tracking-wide grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-screen text-gray-200">
+                ${leftColumn}
+                ${rightColumn}
+            </div>
         </div>
     `;
 
@@ -791,6 +819,14 @@ function renderDashboard(projects) {
     // 🟢 GỌI LẠI HÀM KHỞI TẠO PAGINATION
     // (Gắn event cho nút Next/Prev MỚI)
     initPagination(projects);
+
+    // --- THÊM DÒNG NÀY: Vẽ biểu đồ Gantt ---
+    // Chờ 1 chút để DOM ổn định hoặc gọi trực tiếp
+    renderAfterDOMUpdate(() => {
+        // Gọi hàm vẽ chart
+        // projects.items là danh sách dự án của trang hiện tại
+        renderAssigneeGantt(projects.items);
+    });
 }
 
 /**
@@ -942,6 +978,342 @@ function handleTaskScroll(event) {
 /* =========================================== */
 /* ================ HELPER =================== */
 /* =========================================== */
+let assigneeGanttChart = null;
+
+/**
+ * Vẽ biểu đồ Gantt theo nhân sự
+ * @param {Array} projects - Danh sách dự án đang hiển thị ở trang hiện tại
+ */
+async function renderAssigneeGantt(projects) {
+    const chartEl = document.querySelector("#assignee-gantt-chart");
+    const loaderEl = document.querySelector("#gantt-loader");
+
+    if (!chartEl || !projects || projects.length === 0) {
+        if (loaderEl) loaderEl.innerHTML = '<span class="text-gray-500">Không có dữ liệu dự án.</span>';
+        return;
+    }
+
+    // 1. Hiển thị loader
+    if (loaderEl) loaderEl.classList.remove("hidden");
+
+    try {
+        // 2. Fetch tất cả task của các project đang hiển thị
+        const promises = projects.map(p =>
+            safeFetchJson(`/api/projects/${p.idProject}/tasks?pageIndex=1&pageSize=100`, { items: [] })
+        );
+
+        const results = await Promise.all(promises);
+
+        // 3. Xử lý dữ liệu & Tính toán Min/Max Date
+        const tasksByUser = {};
+        let minDate = new Date().getTime();
+        let maxDate = new Date().getTime();
+
+        results.forEach((res, index) => {
+            const projectName = projects[index].projectName;
+            const tasks = res.items || [];
+
+            tasks.forEach(t => {
+                // Nhóm user
+                const assignee = t.nameAssignee || "Chưa phân công";
+                if (!tasksByUser[assignee]) tasksByUser[assignee] = [];
+
+                // Màu sắc
+                let color = '#3B82F6'; // Blue (Doing)
+
+                if (assignee === "Chưa phân công") {
+                    color = '#6366F1'; // Màu CAM nổi bật cho chưa phân công
+                } else {
+                    // Các nhân viên khác thì theo trạng thái
+                    if (t.statusName === 1) color = '#6B7280'; // Gray (Todo)
+                    if (t.statusName === 3) color = '#10B981'; // Green (Done)
+                    if (t.overdue) color = '#EF4444'; // Red (Overdue)
+                }
+
+                // --- SỬA LỖI LỆCH DÒNG & LỐ NGÀY ---
+                const startDateObj = new Date(t.startDate);
+                const endDateObj = new Date(t.endDate);
+
+                // Start: Đầu ngày (00:00:00)
+                startDateObj.setHours(0, 0, 0, 0);
+
+                // End: Đặt về 16:00:00 (4h chiều) thay vì 23:59:59
+                // Giúp thanh bar dừng lại trước vạch kẻ ngày hôm sau
+                endDateObj.setHours(23, 59, 59, 0);
+
+                // Trường hợp đặc biệt: Nếu data lỗi (Start > End) hoặc task quá ngắn
+                // Đảm bảo End luôn >= Start để không bị lỗi biểu đồ
+                if (startDateObj.getTime() > endDateObj.getTime()) {
+                    endDateObj.setTime(startDateObj.getTime() ); // Cộng thêm 1 giờ
+                }
+
+                const start = startDateObj.getTime();
+                const end = endDateObj.getTime();
+                // -------------------------
+
+                // Cập nhật Min/Max để khóa khung nhìn
+                if (start < minDate) minDate = start;
+                if (end > maxDate) maxDate = end;
+
+                tasksByUser[assignee].push({
+                    x: assignee,
+                    y: [start, end],
+                    fillColor: color,
+                    meta: {
+                        taskName: t.nameTask,
+                        projectName: projectName,
+                        status: t.statusName,
+                        s: new Date(t.startDate),
+                        e: new Date(t.endDate)
+                    }
+                });
+            });
+        });
+
+        // Thêm đệm (buffer) cho thời gian (trừ 2 ngày, cộng 2 ngày)
+        const bufferTime = 2 * 24 * 60 * 60 * 1000;
+        minDate -= bufferTime;
+        maxDate += bufferTime;
+
+        // 1. Lấy danh sách tên
+        let userKeys = Object.keys(tasksByUser);
+
+        // 2. Sort: "Chưa phân công" lên đầu, còn lại Alphabet
+        userKeys.sort((a, b) => {
+            if (a === "Chưa phân công") return -1; // a lên đầu
+            if (b === "Chưa phân công") return 1;  // b lên đầu
+            return a.localeCompare(b, 'vi', { sensitivity: 'base' }); // A-Z tiếng Việt
+        });
+
+        const labelColors = userKeys.map(u => u === "Chưa phân công" ? '#F43F5E' : '#E5E7EB');
+
+        // 3. Đẩy vào seriesData theo thứ tự đã sort
+        const seriesData = [];
+        userKeys.forEach(user => {
+            seriesData.push(...tasksByUser[user]);
+        });
+
+        // 4. TÍNH CHIỀU CAO ĐỘNG
+        const userCount = Object.keys(tasksByUser).length;
+        const dynamicHeight = Math.max(350, userCount * 60);
+
+        const options = {
+            series: [{ name: 'Tasks', data: seriesData }],
+            chart: {
+                height: dynamicHeight,
+                type: 'rangeBar',
+                background: 'transparent',
+                zoom: {
+                    enabled: true, // Phải bật cái này mới Pan được
+                    type: 'x',     // Chỉ tương tác trục ngang
+                    autoScaleYaxis: false
+                },
+                toolbar: {
+                    show: true,
+                    autoSelected: 'pan',
+                    tools: {
+                        download: true,
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    barHeight: '60%',
+                    rangeBarGroupRows: true,
+                    borderRadius: 4,
+                    borderRadiusApplication: 'around',
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                textAnchor: 'middle', // Căn giữa text
+                style: {
+                    colors: ['#fff'],
+                    fontSize: '11px',
+                    fontWeight: '600',
+                },
+                formatter: function (val, opt) {
+                    const meta = opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].meta;
+                    return meta.taskName;
+                }
+            },
+            stroke: {
+                width: 1, // Độ dày viền
+                colors: ['#fff'] // Màu viền (trắng hoặc xám nhạt tùy theme)
+            },
+            fill: {
+                type: 'solid',
+                opacity: 0.8 // Giảm độ đậm màu nền chút để viền nổi bật hơn
+            },
+            annotations: {
+                xaxis: [
+                    {
+                        x: new Date().getTime(), // Thời gian hiện tại
+                        strokeDashArray: 4,      // Nét đứt
+                        borderColor: '#F43F5E',  // Màu đỏ hồng nổi bật
+                        borderWidth: 2,
+                        label: {
+                            borderColor: '#F43F5E',
+                            style: {
+                                color: '#fff',
+                                background: '#F43F5E',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                padding: { left: 5, right: 5, top: 2, bottom: 2 }
+                            },
+                            text: 'Hôm nay',
+                            position: 'top',
+                            offsetY: 5 // Đẩy nhãn xuống một chút
+                        }
+                    }
+                ]
+            },
+            xaxis: {
+                type: 'datetime',
+                min: minDate,
+                max: maxDate,
+                labels: {
+                    style: { colors: '#9CA3AF' },
+                    datetimeFormatter: { year: 'yyyy', month: 'MM', day: 'dd' },
+                    datetimeUTC: false // Dùng giờ Local
+                },
+                axisBorder: { show: false },
+                axisTicks: { show: true, color: '#374151' },
+                tooltip: { enabled: false }
+            },
+            yaxis: {
+                labels: {
+                    align: 'left', // Căn chữ sang trái
+                    style: {
+                        colors: labelColors,
+                        fontSize: '13px',
+                        fontWeight: 600
+                    },
+                    offsetX: -30,
+                    // Đặt chiều rộng cố định cho cột tên để nó thẳng hàng
+                    minWidth: 150,
+                    maxWidth: 150
+                }
+            },
+            grid: {
+                borderColor: '#374151',
+                xaxis: { lines: { show: true } },
+                yaxis: { lines: { show: true } },
+                strokeDashArray: 0
+            },
+            theme: { mode: 'dark' },
+            tooltip: {
+                custom: function ({ series, seriesIndex, dataPointIndex, w }) {
+                    const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                    // Lấy date gốc từ meta để hiển thị đúng ngày
+                    const startStr = data.meta.s.toLocaleDateString('vi-VN');
+                    const endStr = data.meta.e.toLocaleDateString('vi-VN');
+                    return `
+                        <div class="px-3 py-2 bg-gray-900 border border-gray-600 rounded shadow-lg z-50 text-left">
+                            <div class="text-xs text-gray-400 mb-1 truncate max-w-[200px]">${data.meta.projectName}</div>
+                            <div class="text-sm font-bold text-white mb-1">${data.meta.taskName}</div>
+                            <div class="text-xs text-indigo-300 font-mono mt-1">
+                                📅 ${startStr} - ${endStr}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        };
+
+        if (assigneeGanttChart) assigneeGanttChart.destroy();
+        assigneeGanttChart = new ApexCharts(chartEl, options);
+
+        assigneeGanttChart.render().then(() => {
+            const chartContainer = document.querySelector("#assignee-gantt-chart");
+            if (chartContainer) {
+                // 1. Chặn lăn chuột (Mouse Wheel) để không bị Zoom nhầm
+                chartContainer.addEventListener('wheel', function (e) {
+                    e.stopPropagation();
+                }, { capture: true });
+
+                // 2. Xử lý con trỏ Grab/Grabbing "Tuyệt đối"
+                const canvas = chartContainer.querySelector('.apexcharts-canvas');
+                if (canvas) {
+                    // Luôn set con trỏ mặc định của chart là 'grab'
+                    canvas.style.cursor = 'grab';
+
+                    // Tạo một thẻ style để ép buộc cursor trên toàn trang
+                    const cssId = 'force-grabbing-cursor';
+                    const style = document.createElement('style');
+                    style.id = cssId;
+                    // Dùng * để ép tất cả mọi thứ đều thành grabbing
+                    style.innerHTML = `* { cursor: grabbing !important; user-select: none !important; }`;
+
+                    // Kéo (MouseDown): Kích hoạt chế độ "Siêu dính"
+                    canvas.addEventListener('mousedown', (e) => {
+                        canvas.style.cursor = 'grabbing';
+                        // Chèn CSS ép buộc vào head
+                        if (!document.getElementById(cssId)) {
+                            document.head.appendChild(style);
+                        }
+                        // Ngăn chặn hành vi bôi đen văn bản mặc định
+                        e.preventDefault();
+                    });
+
+                    // Thả (MouseUp): Gỡ bỏ chế độ (Gắn vào window để bắt sự kiện dù thả chuột ở đâu)
+                    window.addEventListener('mouseup', () => {
+                        canvas.style.cursor = 'grab';
+                        // Gỡ bỏ CSS ép buộc
+                        const existingStyle = document.getElementById(cssId);
+                        if (existingStyle) {
+                            existingStyle.remove();
+                        }
+                    });
+                }
+            }
+        });
+
+        if (loaderEl) loaderEl.classList.add("hidden");
+        setTimeout(() => lucide.createIcons(), 500);
+
+        const expandBtn = document.getElementById('gantt-expand');
+        const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
+        let isGanttExpanded = false;
+
+        if (expandBtn && scrollWrapper) {
+            // Clone nút để xóa event cũ
+            const newBtn = expandBtn.cloneNode(true);
+            expandBtn.parentNode.replaceChild(newBtn, expandBtn);
+
+            newBtn.addEventListener('click', () => {
+                isGanttExpanded = !isGanttExpanded;
+                const icon = newBtn.querySelector("svg");
+
+                if (isGanttExpanded) {
+                    // Mở rộng: Xóa max-h-350px, thêm max-h-[85vh]
+                    scrollWrapper.classList.remove("max-h-[350px]");
+                    scrollWrapper.classList.add("max-h-[85vh]");
+                    newBtn.setAttribute("title", "Thu gọn");
+                    // Đổi icon
+                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="minimize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
+                } else {
+                    // Thu gọn: Về mặc định
+                    scrollWrapper.classList.remove("max-h-[85vh]");
+                    scrollWrapper.classList.add("max-h-[350px]");
+                    newBtn.setAttribute("title", "Mở rộng");
+                    // Đổi icon
+                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="maximize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Lỗi vẽ Gantt Chart:", e);
+        if (loaderEl) loaderEl.innerHTML = '<span class="text-red-500 text-sm">Lỗi tải dữ liệu biểu đồ.</span>';
+    }
+}
 /**
  * Lấy dữ liệu và xây dựng biểu đồ Gantt (PHIÊN BẢN JIRA TIMELINE)
  */
@@ -1242,90 +1614,6 @@ function toggleProject(projects) {
         lucide.createIcons();
     });
 }
-//function toggleProject(projects) {
-//    setTimeout(() => {
-//        const toggleButtons = document.querySelectorAll("[data-toggle]");
-//        const toggleAllBtn = document.getElementById("toggleAllBtn");
-//        let allOpen = true;
-
-//        // 🔹 Khởi tạo trạng thái ban đầu cho từng project
-//        toggleButtons.forEach(btn => {
-//            const targetId = btn.getAttribute("data-toggle");
-//            const content = document.getElementById(targetId);
-//            const icon = btn.querySelector("svg");
-
-//            // Tìm project tương ứng qua id
-//            const project = projects.items.find(p => `project#${p.idProject}` === targetId);
-//            if (!project || !content) return;
-
-//            // 🔹 Nếu Done hoặc không có task → thu gọn
-//            if (project.status == 3 || project.totalTasks == 0) {
-//                content.classList.remove("max-h-[1000px]");
-//                content.classList.add("max-h-0");
-//                btn.classList.remove("open");
-//                if (icon) icon.style.transform = "rotate(-90deg)";
-//            } else {
-//                content.classList.remove("max-h-0");
-//                content.classList.add("max-h-[1000px]");
-//                btn.classList.add("open");
-//                if (icon) icon.style.transform = "rotate(0deg)";
-//            }
-
-//            // 🔹 Gắn sự kiện toggle từng project
-//            btn.addEventListener("click", () => {
-//                const isOpen = btn.classList.contains("open");
-
-//                if (isOpen) {
-//                    content.classList.remove("max-h-[1000px]");
-//                    content.classList.add("max-h-0");
-//                    btn.classList.remove("open");
-//                    if (icon) icon.style.transform = "rotate(-90deg)";
-//                } else {
-//                    content.classList.remove("max-h-0");
-//                    content.classList.add("max-h-[1000px]");
-//                    btn.classList.add("open");
-//                    if (icon) icon.style.transform = "rotate(0deg)";
-//                }
-
-//                icon?.style.setProperty("transition", "transform 0.3s ease");
-//            });
-//        });
-
-//        // 🔹 Nút “Thu gọn / Mở tất cả”
-//        toggleAllBtn.addEventListener("click", () => {
-//            toggleButtons.forEach(btn => {
-//                const targetId = btn.getAttribute("data-toggle");
-//                const content = document.getElementById(targetId);
-//                const icon = btn.querySelector("svg");
-
-//                if (!content) return;
-
-//                if (allOpen) {
-//                    // Thu lại tất cả
-//                    content.classList.remove("max-h-[1000px]");
-//                    content.classList.add("max-h-0");
-//                    btn.classList.remove("open");
-//                    if (icon) icon.style.transform = "rotate(-90deg)";
-//                } else {
-//                    // Mở tất cả
-//                    content.classList.remove("max-h-0");
-//                    content.classList.add("max-h-[1000px]");
-//                    btn.classList.add("open");
-//                    if (icon) icon.style.transform = "rotate(0deg)";
-//                }
-//            });
-
-//            allOpen = !allOpen;
-
-//            // Cập nhật icon + text cho nút tổng
-//            toggleAllBtn.innerHTML = allOpen
-//                ? `<i data-lucide="chevron-up" class="w-4 h-4"></i> <span class="text-xs">Thu gọn tất cả</span>`
-//                : `<i data-lucide="chevron-down" class="w-4 h-4"></i> <span class="text-xs">Mở tất cả</span>`;
-
-//            lucide.createIcons();
-//        });
-//    }, 100);
-//}
 console.log();
 
 /* =========================================== */
@@ -1873,6 +2161,20 @@ function closeFormModal(projects) {
     });
 }
 
+// Hàm chuyển đổi ngày về dạng YYYY-MM-DD theo giờ địa phương
+function formatDateToLocalInput(dateString) {
+    if (!dateString) return "";
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return "";
+
+    const year = d.getFullYear();
+    // Tháng bắt đầu từ 0 nên phải +1
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
 async function openTaskModal(task = null, role) {
     // Overlay
     const uploadOverlay = document.getElementById(`uploadOverlay`);
@@ -1983,8 +2285,8 @@ async function openTaskModal(task = null, role) {
             const project = allProjectsList.find(p => p.idProject == projectId);
             if (project) {
                 console.log("YES: ", project);
-                const startProj = new Date(project.startDay).toISOString().split("T")[0];
-                const endProj = new Date(project.endDay).toISOString().split("T")[0];
+                const startProj = formatDateToLocalInput(project.startDay);
+                const endProj = formatDateToLocalInput(project.endDay);
 
                 // Ràng buộc ngày trong form
                 taskStart.min = startProj;
@@ -1993,8 +2295,13 @@ async function openTaskModal(task = null, role) {
                 taskEnd.max = endProj;
 
                 // 🟢 Thêm sự kiện kiểm tra ràng buộc ngày
-                taskStart.addEventListener("change", validateDates);
-                taskEnd.addEventListener("change", validateDates);
+                if (typeof validateDates === "function") {
+                    taskStart.removeEventListener("change", validateDates); // Xóa event cũ tránh trùng lặp
+                    taskEnd.removeEventListener("change", validateDates);
+
+                    taskStart.addEventListener("change", validateDates);
+                    taskEnd.addEventListener("change", validateDates);
+                }
             }
 
             if (members && members.length > 0) {
