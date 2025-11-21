@@ -15,6 +15,13 @@ const btnSaveTask = document.getElementById('btnSaveTask');
 const form = document.getElementById('formCreateTask');
 const taskIdField = document.getElementById('taskId');
 
+//Biến DOM check lịch
+const assigneeField = document.getElementById('taskAssignee');
+const startField = document.getElementById('taskStartDate');
+const endField = document.getElementById('taskDeadline');
+const scheduleMessage = document.getElementById('scheduleMessage');
+
+let scheduleDebounce = null;
 // Upload file
 const fileUploadArea = document.getElementById('fileUploadArea');
 const fileInput = document.getElementById('taskFiles');
@@ -142,6 +149,10 @@ function closeModal() {
     if (assigneeSelect) {
         assigneeSelect.innerHTML = '<option value="">-- Chọn người --</option>';
         assigneeSelect.disabled = true;
+    }
+    if (scheduleMessage) {
+        scheduleMessage.classList.add('hidden');
+        scheduleMessage.textContent = '';
     }
 }
 
@@ -499,47 +510,129 @@ document.addEventListener('click', async (e) => {
     // Hiển thị modal
     document.getElementById('reassignModal').classList.remove('hidden');
 });
-document.getElementById('closeReassignModal').addEventListener('click', () => {
-    document.getElementById('reassignModal').classList.add('hidden');
-});
-document.getElementById('reassignForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
+const closeBtn = document.getElementById('closeReassignModal');
+if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+        document.getElementById('reassignModal').classList.add('hidden');
+    });
+}
+const formReassign = document.getElementById('reassignForm');
+if (formReassign) {
+    formReassign.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    const taskId = document.getElementById('reassignTaskId').value;
-    const oldUserName = document.getElementById('reassignCurrentUser').value;
-    const newUserId = document.getElementById('reassignNewUser').value;
-    const progress = document.getElementById('reassignProgress').value;
-    const reason = document.getElementById('reassignReason').value;
+        const taskId = document.getElementById('reassignTaskId').value;
+        const oldUserName = document.getElementById('reassignCurrentUser').value;
+        const newUserId = document.getElementById('reassignNewUser').value;
+        const progress = document.getElementById('reassignProgress').value;
+        const reason = document.getElementById('reassignReason').value;
 
-    if (!newUserId) {
-        alert("Vui lòng chọn người mới.");
+        if (!newUserId) {
+            alert("Vui lòng chọn người mới.");
+            return;
+        }
+
+        try {
+            const res = await fetch('/Task/ReassignUser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskId,
+                    newUserId,
+                    progress: Number(progress),
+                    reason
+                })
+            });
+
+            if (!res.ok) throw new Error("Lỗi phía server");
+
+            const data = await res.json();
+
+            alert("Thay người thành công!");
+            location.reload();
+
+        } catch (err) {
+            console.error(err);
+            alert("Có lỗi xảy ra khi thay người.");
+        }
+    });
+}
+// ========= Hàm gọi API check lịch ===========
+async function checkUserSchedule() {
+
+    const userId = assigneeField.value;
+    const startDate = startField.value;
+    const endDate = endField.value;
+
+    // Nếu chưa đủ dữ liệu → xóa thông báo
+    if (!userId || !startDate || !endDate) {
+        scheduleMessage.classList.add('hidden');
+        scheduleMessage.textContent = '';
         return;
     }
+    if (new Date(startDate) > new Date(endDate)) {
+        scheduleMessage.classList.remove('hidden');
 
-    try {
-        const res = await fetch('/Task/ReassignUser', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                taskId,
-                newUserId,
-                progress: Number(progress),
-                reason
-            })
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-yellow-500 bg-yellow-500/20 text-yellow-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>⚠ Ngày không hợp lệ!</strong><br>
+            Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.
+        `;
+        return;
+    }
+    try { 
+        const params = new URLSearchParams({
+            userId: userId,
+            startDate: startDate,
+            endDate: endDate
         });
 
-        if (!res.ok) throw new Error("Lỗi phía server");
+        const response = await fetch(`/Task/CheckSchedule?${params}`);
+        const result = await response.json();
 
-        const data = await res.json();
-
-        alert("Thay người thành công!");
-        location.reload();
+        displayScheduleMessage(result);
 
     } catch (err) {
-        console.error(err);
-        alert("Có lỗi xảy ra khi thay người.");
+        console.error("Lỗi gọi API CheckSchedule", err);
     }
-});
+}
+
+// ========= Hiển thị message sau khi check ===========
+function displayScheduleMessage(result) {
+    scheduleMessage.classList.remove('hidden');
+
+    if (result.hasOverlap) {
+        // màu đỏ
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-red-500 bg-red-500/20 text-red-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>⚠ Trùng lịch!</strong><br>
+            ${result.message}
+        `;
+    } else {
+        // màu xanh
+        scheduleMessage.className =
+            "mt-3 p-3 rounded-lg text-sm border border-green-500 bg-green-500/20 text-green-300";
+
+        scheduleMessage.innerHTML = `
+            <strong>✔ Không trùng lịch</strong><br>
+            ${result.message}
+        `;
+    }
+}
+
+// ========= Debounce và event listener ===========
+function triggerScheduleCheck() {
+    if (scheduleDebounce) clearTimeout(scheduleDebounce);
+    scheduleDebounce = setTimeout(checkUserSchedule, 500);
+}
+
+assigneeField.addEventListener('change', triggerScheduleCheck);
+startField.addEventListener('change', triggerScheduleCheck);
+endField.addEventListener('change', triggerScheduleCheck);
 // ==========================
 // Load danh sách user khi chọn Project TRONG MODAL (chỉ cho CREATE)
 // ==========================
@@ -593,12 +686,199 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* Lọc theo dự án */
     const projectFilter = document.getElementById('headerProjectFilter');
-    projectFilter.addEventListener('change', function () {
-        const projectId = this.value;
-        if (!projectId) {
-            window.location.href = '/Task/Index';
-        } else {
-            window.location.href = `/Task/Index?projectId=${projectId}`;
+
+    if (projectFilter) {
+        projectFilter.addEventListener('change', function () {
+            const projectId = this.value;
+            window.location.href = projectId
+                ? `/Task/Index?projectId=${projectId}`
+                : '/Task/Index';
+        });
+    }
+    const tabKanban = document.getElementById("tabKanban");
+    const tabHistory = document.getElementById("tabHistory");
+    const kanbanContainer = document.getElementById("kanbanContainer");
+    const historyContainer = document.getElementById("historyContainer");
+    const historyContent = document.getElementById("historyContent");
+    const historyLoading = document.getElementById("historyLoading");
+
+    let currentPage = 1;
+    const pageSize = 15;
+    let totalPages = 0;
+    let isHistoryLoaded = false;
+
+    // Hàm load lịch sử với phân trang
+    async function loadHistory(page = 1) {
+        historyLoading.classList.remove("hidden");
+
+        try {
+            const res = await fetch(`/Task/GetLog?page=${page}&pageSize=${pageSize}`);
+            const data = await res.json();
+
+            const logs = data.items;
+            totalPages = Math.ceil(data.totalCount / pageSize);
+            currentPage = page;
+
+            historyLoading.classList.add("hidden");
+            historyContent.innerHTML = buildHistoryTable(logs);
+
+            // Render pagination
+            renderPagination();
+
+            isHistoryLoaded = true;
+        } catch (err) {
+            console.error('❌ Lỗi khi load lịch sử:', err);
+            historyLoading.classList.add("hidden");
+            historyContent.innerHTML = '<p class="text-red-400 p-4">Lỗi tải dữ liệu</p>';
+        }
+    }
+
+    // Hàm render phân trang
+    function renderPagination() {
+        let paginationHTML = '<div class="flex items-center justify-center gap-2 mt-4 pb-4">';
+
+        // Nút Previous
+        if (currentPage > 1) {
+            paginationHTML += `
+                <button onclick="changePage(${currentPage - 1})" 
+                        class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                    « Trước
+                </button>`;
+        }
+
+        // Hiển thị số trang
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        // Trang đầu tiên
+        if (startPage > 1) {
+            paginationHTML += `
+                <button onclick="changePage(1)" 
+                        class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                    1
+                </button>`;
+            if (startPage > 2) {
+                paginationHTML += '<span class="text-gray-400">...</span>';
+            }
+        }
+
+        // Các trang giữa
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                paginationHTML += `
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded font-bold">
+                        ${i}
+                    </button>`;
+            } else {
+                paginationHTML += `
+                    <button onclick="changePage(${i})" 
+                            class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                        ${i}
+                    </button>`;
+            }
+        }
+
+        // Trang cuối cùng
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += '<span class="text-gray-400">...</span>';
+            }
+            paginationHTML += `
+                <button onclick="changePage(${totalPages})" 
+                        class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                    ${totalPages}
+                </button>`;
+        }
+
+        // Nút Next
+        if (currentPage < totalPages) {
+            paginationHTML += `
+                <button onclick="changePage(${currentPage + 1})" 
+                        class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600">
+                    Sau »
+                </button>`;
+        }
+
+        paginationHTML += '</div>';
+
+        // Thêm thông tin tổng số
+        paginationHTML = `
+            <div class="text-center text-gray-400 text-sm mt-2">
+                Trang ${currentPage} / ${totalPages}
+            </div>
+        ` + paginationHTML;
+
+        historyContent.innerHTML += paginationHTML;
+    }
+
+    // Hàm chuyển trang (expose ra global scope)
+    window.changePage = async function (page) {
+        if (page < 1 || page > totalPages) return;
+        await loadHistory(page);
+
+        // Scroll lên đầu bảng
+        historyContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // Tab History click event
+    tabHistory.addEventListener("click", async () => {
+        tabKanban.classList.remove("active");
+        tabHistory.classList.add("active");
+        kanbanContainer.classList.add("hidden");
+        historyContainer.classList.remove("hidden");
+
+        if (!isHistoryLoaded) {
+            await loadHistory(1);
         }
     });
+
+    // Tab Kanban click event
+    tabKanban.addEventListener("click", () => {
+        tabHistory.classList.remove("active");
+        tabKanban.classList.add("active");
+        historyContainer.classList.add("hidden");
+        kanbanContainer.classList.remove("hidden");
+    });
 });
+
+function buildHistoryTable(logs) {
+    if (!logs || logs.length === 0) {
+        return '<p class="text-gray-400 p-4 text-center">Không có dữ liệu</p>';
+    }
+
+    let rows = logs.map(log => `
+        <tr class="border-b border-gray-700 hover:bg-gray-800">
+            <td class="p-2 text-gray-300">${new Date(log.updateAt).toLocaleString('vi-VN')}</td>
+            <td class="p-2 text-gray-300">${log.taskName ?? "N/A"}</td>
+            <td class="p-2 text-gray-300">${log.userName ?? "N/A"}</td>
+             <td class="p-2">
+                <span class="px-2 py-1 text-xs rounded-md bg-red-500/20 text-red-300 font-semibold">
+                    ${log.previousStatus ?? "N/A"}
+                </span>
+            </td>
+
+            <td class="p-2">
+                <span class="px-2 py-1 text-xs rounded-md bg-green-500/20 text-green-300 font-semibold">
+                    ${log.newStatus ?? "N/A"}
+                </span>
+            </td>
+        </tr>
+    `).join("");
+
+    return `
+        <table class="w-full text-sm text-left text-gray-300">
+            <thead class="text-gray-400 uppercase border-b border-gray-700">
+                <tr>
+                    <th class="p-2">Ngày thay đổi</th>
+                    <th class="p-2">Nhiệm vụ</th>
+                    <th class="p-2">Người cập nhật</th>
+                    <th class="p-2">Trạng thái cũ</th>
+                    <th class="p-2">Trạng thái mới</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    `;
+}

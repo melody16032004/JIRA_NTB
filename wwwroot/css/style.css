@@ -2,6 +2,15 @@
     scroll-behavior: smooth;
     scrollbar-width: thin;
 }
+#assignee-gantt-chart .apexcharts-canvas,
+#assignee-gantt-chart .apexcharts-inner {
+    cursor: grab !important;
+}
+
+    #assignee-gantt-chart .apexcharts-canvas.grabbing,
+    #assignee-gantt-chart .apexcharts-inner.grabbing {
+        cursor: grabbing !important;
+    }
 #progressText{
     user-select: none;
 }

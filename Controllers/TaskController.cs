@@ -388,5 +388,21 @@ namespace JIRA_NTB.Controllers
 
             return Ok(new { message = "Thay người thành công" });
         }
+        [HttpGet]
+        public async Task<IActionResult> CheckSchedule(string userId, DateTime startDate, DateTime endDate)
+        {
+            var result = await taskService.CheckUserScheduleAsync(userId, startDate, endDate);
+            return Json(result);
+        }
+        public async Task<IActionResult> GetLog(int page = 1, int pageSize = 30)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            PagedResult<LogStatusDTO> logs =
+                await taskService.GetLogsAsync(user, roles, page, pageSize);
+
+            return Ok(logs);
+        }
     }
 }

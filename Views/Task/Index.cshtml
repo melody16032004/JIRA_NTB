@@ -48,6 +48,18 @@
         }
     };
 }
+<style>
+.tab-btn {
+    padding: 8px 16px;
+    color: #ccc;
+    border-bottom: 2px solid transparent;
+}
+
+    .tab-btn.active {
+        color: white;
+        border-bottom-color: #6366f1;
+    }
+</style>
 <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
     <div class="z-10 bg-gray-900/95 backdrop-blur-sm border-b border-gray-800 shadow-lg">
         <div class="px-6 py-4">
@@ -77,14 +89,33 @@
             </div>
         </div>
     </div>
+    <div class="px-6 pt-4">
+        <div class="flex items-center gap-2 border-b border-gray-700">
+            <button id="tabKanban"
+                    class="tab-btn active py-2 px-4 text-sm font-medium">
+                Kanban Board
+            </button>
 
-    <div class="p-3">
+            <button id="tabHistory"
+                    class="tab-btn py-2 px-4 text-sm font-medium text-gray-400 hover:text-white border-b-2 border-transparent">
+                Version History
+            </button>
+        </div>
+    </div>
+    <!-- KANBAN VIEW -->
+    <div id="kanbanContainer" class="p-3">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             @foreach (var column in columns)
             {
-                <partial name="_TaskColumn" model="column" /> 
+                <partial name="_TaskColumn" model="column" />
             }
         </div>
+    </div>
+
+    <!-- HISTORY VIEW (empty, sẽ load bằng JS) -->
+    <div id="historyContainer" class="p-3 hidden">
+        <div id="historyLoading" class="text-gray-400">Đang tải dữ liệu...</div>
+        <div id="historyContent"></div>
     </div>
 </div>
 

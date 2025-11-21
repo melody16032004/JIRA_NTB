@@ -41,5 +41,11 @@ namespace JIRA_NTB.Services
         string statusId,
         string? projectId = null);
         Task<bool> ReassignTaskAsync(ReassignTaskDto dto, string reassignedById);
+        Task<UserScheduleResult> CheckUserScheduleAsync(
+    string userId,
+    DateTime newStart,
+    DateTime newEnd);
+        Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+      int page, int pageSize);
     }
 }
