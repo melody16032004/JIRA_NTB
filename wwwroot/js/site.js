@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!me || me == null) {
         window.location.href = "/Error/403";
+        return;
     }
 
     console.log(me);
