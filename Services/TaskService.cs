@@ -4,6 +4,7 @@ using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Polly;
+using System.Data;
 
 namespace JIRA_NTB.Services
 {
@@ -13,13 +14,15 @@ namespace JIRA_NTB.Services
         private readonly IStatusRepository _statusRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepo;
-
-        public TaskService(ITaskRepository taskRepository, IStatusRepository statusRepository, IProjectRepository projectRepository, IUserRepository userRepo)
+        private readonly ILogTaskRepository _logTaskRepository;
+        public TaskService(ITaskRepository taskRepository, IStatusRepository statusRepository, 
+            IProjectRepository projectRepository, IUserRepository userRepo, ILogTaskRepository logTaskRepository)
         {
             _taskRepository = taskRepository;
             _statusRepository = statusRepository;
             _projectRepository = projectRepository;
             _userRepo = userRepo;
+            _logTaskRepository = logTaskRepository;
         }
 
         public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, string? projectId = null)
@@ -626,7 +629,7 @@ namespace JIRA_NTB.Services
                 ).ToList();
 
             // ❗ Chỉ báo nếu trùng từ 2 task trở lên
-            if (overlappingTasks.Count >= 2)
+            if (overlappingTasks.Any())
             {
                 var minStart = overlappingTasks.Min(o => o.StartDate.Value.Date);
                 var maxEnd = overlappingTasks.Max(o => o.EndDate.Value.Date);
@@ -683,6 +686,11 @@ namespace JIRA_NTB.Services
                 Message =
                     $"Nhân viên không có công việc nào trước thời điểm {newStart:dd/MM}."
             };
+        }
+        public async Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+      int page, int pageSize)
+        {
+            return await _logTaskRepository.GetLogsAsync(user, roles, page, pageSize);
         }
     }
 }

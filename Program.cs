@@ -33,6 +33,7 @@ builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ILogTaskRepository, LogTaskRepository>();
 builder.Services.Configure<IdentityOptions>(options =>
 {
 	// User settings
@@ -76,7 +77,7 @@ using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
 
-    string email = "testuser2@example.com";
+    string email = "testuser@gmail.com";
     string password = "Test@123";
 
     var existingUser = await userManager.FindByEmailAsync(email);

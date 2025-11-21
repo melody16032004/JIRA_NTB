@@ -470,7 +470,7 @@ namespace JIRA_NTB.Controllers
 
             // --- 5. Lấy dữ liệu đã phân trang ---
             var tasks = await query
-                .OrderByDescending(t => t.Priority) // Sắp xếp (ví dụ: ưu tiên cao lên đầu)
+                .OrderByDescending(t => t.CreateAt) // Sort theo ngày tạo, mới nhất lên đầu                                                    // Sắp xếp (ví dụ: ưu tiên cao lên đầu)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .Include(t => t.Status)     // Include Status và Assignee
@@ -487,6 +487,7 @@ namespace JIRA_NTB.Controllers
                     t.EndDate,
                     t.Assignee_Id,
                     t.ProjectId,
+                    t.CreateAt,
                     // ProjectName không cần nữa vì chúng ta đã ở trong project đó
                     StatusName = t.Status.StatusName,
                     NameAssignee = t.Assignee.FullName
@@ -503,6 +504,74 @@ namespace JIRA_NTB.Controllers
             });
         }
         #endregion
+
+        // [GET] api/tasks/all?pageIndex=1&pageSize=50
+        [HttpGet("api/tasks/all")]
+        public async Task<IActionResult> GetAllTasks([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            // 1. Xây dựng Query cơ bản
+            IQueryable<TaskItemModel> query = _context.Tasks.AsQueryable();
+
+            // 2. Phân quyền dữ liệu (Ai thấy task nào?)
+            if (User.IsInRole("ADMIN"))
+            {
+                // Admin thấy hết -> Không cần lọc
+            }
+            else if (User.IsInRole("LEADER"))
+            {
+                // Leader thấy task trong các project mình quản lý (Project.UserId == Me)
+                // HOẶC task được gán trực tiếp cho mình (nếu Leader cũng làm task)
+                query = query.Where(t => t.Project.UserId == user.Id || t.Assignee_Id == user.Id);
+            }
+            else // EMPLOYEE
+            {
+                // Employee chỉ thấy task được gán cho mình
+                query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            // 3. Đếm tổng số (cho phân trang)
+            var totalTasks = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalTasks / pageSize);
+
+            // 4. Lấy dữ liệu (Sắp xếp theo ngày bắt đầu để vẽ Gantt đẹp hơn)
+            var tasks = await query
+                .OrderBy(t => t.StartDate) // Gantt thì nên sort theo ngày bắt đầu
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Include(t => t.Status)
+                .Include(t => t.Assignee)
+                .Include(t => t.Project) // Include thêm Project để biết task thuộc dự án nào
+                .Select(t => new
+                {
+                    t.IdTask,
+                    t.NameTask,
+                    t.Priority,
+                    t.Overdue,
+                    t.StartDate,
+                    t.EndDate,
+                    t.Assignee_Id,
+                    t.ProjectId,
+
+                    // Thêm tên dự án để hiển thị trên Gantt
+                    ProjectName = t.Project.ProjectName,
+                    StatusName = t.Status.StatusName,
+                    NameAssignee = t.Assignee.FullName
+                })
+                .ToListAsync();
+
+            // 5. Trả về kết quả
+            return Ok(new
+            {
+                items = tasks,
+                pageIndex = pageIndex,
+                pageSize = pageSize,
+                totalPages = totalPages,
+                totalCount = totalTasks
+            });
+        }
 
         #region GET: api/projects/{projectId}/all-tasks -> Lấy tất cả task theo project (không phân trang)
         [HttpGet("api/projects/{projectId}/all-tasks")]

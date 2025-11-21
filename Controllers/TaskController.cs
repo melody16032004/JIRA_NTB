@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
 {
- 
+    [Authorize]
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
@@ -393,6 +393,16 @@ namespace JIRA_NTB.Controllers
         {
             var result = await taskService.CheckUserScheduleAsync(userId, startDate, endDate);
             return Json(result);
+        }
+        public async Task<IActionResult> GetLog(int page = 1, int pageSize = 30)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            PagedResult<LogStatusDTO> logs =
+                await taskService.GetLogsAsync(user, roles, page, pageSize);
+
+            return Ok(logs);
         }
     }
 }
