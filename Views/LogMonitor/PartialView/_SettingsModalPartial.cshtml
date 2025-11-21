@@ -1,0 +1,63 @@
+﻿@model List<SetTimeViewModel>
+
+<div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 overflow-hidden dark:bg-gray-800 dark:border dark:border-gray-700 transform transition-all">
+
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Cấu hình thời gian
+        </h3>
+        <button @@click="showSettings = false" class="text-gray-400 hover:text-gray-500 focus:outline-none dark:hover:text-white">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <form action="@Url.Action("SaveSettings", "LogMonitor")" method="post" class="p-6 space-y-4">
+        @for (int i = 0; i < Model.Count; i++)
+        {
+            <input type="hidden" name="[@i].Id" value="@Model[i].Id" />
+            <input type="hidden" name="[@i].Title" value="@Model[i].Title" />
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        @Model[i].Title
+                    </label>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Mã: @Model[i].Id</span>
+                </div>
+
+                <div>
+                    <input type="text"
+                           name="[@i].Time"
+                           value="@Model[i].Time.ToString(@"hh\:mm\:ss")"
+                           placeholder="HH:mm:ss"
+                           pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                           title="Nhập định dạng Giờ:Phút:Giây (Ví dụ: 00:10:00)"
+                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2
+                  dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500"
+                           oninvalid="this.setCustomValidity('Vui lòng nhập đúng định dạng Giờ:Phút:Giây (00:00:00)')"
+                           oninput="this.setCustomValidity('')" />
+                </div>
+            </div>
+
+            @if (i < Model.Count - 1)
+            {
+                <hr class="border-gray-200 dark:border-gray-700" />
+            }
+        }
+
+        <div class="mt-6 flex justify-end space-x-3">
+            <button type="button" @@click="showSettings = false"
+                    class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50
+                           dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600 transition">
+                Hủy bỏ
+            </button>
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition">
+                💾 Lưu cấu hình
+            </button>
+        </div>
+    </form>
+</div>
