@@ -12,14 +12,14 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border border-purple-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
+        <div class="bg-gradient-to-br from-indigo-500/10 to-indigo-600/10 border border-indigo-500/20 rounded-xl p-6 hover:scale-105 transition-transform duration-300">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-purple-400 text-sm font-medium mb-1">Tổng nhân viên</p>
+                    <p class="text-indigo-400 text-sm font-medium mb-1">Tổng nhân viên</p>
                     <h3 class="text-3xl font-bold text-white">@Model.TotalItems</h3>
                 </div>
-                <div class="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <i data-lucide="users" class="w-6 h-6 text-purple-400"></i>
+                <div class="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                    <i data-lucide="users" class="w-6 h-6 text-indigo-400"></i>
                 </div>
             </div>
         </div>
@@ -81,7 +81,7 @@
     <!-- Table Section -->
     <div class="bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
         <!-- Table Header -->
-        <div class="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-b border-gray-700 px-6 py-4">
+        <div class="bg-gradient-to-r from-indigo-600/20 to-blue-600/20 border-b border-gray-700 px-6 py-4">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-white flex items-center gap-2">
                     <i data-lucide="list" class="w-5 h-5"></i>
@@ -98,7 +98,7 @@
                 </div>
                 
                 <!-- Lọc theo phòng ban -->
-                <select name="department" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <select name="department" class="px-3 py-1.5 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <option value="">Tất cả phòng ban</option>
                     @if (ViewBag.Departments != null)
                     {
@@ -115,12 +115,12 @@
                            name="searchString"
                            value="@ViewBag.CurrentSearch"
                            placeholder="Tìm kiếm theo email hoặc tên..." 
-                           class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                           class="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                 </div>
                 
                 <!-- Nút tìm kiếm -->
-                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors duration-200">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors duration-200">
                     <i data-lucide="search" class="w-4 h-4"></i>
                     Tìm
                 </button>
@@ -185,7 +185,7 @@
                         <tr class="hover:bg-gray-700/30 transition-colors duration-200 group">
                             <td class="py-2 px-3">
                                 <div class="flex items-center gap-2">
-                                    <div class="w-7 h-7 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg flex-shrink-0">
+                                    <div class="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg flex-shrink-0">
                                         @(user.Email?.Substring(0, 1).ToUpper())
                                     </div>
                                     <div class="min-w-0">
@@ -284,8 +284,8 @@
                                         <input type="hidden" name="userId" value="@user.Id" />
                                         
                                         <!-- Dropdown chọn role -->
-                                        <select name="roleName" 
-                                                class="px-2 py-1 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        <select name="roleName"
+                                                class="px-2 py-1 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                             <option value="EMPLOYEE" selected="@(userRoles.Contains("EMPLOYEE") ? "selected" : null)">Employee</option>
                                             <option value="LEADER" selected="@(userRoles.Contains("LEADER") ? "selected" : null)">Leader</option>
                                         </select>
@@ -293,7 +293,7 @@
                                         <!-- Nút Lưu (chỉ icon) -->
                                         <button type="submit" 
                                                 title="Lưu thay đổi"
-                                                class="inline-flex items-center justify-center w-6 h-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200">
+                                                class="inline-flex items-center justify-center w-6 h-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200">
                                             <i data-lucide="save" class="w-3 h-3"></i>
                                         </button>
                                     </form>
@@ -364,7 +364,7 @@
                             {
                                 if (i == Model.PageIndex)
                                 {
-                                    <span class="px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">
+                                    <span class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">
                                         @i
                                     </span>
                                 }
