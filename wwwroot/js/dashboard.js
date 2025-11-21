@@ -1009,7 +1009,28 @@ async function renderAssigneeGantt(projects) {
     try {
         // 2. Fetch dữ liệu
         const response = await safeFetchJson(`/api/tasks/all?pageIndex=1&pageSize=100`, { items: [] });
-        const allTasks = response.items || [];
+        const safeResponse = (response && typeof response === "object") ? response : { items: [] };
+        const allTasks = Array.isArray(safeResponse.items) ? safeResponse.items : [];
+        if (allTasks.length === 0) {
+            if (loaderEl) loaderEl.classList.add("hidden");
+
+            // Xóa chart cũ nếu có
+            if (assigneeGanttChart) {
+                assigneeGanttChart.destroy();
+                assigneeGanttChart = null;
+            }
+            chartEl.innerHTML = "";
+            chartEl.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-[280px] text-gray-500 border-2 border-dashed border-gray-700 rounded-xl bg-gray-800/30">
+                    <div class="p-4 rounded-full bg-gray-800 mb-3 shadow-sm">
+                        <i data-lucide="clipboard-list" class="w-10 h-10 text-indigo-400 opacity-80"></i>
+                    </div>
+                    <span class="font-medium">Chưa có nhiệm vụ nào</span>
+                    <span class="text-xs text-gray-500 mt-1">Các dự án hiện tại chưa có task nào được tạo.</span>
+                </div>`;
+            lucide.createIcons();
+            return; // Dừng hàm tại đây, không vẽ chart nữa
+        }
 
         // 3. Xử lý dữ liệu & Tính toán Min/Max Date
         const tasksByUser = {};
@@ -1074,6 +1095,7 @@ async function renderAssigneeGantt(projects) {
 
         // --- [VIEWPORT: Hiển thị tối đa 45 ngày, còn lại scroll] ---
         const VIEW_RANGE_DAYS = 16;
+        const DAYS_BEFORE_TODAY = 2;
         const msInDay = 24 * 60 * 60 * 1000;
         const currentViewDuration = VIEW_RANGE_DAYS * msInDay;
 
@@ -1081,24 +1103,25 @@ async function renderAssigneeGantt(projects) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayTS = today.getTime();
+        const todayTime = today.getTime();
 
         // Tỉ lệ lệch trái (0.0 = trái hoàn toàn, 0.5 = giữa, 1.0 = phải)
         const LEFT_RATIO = 0.375; // <-- chỉnh ở đây nếu muốn lệch nhiều/ít hơn
 
         // Tính khoảng xem
-        let viewMinDate = todayTS - currentViewDuration * LEFT_RATIO;
-        let viewMaxDate = viewMinDate + currentViewDuration;
+        let viewMinDate = todayTime - (DAYS_BEFORE_TODAY * msInDay);
+        let viewMaxDate = viewMinDate + (VIEW_RANGE_DAYS * msInDay);
 
         // Không cho vượt giới hạn thực tế
-        if (viewMinDate < realMinDate) {
-            viewMinDate = realMinDate;
-            viewMaxDate = realMinDate + currentViewDuration;
-        }
+        //if (viewMinDate < realMinDate) {
+        //    viewMinDate = realMinDate;
+        //    viewMaxDate = realMinDate + currentViewDuration;
+        //}
 
-        if (viewMaxDate > realMaxDate) {
-            viewMaxDate = realMaxDate;
-            viewMinDate = realMaxDate - currentViewDuration;
-        }
+        //if (viewMaxDate > realMaxDate) {
+        //    viewMaxDate = realMaxDate;
+        //    viewMinDate = realMaxDate - currentViewDuration;
+        //}
 
         //const viewMaxDate = Math.min(realMaxDate, realMinDate + currentViewDuration);
 
@@ -1286,6 +1309,9 @@ async function renderAssigneeGantt(projects) {
         };
 
         if (assigneeGanttChart) assigneeGanttChart.destroy();
+
+        //chartEl.innerHTML = '';
+
         assigneeGanttChart = new ApexCharts(chartEl, options);
 
         assigneeGanttChart.render().then(() => {
@@ -1353,7 +1379,14 @@ async function renderAssigneeGantt(projects) {
             if (icon) icon.classList.remove("animate-spin");
             newBtn.addEventListener('click', async () => {
                 if (icon) icon.classList.add("animate-spin");
+                // Xoá placeholder (nếu đang có)
+                chartEl.innerHTML = "";
 
+                // Xoá biểu đồ cũ (nếu có)
+                //if (assigneeGanttChart) {
+                //    assigneeGanttChart.destroy();
+                //    assigneeGanttChart = null;
+                //}
                 await renderAssigneeGantt(projects);
             });
         }
