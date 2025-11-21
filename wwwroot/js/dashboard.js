@@ -780,6 +780,9 @@ function renderDashboard(projects) {
                         Tiến độ theo nhân sự
                     </h3>
                     <div>
+                        <button id="gantt-check" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
+                            <i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>
+                        </button>
                         <button id="gantt-reload" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Làm mới">
                             <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                         </button>
@@ -993,6 +996,7 @@ let ganttExpandedUsers = new Set();
 async function renderAssigneeGantt(projects) {
     const chartEl = document.querySelector("#assignee-gantt-chart");
     const loaderEl = document.querySelector("#gantt-loader");
+    let isLabelShown = true;
 
     if (!chartEl || !projects || projects.length === 0) {
         if (loaderEl) loaderEl.innerHTML = '<span class="text-gray-500">Không có dữ liệu dự án.</span>';
@@ -1004,11 +1008,6 @@ async function renderAssigneeGantt(projects) {
 
     try {
         // 2. Fetch dữ liệu
-        //const promises = projects.map(p =>
-        //    safeFetchJson(`/api/projects/${p.idProject}/tasks?pageIndex=1&pageSize=100`, { items: [] })
-        //);
-
-        //const results = await Promise.all(promises);
         const response = await safeFetchJson(`/api/tasks/all?pageIndex=1&pageSize=100`, { items: [] });
         const allTasks = response.items || [];
 
@@ -1018,55 +1017,50 @@ async function renderAssigneeGantt(projects) {
         let maxDate = new Date().getTime();
         let hasData = false;
 
-        //results.forEach((res, index) => {
-        //    const projectName = projects[index].projectName;
-        //    const tasks = res.items || [];
+        allTasks.forEach(t => {
+            hasData = true;
+            const assignee = t.nameAssignee || "Chưa phân công";
+            if (!tasksByUser[assignee]) tasksByUser[assignee] = [];
 
-            allTasks.forEach(t => {
-                hasData = true;
-                const assignee = t.nameAssignee || "Chưa phân công";
-                if (!tasksByUser[assignee]) tasksByUser[assignee] = [];
+            let color = '#3B82F6'; // Default Blue
+            if (assignee === "Chưa phân công") {
+                color = '#6366F1'; // Indigo
+            } else {
+                if (t.statusName === 1) color = '#6B7280'; // Gray (Todo)
+                if (t.statusName === 3) color = '#10B981'; // Green (Done)
+                if (t.overdue) color = '#EF4444'; // Red (Overdue)
+            }
 
-                let color = '#3B82F6'; // Default Blue
-                if (assignee === "Chưa phân công") {
-                    color = '#6366F1'; // Indigo
-                } else {
-                    if (t.statusName === 1) color = '#6B7280'; // Gray (Todo)
-                    if (t.statusName === 3) color = '#10B981'; // Green (Done)
-                    if (t.overdue) color = '#EF4444'; // Red (Overdue)
+            const startDateObj = new Date(t.startDate);
+            const endDateObj = new Date(t.endDate);
+            startDateObj.setHours(0, 0, 0, 0);
+            endDateObj.setHours(23, 59, 59, 999); // Cuối ngày
+
+            if (startDateObj.getTime() > endDateObj.getTime()) {
+                endDateObj.setTime(startDateObj.getTime());
+            }
+
+            const start = startDateObj.getTime();
+            const end = endDateObj.getTime();
+
+            // Cập nhật Min/Max thực tế
+            if (!hasData || start < minDate) minDate = start;
+            if (!hasData || end > maxDate) maxDate = end;
+
+            tasksByUser[assignee].push({
+                userKey: assignee, // Key gốc cho logic expand
+                x: assignee,
+                y: [start, end],
+                fillColor: color,
+                meta: {
+                    taskName: t.nameTask,
+                    projectName: t.projectName,
+                    status: t.statusName,
+                    s: new Date(t.startDate),
+                    e: new Date(t.endDate)
                 }
-
-                const startDateObj = new Date(t.startDate);
-                const endDateObj = new Date(t.endDate);
-                startDateObj.setHours(0, 0, 0, 0);
-                endDateObj.setHours(23, 59, 59, 0); // Cuối ngày
-
-                if (startDateObj.getTime() > endDateObj.getTime()) {
-                    endDateObj.setTime(startDateObj.getTime());
-                }
-
-                const start = startDateObj.getTime();
-                const end = endDateObj.getTime();
-
-                // Cập nhật Min/Max thực tế
-                if (!hasData || start < minDate) minDate = start;
-                if (!hasData || end > maxDate) maxDate = end;
-
-                tasksByUser[assignee].push({
-                    userKey: assignee, // Key gốc cho logic expand
-                    x: assignee,
-                    y: [start, end],
-                    fillColor: color,
-                    meta: {
-                        taskName: t.nameTask,
-                        projectName: t.projectName,
-                        status: t.statusName,
-                        s: new Date(t.startDate),
-                        e: new Date(t.endDate)
-                    }
-                });
             });
-        //});
+        });
 
         // Nếu không có task nào
         if (!hasData) {
@@ -1079,10 +1073,34 @@ async function renderAssigneeGantt(projects) {
         const realMaxDate = maxDate + bufferTime;
 
         // --- [VIEWPORT: Hiển thị tối đa 45 ngày, còn lại scroll] ---
-        const VIEW_RANGE_DAYS = 15;
+        const VIEW_RANGE_DAYS = 16;
         const msInDay = 24 * 60 * 60 * 1000;
         const currentViewDuration = VIEW_RANGE_DAYS * msInDay;
-        const viewMaxDate = Math.min(realMaxDate, realMinDate + currentViewDuration);
+
+        // Timestamp hôm nay reset về 00:00
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayTS = today.getTime();
+
+        // Tỉ lệ lệch trái (0.0 = trái hoàn toàn, 0.5 = giữa, 1.0 = phải)
+        const LEFT_RATIO = 0.375; // <-- chỉnh ở đây nếu muốn lệch nhiều/ít hơn
+
+        // Tính khoảng xem
+        let viewMinDate = todayTS - currentViewDuration * LEFT_RATIO;
+        let viewMaxDate = viewMinDate + currentViewDuration;
+
+        // Không cho vượt giới hạn thực tế
+        if (viewMinDate < realMinDate) {
+            viewMinDate = realMinDate;
+            viewMaxDate = realMinDate + currentViewDuration;
+        }
+
+        if (viewMaxDate > realMaxDate) {
+            viewMaxDate = realMaxDate;
+            viewMinDate = realMaxDate - currentViewDuration;
+        }
+
+        //const viewMaxDate = Math.min(realMaxDate, realMinDate + currentViewDuration);
 
         // --- TÍNH SỐ NGÀY ĐỂ CHIA VẠCH (Dựa trên Viewport) ---
         const tickCount = VIEW_RANGE_DAYS; // Cố định số vạch hiển thị
@@ -1196,7 +1214,7 @@ async function renderAssigneeGantt(projects) {
                 bar: { horizontal: true, barHeight: '60%', rangeBarGroupRows: true, borderRadius: 4, borderRadiusApplication: 'around' }
             },
             dataLabels: {
-                enabled: true, textAnchor: 'middle',
+                enabled: isLabelShown, textAnchor: 'middle',
                 style: { colors: ['#fff'], fontSize: '11px', fontWeight: '600' },
                 formatter: function (val, opt) {
                     return opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].meta.taskName;
@@ -1212,7 +1230,7 @@ async function renderAssigneeGantt(projects) {
             },
             xaxis: {
                 type: 'datetime',
-                min: realMinDate,
+                min: viewMinDate,
                 max: viewMaxDate,
                 tickAmount: tickCount, // Cố định số vạch
                 labels: {
@@ -1294,15 +1312,49 @@ async function renderAssigneeGantt(projects) {
         const reloadBtn = document.getElementById('gantt-reload');
         const expandBtn = document.getElementById('gantt-expand');
         const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
+        const checkBtn = document.getElementById('gantt-check');
+
+        if (checkBtn) {
+            const newBtn = checkBtn.cloneNode(true);
+            checkBtn.parentNode.replaceChild(newBtn, checkBtn);
+
+            // Set icon ban đầu (nếu mặc định là tắt)
+            newBtn.innerHTML = '<i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>';
+
+            newBtn.addEventListener('click', () => {
+                // 1. Đổi trạng thái
+                isLabelShown = !isLabelShown;
+
+                // 2. Cập nhật Icon (Check hoặc Square)
+                if (isLabelShown) {
+                    newBtn.innerHTML = '<i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>';
+                    newBtn.classList.add("text-indigo-400"); // Thêm màu cho nút sáng lên
+                } else {
+                    newBtn.innerHTML = '<i data-lucide="square" class="w-4 h-4"></i>';
+                    newBtn.classList.remove("text-indigo-400");
+                }
+                lucide.createIcons();
+
+                // 3. Cập nhật Chart (Không cần render lại toàn bộ)
+                if (assigneeGanttChart) {
+                    assigneeGanttChart.updateOptions({
+                        dataLabels: {
+                            enabled: isLabelShown
+                        }
+                    });
+                }
+            });
+        }
 
         if (reloadBtn) {
             const newBtn = reloadBtn.cloneNode(true);
             reloadBtn.parentNode.replaceChild(newBtn, reloadBtn);
+            const icon = newBtn.querySelector("svg");
+            if (icon) icon.classList.remove("animate-spin");
             newBtn.addEventListener('click', async () => {
-                const icon = newBtn.querySelector("svg");
                 if (icon) icon.classList.add("animate-spin");
+
                 await renderAssigneeGantt(projects);
-                if (icon) icon.classList.remove("animate-spin");
             });
         }
 
