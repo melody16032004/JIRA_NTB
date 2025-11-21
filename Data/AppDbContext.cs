@@ -21,6 +21,9 @@ namespace JIRA_NTB.Data
         public DbSet<LogDevice> logDevices { get; set; }
         public DbSet<CheckIn> checkIns { get; set; }
         public DbSet<NotificationsModel> Notifications { get; set; }
+        public DbSet<SetTime> SetTimes { get; set; }
+        public DbSet<ImageLog> ImageLogs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -133,6 +136,22 @@ namespace JIRA_NTB.Data
                 .WithMany()
                 .HasForeignKey(l => l.IdUserUpdate)
                 .OnDelete(DeleteBehavior.Restrict);
+            // Cấu hình cho ImageLog
+            builder.Entity<ImageLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.MacAddress).HasMaxLength(30);
+                entity.Property(e => e.UrlImage);
+                entity.Property(e => e.CreateAt);
+            });
+
+            // Cấu hình cho SetTime
+            builder.Entity<SetTime>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).HasMaxLength(50);
+                entity.Property(e => e.Time);
+            });
         }
     }
 }

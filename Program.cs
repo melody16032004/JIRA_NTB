@@ -4,6 +4,7 @@ using JIRA_NTB.Middleware;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
 using JIRA_NTB.Services;
+using JIRA_NTB_WEB.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -65,6 +66,7 @@ builder.Services.AddTransient<IEmailSender, EmailSenderService>();
 builder.Services.AddHostedService<UnconfirmedAccountCleanupService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<NotificationService>();
+builder.Services.AddHostedService<FileCleanupService>();
 
 var app = builder.Build();
 
