@@ -10,6 +10,7 @@ let projectTaskCache = {};
 let allProjectsList = [];
 let allTasksStat = {};
 let allProjectsStat = {};
+let allDepartments = [];
 let currentUser = {};
 let currentUserRole = '';
 let isProjectToggleAllOpen = false;
@@ -66,7 +67,7 @@ function renderTaskCard(t) {
                 <div class="relative group">
                     <button id="openUpdateTaskBtn#${t.projectId}#${t.idTask}"
                         onclick="this.blur()"
-                        class="p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
+                        class="hidden p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
                         data-task='${JSON.stringify(t)}'>
                         <i data-lucide="bolt" class="w-4 h-4 text-gray-300"></i>
                     </button>
@@ -195,7 +196,7 @@ async function loadTasksForProject(projectId, page) {
         ]);
 
         if (data && data.items) {
-            console.log("Task: ", data);
+            //console.log("Task: ", data);
             // 4. Render HTML mới
             let newTasksHtml = '';
             data.items.forEach(t => {
@@ -562,7 +563,7 @@ function renderDashboard(projects) {
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
                     
-                    <button id="openUpdateTaskBtn#${x}#${x}" class="${role != "EMPLOYEE" ? "" : "hidden"} bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    <button id="openUpdateTaskBtn#${x}#${x}" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
                     </button>
                 </div>
@@ -775,11 +776,18 @@ function renderDashboard(projects) {
             <div id="assignee-gantt-container" class="w-full bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-4 relative min-h-[400px] overflow-hidden">
                 
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
-                        Tiến độ theo nhân sự
-                    </h3>
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
+                            Tiến độ theo nhân sự
+                        </h3>
+                        <select id="gantt-department-filter"
+                            class="${role == "ADMIN" ? "" : "hidden"} bg-gray-700 text-gray-300 text-xs rounded-lg px-3 py-1.5 border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition mr-2">
+                            <option value="all">Tất cả phòng ban</option>
+                        </select>
+                    </div>
                     <div>
+                        <!-- Lọc theo phòng ban-->
                         <button id="gantt-check" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
                             <i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>
                         </button>
@@ -899,7 +907,7 @@ function attachAllEventListeners(projects, role) {
 
             // 1. Cập nhật state toàn cục
             currentViewMode = newView;
-            console.log(`Chuyển sang view: ${currentViewMode}`);
+            //console.log(`Chuyển sang view: ${currentViewMode}`);
 
             // 2. Lấy các element
             const listView = document.getElementById('project-list-view');
@@ -979,7 +987,7 @@ function handleTaskScroll(event) {
     if (container.scrollTop + container.clientHeight >= container.scrollHeight - GẦN_ĐÁY) {
 
         // Tải trang tiếp theo
-        console.log(`🌀 Tải task trang ${state.page + 1} cho project ${projectId}...`);
+        //console.log(`🌀 Tải task trang ${state.page + 1} cho project ${projectId}...`);
         loadTasksForProject(projectId, state.page + 1);
     }
 }
@@ -988,7 +996,7 @@ function handleTaskScroll(event) {
 /* =========================================== */
 let assigneeGanttChart = null;
 let ganttExpandedUsers = new Set();
-
+let currentDepartmentFilter = 'all';
 /**
  * Vẽ biểu đồ Gantt theo nhân sự (Full chức năng: Accordion, Scroll, Toolbar, Colors, Tooltip)
  * @param {Array} projects - Danh sách dự án đang hiển thị ở trang hiện tại
@@ -996,6 +1004,7 @@ let ganttExpandedUsers = new Set();
 async function renderAssigneeGantt(projects) {
     const chartEl = document.querySelector("#assignee-gantt-chart");
     const loaderEl = document.querySelector("#gantt-loader");
+    const deptSelect = document.getElementById("gantt-department-filter");
     let isLabelShown = true;
 
     if (!chartEl || !projects || projects.length === 0) {
@@ -1007,10 +1016,33 @@ async function renderAssigneeGantt(projects) {
     if (!assigneeGanttChart && loaderEl) loaderEl.classList.remove("hidden");
 
     try {
+        if (deptSelect && deptSelect.options.length <= 1) {
+            // Chỉ fetch nếu là ADMIN (hoặc logic tùy bạn)
+            // Ở đây ta check nếu element không có class 'hidden' thì mới fetch
+            if (!deptSelect.classList.contains("hidden")) {
+                const depts = await safeFetchJson(`/api/departments/list`, []);
+                depts.forEach(d => {
+                    const option = document.createElement("option");
+                    option.value = d.idDepartment;
+                    option.textContent = d.departmentName;
+                    deptSelect.appendChild(option);
+                });
+
+                // Gắn sự kiện Change
+                deptSelect.addEventListener("change", async (e) => {
+                    currentDepartmentFilter = e.target.value;
+                    // Gọi lại hàm render để fetch lại task theo department mới
+                    await renderAssigneeGantt(projects);
+                });
+            }
+        }
+
         // 2. Fetch dữ liệu
-        const response = await safeFetchJson(`/api/tasks/all?pageIndex=1&pageSize=100`, { items: [] });
+        const url = `/api/tasks/all?pageIndex=1&pageSize=100&departmentId=${currentDepartmentFilter}`;
+        const response = await safeFetchJson(url, { items: [] });
         const safeResponse = (response && typeof response === "object") ? response : { items: [] };
         const allTasks = Array.isArray(safeResponse.items) ? safeResponse.items : [];
+
         if (allTasks.length === 0) {
             if (loaderEl) loaderEl.classList.add("hidden");
 
@@ -1030,6 +1062,10 @@ async function renderAssigneeGantt(projects) {
                 </div>`;
             lucide.createIcons();
             return; // Dừng hàm tại đây, không vẽ chart nữa
+        } else {
+            // Nếu có data thì clear nội dung cũ (thông báo rỗng) để vẽ chart
+            // NHƯNG ĐỪNG XÓA NẾU ĐANG CÓ CHART (để tránh nháy)
+            if (!assigneeGanttChart) chartEl.innerHTML = "";
         }
 
         // 3. Xử lý dữ liệu & Tính toán Min/Max Date
@@ -1339,6 +1375,7 @@ async function renderAssigneeGantt(projects) {
         const expandBtn = document.getElementById('gantt-expand');
         const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
         const checkBtn = document.getElementById('gantt-check');
+        const ganttDepartmentFilter = document.getElementById('gantt-department-filter');
 
         if (checkBtn) {
             const newBtn = checkBtn.cloneNode(true);
@@ -1723,7 +1760,7 @@ console.log();
  * Nó chỉ fetch project mới và GỌI LẠI RENDER
  */
 async function loadPageData(page, pageSize = PAGE_SIZE) {
-    console.log(`🔄 Load dữ liệu trang: ${page}`);
+    //console.log(`🔄 Load dữ liệu trang: ${page}`);
     let loading = document.getElementById("loadingOverlay");
 
     if (ganttChartInstance) {
@@ -1825,7 +1862,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Nếu user OK, log và tiếp tục
-    //console.log("User:", me);
+    console.log("User:", me);
 
     // --- Bước 3: Fetch các dữ liệu còn lại (vì user đã hợp lệ) ---
     let [initialProjects, tasksStat, projectsStat] = await Promise.all([
@@ -1877,7 +1914,7 @@ async function fetchMemberByProject(idProject) {
         }
 
         const members = await res.json();
-        console.log("Members:", members);
+        //console.log("Members:", members);
         return members;
     } catch (err) {
         console.error("❌ Fetch members error:", err);
@@ -2280,11 +2317,11 @@ async function openTaskModal(task = null, role) {
     uploadOverlay.classList.remove("hidden");
 
     if (allProjectsList.length === 0) {
-        console.log("Cache project list rỗng, đang fetch lần đầu...");
+        //console.log("Cache project list rỗng, đang fetch lần đầu...");
         try {
             // Chờ fetch và lưu vào cache toàn cục
             allProjectsList = await safeFetchJson("/api/projects/list", []);
-            console.log("✅ Đã fetch và cache project list:", allProjectsList);
+            //console.log("✅ Đã fetch và cache project list:", allProjectsList);
         } catch (err) {
             console.error("LỖI NGHIÊM TRỌNG: Không thể fetch project list cho modal.", err);
             // Báo lỗi và đóng modal
@@ -2337,9 +2374,9 @@ async function openTaskModal(task = null, role) {
     };
 
     if (allProjectsList) {
-        console.log("Projects: NOT NULL");
+        //console.log("Projects: NOT NULL");
     } else {
-        console.log("Projects: NULL");
+        //console.log("Projects: NULL");
     }
     if (task) {
         members = await fetchMemberByProject(task.projectId);
@@ -2383,7 +2420,7 @@ async function openTaskModal(task = null, role) {
             // 🔹 Lấy ngày bắt đầu và kết thúc của project
             const project = allProjectsList.find(p => p.idProject == projectId);
             if (project) {
-                console.log("YES: ", project);
+                //console.log("YES: ", project);
                 const startProj = formatDateToLocalInput(project.startDay);
                 const endProj = formatDateToLocalInput(project.endDay);
 
@@ -2577,7 +2614,7 @@ function handleConfirm(task) { // 'task' ở đây là object task GỐC (trư�
                     } catch (e) {
                         console.warn("Không thể lấy tên project.", e);
                     }
-                    console.log("Tên project để gửi notify:", projectName);
+                    //console.log("Tên project để gửi notify:", projectName);
                     // --- Hết phần sửa lấy tên project ---
 
                     const truncatedProjectName = truncateString(projectName, 50);
@@ -2624,7 +2661,7 @@ function handleDelete(taskId) {
     const deleteBtn = document.getElementById("deleteBtn");
     deleteBtn.addEventListener("click", async () => {
         const loadingOverlay = document.getElementById(`loadingOverlay`);
-        console.log(taskId);
+        //console.log(taskId);
         if (!taskId) {
             alert("⚠️ Không tìm thấy ID task để xóa!");
             return;
@@ -2641,12 +2678,12 @@ function handleDelete(taskId) {
                 closeFormModal();
                 location.reload();
             } else {
-                console.log("❌ " + data.message);
+                //console.log("❌ " + data.message);
             }
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi khi xóa task:", e);
-            console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
+            //console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
         }
     });
 }
