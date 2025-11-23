@@ -231,170 +231,157 @@ namespace JIRA_NTB.Controllers
 			return View(model);
 		}
 
-		[HttpPost]
-		[ValidateAntiForgeryToken]
-		public async Task<IActionResult> Register(RegisterViewModel model)
-		{
-			Console.Clear();
-			Console.WriteLine(model.DeviceAddress);
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
 
-			string clientMacAddress = "Không xác định";
-			try
-			{
-				// 1. Lấy IP của người dùng (từ HttpContext của hàm Register)
-				string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            //string clientMacAddress = "Không xác định";
 
-				if (!string.IsNullOrEmpty(clientIp) &&
-					(clientIp == "127.0.0.1" || clientIp == "::1"))
-				{
-					// Xử lý trường hợp chạy trên localhost (Lấy MAC của server)
-					// Cảnh báo: Đây là MAC của server, không phải MAC của client
-					clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
-						.Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-									  nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-						.Select(nic => nic.GetPhysicalAddress().ToString())
-						.FirstOrDefault() ?? "Localhost MAC";
-				}
-				else if (!string.IsNullOrEmpty(clientIp))
-				{
-					// 2. Chạy lệnh 'arp' với IP của người dùng
-					var process = new Process
-					{
-						StartInfo = new ProcessStartInfo
-						{
-							FileName = "arp",
-							Arguments = "-a " + clientIp,
-							RedirectStandardOutput = true,
-							UseShellExecute = false,
-							CreateNoWindow = true
-						}
-					};
-					process.Start();
-					string output = process.StandardOutput.ReadToEnd();
-					process.WaitForExit();
+            //// --- [LOGIC LẤY MAC ADDRESS (SERVER SIDE)] ---
+            //try
+            //{
+            //    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-					// 3. Parse kết quả
-					// (Lưu ý: Format regex này chỉ chạy trên Windows)
-					var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-					if (match.Success)
-					{
-						clientMacAddress = match.Value.Replace('-', ':');
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				// Nếu có lỗi (ví dụ: chạy trên Linux, không có quyền...), ghi log và tiếp tục
-				Console.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
-				clientMacAddress = "Lỗi khi lấy MAC";
-			}
+            //    if (!string.IsNullOrEmpty(clientIp) && (clientIp == "127.0.0.1" || clientIp == "::1"))
+            //    {
+            //        clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
+            //            .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+            //                          nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            //            .Select(nic => nic.GetPhysicalAddress().ToString())
+            //            .FirstOrDefault() ?? "Localhost MAC";
+            //    }
+            //    else if (!string.IsNullOrEmpty(clientIp))
+            //    {
+            //        string sysPath = Environment.SystemDirectory;
+            //        string arpPath = System.IO.Path.Combine(sysPath, "arp.exe");
 
-			if (ModelState.IsValid) // Kiểm tra xem Email, Pass có hợp lệ không
-			{
-				// Kiểm tra xem Email đã tồn tại chưa
-				var existingEmail = await _userManager.FindByEmailAsync(model.Email);
-				if (existingEmail != null)
-				{
-					ModelState.AddModelError("Email", "Email này đã được sử dụng.");
+            //        if (System.IO.File.Exists(arpPath))
+            //        {
+            //            var process = new Process
+            //            {
+            //                StartInfo = new ProcessStartInfo
+            //                {
+            //                    FileName = arpPath,
+            //                    Arguments = "-a " + clientIp,
+            //                    RedirectStandardOutput = true,
+            //                    UseShellExecute = false,
+            //                    CreateNoWindow = true
+            //                }
+            //            };
+            //            process.Start();
+            //            string output = await process.StandardOutput.ReadToEndAsync();
+            //            await process.WaitForExitAsync();
 
-					// Load lại danh sách phòng ban khi có lỗi
-					model.DepartmentList = _context.Departments
-						.Select(d => new SelectListItem
-						{
-							Value = d.IdDepartment,
-							Text = d.DepartmentName
-						})
-						.ToList();
+            //            var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
+            //            if (match.Success)
+            //            {
+            //                clientMacAddress = match.Value.Replace('-', ':');
+            //            }
+            //        }
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    System.Diagnostics.Debug.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
+            //    clientMacAddress = "Lỗi khi lấy MAC";
+            //}
 
-					return View(model);
-				}
+            //// Không ghi đè DeviceAddress nữa
+            //// if (clientMacAddress != "Không xác định") model.DeviceAddress = clientMacAddress;
 
-				var user = new UserModel
-				{
-					IdDepartment = model.DepartmentId.ToString(),
-					FullName = model.FullName,
-					UserName = model.Email, // Sử dụng Email làm UserName
-					Email = model.Email,
-					DeviceAddress = model.DeviceAddress
-				};
-				
-				var result = await _userManager.CreateAsync(user, model.Password);
 
-				if (result.Succeeded)
-				{
-					// Thêm tài khoản vào danh sách chờ xác nhận (sẽ tự động xóa sau 10 phút nếu không xác nhận)
-					UnconfirmedAccountCleanupService.AddPendingAccount(user.Id);
+            // --- [LOGIC ĐĂNG KÝ USER] ---
+            if (ModelState.IsValid)
+            {
+                var existingEmail = await _userManager.FindByEmailAsync(model.Email);
+                if (existingEmail != null)
+                {
+                    ModelState.AddModelError("Email", "Email này đã được sử dụng.");
 
-					// Gán role "Employee" cho user mới tạo
-					await _userManager.AddToRoleAsync(user, "EMPLOYEE");
+                    model.DepartmentList = _context.Departments
+                        .Select(d => new SelectListItem { Value = d.IdDepartment, Text = d.DepartmentName })
+                        .ToList();
+                    return View(model);
+                }
 
-					// Generate token với custom provider (10 phút)
-					var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-					var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+                var user = new UserModel
+                {
+                    IdDepartment = model.DepartmentId.ToString(),
+                    FullName = model.FullName,
+                    UserName = model.Email,
+                    Email = model.Email,
+                    DeviceAddress = model.DeviceAddress // vẫn lấy từ form (hidden input) nếu có
+                };
 
-					// Dùng Url.Action để tạo link một cách an toàn
-					var callbackUrl = Url.Action(
-						"ConfirmEmail",    // Tên Action (Hàm 4)
-						"Account",         // Tên Controller
-						new { userId = user.Id, token = encodedToken }, // Tham số
-						protocol: Request.Scheme // http hoặc https
-					);
+                var result = await _userManager.CreateAsync(user, model.Password);
 
-					await _emailSender.SendEmailAsync(
-						model.Email,
-						"Xác nhận tài khoản của bạn",
-						$@"
-						<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-							<h2 style='color: #9333ea;'>Xác nhận tài khoản của bạn</h2>
-							<p>Chào mừng bạn đến với <strong>JIRA NTB</strong>!</p>
-							<p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
-							<p style='margin: 30px 0;'>
-								<a href='{callbackUrl}' 
-								   style='background: linear-gradient(to right, #9333ea, #ec4899); 
-								          color: white; 
-								          padding: 12px 30px; 
-								          text-decoration: none; 
-								          border-radius: 8px; 
-								          display: inline-block;
-								          font-weight: bold;'>
-									Xác nhận Email
-								</a>
-							</p>
-							<p style='color: #dc2626; font-weight: bold;'>⚠️ LƯU Ý: Link xác nhận chỉ có hiệu lực trong vòng 60 giây!</p>
-							<p style='color: #6b7280; font-size: 14px;'>Nếu bạn không thể bấm vào nút, hãy sao chép link sau vào trình duyệt:</p>
-							<p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
-							<hr style='border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;'>
-							<p style='color: #9ca3af; font-size: 12px;'>Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.</p>
-						</div>"
-					);
+                if (result.Succeeded)
+                {
+                    UnconfirmedAccountCleanupService.AddPendingAccount(user.Id);
+                    await _userManager.AddToRoleAsync(user, "EMPLOYEE");
 
-					// Chuyển hướng đến trang thông báo
-					return RedirectToAction("RegisterConfirmation");
-				}
+                    try
+                    {
+                        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
 
-				// Nếu thất bại, thêm lỗi vào ModelState để View hiển thị
-				foreach (var error in result.Errors)
-				{
-					ModelState.AddModelError(string.Empty, error.Description);
-				}
-			}
+                        var callbackUrl = Url.Action(
+                            "ConfirmEmail",
+                            "Account",
+                            new { userId = user.Id, token = encodedToken },
+                            protocol: Request.Scheme
+                        );
 
-			// Reload lại danh sách phòng ban trước khi trả về View
-			model.DepartmentList = _context.Departments
-				.Select(d => new SelectListItem
-				{
-					Value = d.IdDepartment,
-					Text = d.DepartmentName
-				})
-				.ToList();
+                        await _emailSender.SendEmailAsync(
+                            model.Email,
+                            "Xác nhận tài khoản của bạn",
+                            $@"<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                        <h2 style='color: #9333ea;'>Xác nhận tài khoản của bạn</h2>
+                        <p>Chào mừng bạn đến với <strong>JIRA NTB</strong>!</p>
+                        <p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
+                        <p style='margin: 30px 0;'>
+                            <a href='{callbackUrl}' 
+                               style='background: linear-gradient(to right, #9333ea, #ec4899);
+                               color: white; padding: 12px 30px; text-decoration: none; 
+                               border-radius: 8px; display: inline-block; font-weight: bold;'>
+                                Xác nhận Email
+                            </a>
+                        </p>
+                        <p style='color: #dc2626; font-weight: bold;'>⚠️ Link xác nhận chỉ có hiệu lực trong 60 giây!</p>
+                        <p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
+                    </div>"
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Gửi email thất bại: " + ex.Message);
+                    }
 
-			// trả về View cũ và hiển thị lỗi
-			return View(model);
-		}
-		#endregion
+                    return RedirectToAction("RegisterConfirmation");
+                }
 
-		#region Email Confirmation
-		[HttpGet]
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            model.DepartmentList = _context.Departments
+                .Select(d => new SelectListItem
+                {
+                    Value = d.IdDepartment,
+                    Text = d.DepartmentName
+                })
+                .ToList();
+
+            return View(model);
+        }
+        #endregion
+
+        #region Email Confirmation
+        [HttpGet]
 		public IActionResult RegisterConfirmation()
 		{
 			return View();

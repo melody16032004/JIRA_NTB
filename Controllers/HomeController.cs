@@ -268,7 +268,7 @@ namespace JIRA_NTB.Controllers
 
         #region GET: api/projects -> Lấy danh sách project theo role với phân trang
         [HttpGet("api/projects")]
-        public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5)
+        public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5, [FromQuery] string? departmentId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             var now = DateTime.Now;
@@ -291,6 +291,14 @@ namespace JIRA_NTB.Controllers
                 query = query.Where(p => projectIds.Contains(p.IdProject));
             }
 
+            if (User.IsInRole("ADMIN") && !string.IsNullOrEmpty(departmentId) && departmentId != "all")
+            {
+                // Giả sử Project có Manager, và Manager thuộc Department
+                // Hoặc Project có trực tiếp DepartmentId. Tùy DB của bạn.
+                // Ví dụ: Lọc các dự án do Manager thuộc phòng ban đó quản lý
+                query = query.Where(p => p.Manager.IdDepartment == departmentId);
+            }
+
             // THÊM: Đếm tổng
             var totalCount = await query.CountAsync();
 
@@ -300,7 +308,8 @@ namespace JIRA_NTB.Controllers
 
             // 🔹 Truy vấn dữ liệu chung
             var projects = await query
-                .OrderByDescending(p => p.EndDay)
+                .OrderByDescending(p => p.CreateAt)
+                //.OrderByDescending(p => p.EndDay)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new
