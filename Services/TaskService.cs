@@ -1,4 +1,5 @@
-﻿using JIRA_NTB.Models;
+﻿using JIRA_NTB.Data;
+using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
 using JIRA_NTB.ViewModels;
@@ -15,17 +16,22 @@ namespace JIRA_NTB.Services
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepo;
         private readonly ILogTaskRepository _logTaskRepository;
+        private readonly ITaskSearchService _taskSearchService;
+
         public TaskService(ITaskRepository taskRepository, IStatusRepository statusRepository, 
-            IProjectRepository projectRepository, IUserRepository userRepo, ILogTaskRepository logTaskRepository)
+            IProjectRepository projectRepository, IUserRepository userRepo, ILogTaskRepository logTaskRepository,
+            ITaskSearchService taskSearchService)
         {
             _taskRepository = taskRepository;
             _statusRepository = statusRepository;
             _projectRepository = projectRepository;
             _userRepo = userRepo;
             _logTaskRepository = logTaskRepository;
+            _taskSearchService = taskSearchService;
         }
 
-        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, string? projectId = null)
+        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, 
+            string? projectId = null, string? taskId = null)
         {
             // ✅ Tách riêng logic cập nhật
             await _taskRepository.RefreshOverdueStatusAsync();
@@ -34,6 +40,10 @@ namespace JIRA_NTB.Services
             if (!string.IsNullOrEmpty(projectId))
             {
                 tasks = tasks.Where(t => t.ProjectId == projectId).ToList();
+            }
+            if (!string.IsNullOrEmpty(taskId))
+            {
+                tasks = tasks.Where(t => t.IdTask == taskId).ToList();
             }
             var projects = await _projectRepository.GetAllFilteredAsync(user, roles);
             var statuses = await _statusRepository.GetAllAsync();
@@ -328,7 +338,12 @@ namespace JIRA_NTB.Services
                 };
 
                 await _taskRepository.AddAsync(newTask);
-
+                await _taskSearchService.IndexTaskAsync(new TaskEntity
+                {
+                    Id = newTask.IdTask,
+                    Name = newTask.NameTask,
+                    ProjectId = newTask.ProjectId
+                });
                 return (true, "Tạo nhiệm vụ thành công", newTask.IdTask);
             }
             catch (Exception ex)
@@ -404,6 +419,13 @@ namespace JIRA_NTB.Services
             }
 
             await _taskRepository.UpdateAsync(task);
+            //Update index cho Lucene
+            await _taskSearchService.UpdateIndexAsync(new TaskEntity
+            {
+                Id = task.IdTask,
+                Name = task.NameTask,
+                ProjectId = task.ProjectId
+            });
             return (true, "Cập nhật nhiệm vụ thành công!");
         }
         public async Task<TaskStatusChangeResult> DeleteTaskAsync(
@@ -454,6 +476,8 @@ namespace JIRA_NTB.Services
             task.CompletedDate = null;
 
             await _taskRepository.UpdateAsync(task);
+            //Xóa index khỏi lucene
+            await _taskSearchService.DeleteIndexAsync(task.IdTask);
             var log = new LogStatusUpdate
             {
                 IdTask = task.IdTask,
