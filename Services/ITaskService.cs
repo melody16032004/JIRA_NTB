@@ -6,7 +6,7 @@ namespace JIRA_NTB.Services
 {
     public interface ITaskService
     {
-        Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, string? projectId = null);
+        Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, string? projectId = null, string? taskId = null);
         Task<List<TaskViewModel>> GetTasksByStatusAsync(UserModel user, IList<string> roles,
             string statusId, int page, int pageSize, string? projectId = null);
         Task<TaskStatusChangeResult> UpdateTaskStatusAsync(

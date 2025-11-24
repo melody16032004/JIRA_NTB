@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Bỏ qua thư mục index trong wwwroot
+wwwroot/lucene_index/
