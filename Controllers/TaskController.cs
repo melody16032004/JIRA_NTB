@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
@@ -13,26 +14,47 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
 {
-    [Authorize]
+    //[Authorize]
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
         private readonly UserManager<UserModel> _userManager;
         private readonly IStatusRepository statusRepository;
-
-        public TaskController(ITaskService taskService, UserManager<UserModel> userManager, IStatusRepository statusRepository)
+        private readonly ITaskSearchService _taskSearchService;
+        private readonly AppDbContext _dbContext;
+        public TaskController(ITaskService taskService, UserManager<UserModel> userManager, IStatusRepository statusRepository, ITaskSearchService taskSearchService, AppDbContext dbContext)
         {
             this.taskService = taskService;
             _userManager = userManager;
             this.statusRepository = statusRepository;
+            _taskSearchService = taskSearchService;
+            _dbContext = dbContext;
         }
-        public async Task<IActionResult> Index(string? projectId = null)
+        public async Task<IActionResult> Index(string? projectId = null, string? taskId = null, string? keyword = null)
         {
             var user = await _userManager.GetUserAsync(User);
             var roles = await _userManager.GetRolesAsync(user);
-            var viewModel = await taskService.GetTaskBoardAsync(user, roles, projectId);
+            var viewModel = await taskService.GetTaskBoardAsync(user, roles, projectId, taskId);
             ViewBag.SelectedProjectId = projectId; // để giữ lại lựa chọn
+            ViewBag.SearchKeyword = keyword;
             return View(viewModel);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Search(string keyword, string? projectId)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return RedirectToAction("Index", new { projectId });
+
+            var task = await _taskSearchService.FindByFullNameAsync(keyword, projectId);
+
+            if (task == null)
+            {
+                TempData["SearchMessage"] = "Không tìm thấy nhiệm vụ";
+                return RedirectToAction("Index", new { projectId });
+            }
+
+            // ⭐ Redirect về Index nhưng truyền đúng TaskId
+            return RedirectToAction("Index", new { projectId, taskId = task.Id, keyword = keyword });
         }
         [HttpGet]
         public async Task<IActionResult> GetMoreTasks(string statusId, int page = 1, int pageSize = 10, string? projectId = null)
@@ -403,6 +425,44 @@ namespace JIRA_NTB.Controllers
                 await taskService.GetLogsAsync(user, roles, page, pageSize);
 
             return Ok(logs);
+        }
+        [HttpPost]
+        public async Task<IActionResult> IndexTask([FromBody] TaskEntity task)
+        {
+            await _taskSearchService.IndexTaskAsync(task);
+            return Ok(new { message = "Task indexed successfully", taskId = task.Id });
+        }
+
+        // Endpoint để index NHIỀU tasks cùng lúc
+        [HttpPost]
+        public async Task<IActionResult> IndexTasks([FromBody] List<TaskEntity> tasks)
+        {
+            await _taskSearchService.IndexTasksAsync(tasks);
+            return Ok(new { message = $"{tasks.Count} tasks indexed successfully" });
+        }
+        [HttpGet]
+        public async Task<IActionResult> SmartSuggest([FromQuery] string keyword, [FromQuery] string? projectId)
+        {
+            var suggestions = await _taskSearchService.SmartSuggestAsync(keyword, projectId);
+            return Ok(suggestions);
+        }
+        [HttpPost]
+        public async Task<IActionResult> RebuildIndex()
+        {
+            // Lấy tất cả task từ database
+            var tasks = await _dbContext.Tasks
+            .Select(t => new TaskEntity
+            {
+                Id = t.IdTask,
+                Name = t.NameTask,
+                ProjectId = t.ProjectId
+            })
+            .ToListAsync();
+
+            // Index tất cả vào Lucene
+            await _taskSearchService.IndexTasksAsync(tasks);
+
+            return Ok(new { message = $"Indexed {tasks.Count} tasks" });
         }
     }
 }

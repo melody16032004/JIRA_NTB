@@ -153,11 +153,42 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/statistics")]
         public async Task<IActionResult> GetProjectsStatistics()
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
             var now = DateTime.Now;
 
-            // SỬA: Dùng GroupBy để lấy tất cả trong 1 truy vấn
-            var stats = await _context.Projects
-                .GroupBy(p => 1)
+            // 1. Khởi tạo Query (chưa chạy xuống DB)
+            IQueryable<ProjectModel> query = _context.Projects;
+
+            // 2. Xử lý phân quyền lọc dữ liệu
+            if (User.IsInRole("ADMIN"))
+            {
+                // ADMIN: Không làm gì cả, mặc định lấy hết
+            }
+            else if (User.IsInRole("LEADER"))
+            {
+                // LEADER: Lọc các dự án mà người quản lý (Manager) thuộc cùng phòng ban với Leader
+                // Lưu ý: p.Manager là navigation property trỏ tới bảng Users
+                if (!string.IsNullOrEmpty(user.IdDepartment))
+                {
+                    query = query.Where(p => p.Manager.IdDepartment == user.IdDepartment);
+                }
+                else
+                {
+                    // Nếu Leader không có phòng ban -> Không thấy gì
+                    return Ok(new { Completed = 0, InProgress = 0, Todo = 0, Overdue = 0 });
+                }
+            }
+            else
+            {
+                // EMPLOYEE hoặc role khác: Trả về 0 (hoặc tùy logic của bạn)
+                return Ok(new { Completed = 0, InProgress = 0, Todo = 0, Overdue = 0 });
+            }
+
+            // 3. Thực hiện GroupBy và Count trên tập dữ liệu ĐÃ LỌC
+            var stats = await query
+                .GroupBy(p => 1) // Group dummy để tính tổng trên toàn bộ kết quả lọc
                 .Select(g => new
                 {
                     Completed = g.Count(p => p.Status.StatusName == TaskStatusModel.Done && p.EndDay >= now),
@@ -167,9 +198,9 @@ namespace JIRA_NTB.Controllers
                 })
                 .FirstOrDefaultAsync();
 
+            // 4. Trả về kết quả
             if (stats == null)
             {
-                // Trả về 0 nếu không có project nào
                 return Ok(new { Completed = 0, InProgress = 0, Todo = 0, Overdue = 0 });
             }
 

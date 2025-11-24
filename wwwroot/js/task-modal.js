@@ -15,6 +15,8 @@ const btnSaveTask = document.getElementById('btnSaveTask');
 const form = document.getElementById('formCreateTask');
 const taskIdField = document.getElementById('taskId');
 
+
+let delayTimer = null;
 //Biến DOM check lịch
 const assigneeField = document.getElementById('taskAssignee');
 const startField = document.getElementById('taskStartDate');
@@ -31,6 +33,76 @@ const fileList = document.getElementById('fileList');
 let selectedFiles = [];
 let isEditMode = false;
 
+//Biến DOM Search
+const searchInput = document.getElementById("searchInput");
+const suggestBox = document.getElementById("suggestBox");
+
+// ====== Search Control =====
+searchInput.addEventListener("input", function () {
+    const keyword = this.value.trim();
+    clearTimeout(delayTimer);
+    if (!keyword) {
+        suggestBox.classList.add("hidden");
+        suggestBox.innerHTML = "";
+        return;
+    }
+
+    delayTimer = setTimeout(async () => {
+        const res = await fetch(`/Task/SmartSuggest?keyword=${encodeURIComponent(keyword)}`);
+        const data = await res.json();
+        renderSuggest(data);
+    }, 200);
+});
+// Click ngoài input ẩn suggestion
+document.addEventListener("click", function (e) {
+    if (!searchInput.contains(e.target) && !suggestBox.contains(e.target)) {
+        suggestBox.classList.add("hidden");
+    }
+});
+searchInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault(); // Chặn hành vi submit form mặc định (nếu có)
+
+        const keyword = this.value.trim();
+
+        // ⭐ Lấy projectId trực tiếp tại đây luôn, không cần gọi hàm ngoài nữa
+        const urlParams = new URLSearchParams(window.location.search);
+        const projectId = urlParams.get('projectId') || '';
+
+        if (!keyword) {
+            // Nếu Enter mà không có chữ -> Reset về Index (giữ projectId nếu có)
+            window.location.href = projectId ? `/Task/Index?projectId=${projectId}` : `/Task/Index`;
+        } else {
+            // Nếu có chữ -> Thực hiện Search
+            window.location.href = `/Task/Search?keyword=${encodeURIComponent(keyword)}&projectId=${projectId}`;
+        }
+    }
+});
+function renderSuggest(list) {
+    if (!list || list.length === 0) {
+        suggestBox.classList.add("hidden");
+        suggestBox.innerHTML = "";
+        return;
+    }
+
+    suggestBox.innerHTML = list.map(item =>
+        `
+        <div class="px-3 py-2 hover:bg-gray-700 cursor-pointer text-gray-200 text-sm"
+             onclick="selectSuggestion('${item.fullName}')">
+            ${item.fullName}
+        </div>
+        `
+    ).join("");
+
+    suggestBox.classList.remove("hidden");
+}
+function selectSuggestion(taskName) {
+    window.location.href =
+        `/Task/Search?keyword=${encodeURIComponent(taskName)}`;
+    searchInput.value = taskName;
+    suggestBox.classList.add("hidden");
+    
+}
 // ====== Modal control ======
 if (btnCreateTask) {
     btnCreateTask.addEventListener('click', () => {
@@ -297,10 +369,10 @@ if (btnSaveTask) {
             }
 
             // ✅ Khi chỉnh sửa, chỉ cần đảm bảo endDate >= hôm nay (nếu họ muốn cập nhật deadline)
-            if (isEditMode && end < today) {
-                alert('Không thể đặt hạn chót trong quá khứ!');
-                return;
-            }
+            //if (isEditMode && end < today) {
+            //    alert('Không thể đặt hạn chót trong quá khứ!');
+            //    return;
+            //}
         }
 
         // Tạo FormData
