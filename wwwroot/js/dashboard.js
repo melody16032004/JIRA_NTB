@@ -36,8 +36,22 @@ const viewTaskNull = `
  */
 async function safeFetchJson(url, defaultValue = []) {
     try {
+        // 1. Lấy response trực tiếp
         const res = await fetch(url);
+
+        // 2. Xử lý các mã lỗi đặc biệt (Redirect)
+        if (res.status === 401) {
+            window.location.href = '/Account/Login';
+            return defaultValue; // Trả về default để tránh lỗi trong lúc chờ chuyển trang
+        }
+        if (res.status === 500) {
+            window.location.href = '/Error/500';
+            return defaultValue;
+        }
+
+        // 3. Kiểm tra nếu request thất bại (400, 404, 403...)
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         return await res.json();
     } catch (err) {
         console.warn(`⚠️ Fetch lỗi: ${url}`, err);

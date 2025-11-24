@@ -297,10 +297,10 @@ if (btnSaveTask) {
             }
 
             // ✅ Khi chỉnh sửa, chỉ cần đảm bảo endDate >= hôm nay (nếu họ muốn cập nhật deadline)
-            if (isEditMode && end < today) {
-                alert('Không thể đặt hạn chót trong quá khứ!');
-                return;
-            }
+            //if (isEditMode && end < today) {
+            //    alert('Không thể đặt hạn chót trong quá khứ!');
+            //    return;
+            //}
         }
 
         // Tạo FormData
