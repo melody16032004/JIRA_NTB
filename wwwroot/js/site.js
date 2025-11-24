@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    console.log(me);
+    //console.log(me);
 
     const meCur = document.getElementById("me");
     meCur.innerHTML += `${me.fullName}`;

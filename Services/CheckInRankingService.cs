@@ -7,7 +7,7 @@ namespace JIRA_NTB.Services
 {
     public class CheckInRankingService
     {
-        private const string ConnectionString = "Server=MARS;Database=JIRA_NTB;User Id=sa;Password=1;TrustServerCertificate=True;";
+        private const string ConnectionString = "Server=10.13.21.178;Database=JIRA_NTB;User Id=sa;Password=1;TrustServerCertificate=True;";
 
         public List<TopCheckInUsers> GetTopUsersByCheckIn(DateTime fromTime, int topN = 3)
         {

@@ -507,7 +507,7 @@ namespace JIRA_NTB.Controllers
 
         // [GET] api/tasks/all?pageIndex=1&pageSize=50
         [HttpGet("api/tasks/all")]
-        public async Task<IActionResult> GetAllTasks([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50)
+        public async Task<IActionResult> GetAllTasks([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50, [FromQuery] string? departmentId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
@@ -530,6 +530,11 @@ namespace JIRA_NTB.Controllers
             {
                 // Employee chỉ thấy task được gán cho mình
                 query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            if (!string.IsNullOrEmpty(departmentId) && departmentId != "all")
+            {
+                query = query.Where(t => t.Assignee.IdDepartment == departmentId);
             }
 
             // 3. Đếm tổng số (cho phân trang)
@@ -677,6 +682,21 @@ namespace JIRA_NTB.Controllers
                 .ToListAsync();
 
             return Ok(projectList);
+        }
+        #endregion
+
+        #region GET: api/departments/list -> Lấy danh sách phòng ban cho dropdown
+        [HttpGet("api/departments/list")]
+        public async Task<IActionResult> GetDepartmentList()
+        {
+            var departments = await _context.Departments
+                .Select(d => new
+                {
+                    d.IdDepartment,
+                    d.DepartmentName
+                })
+                .ToListAsync();
+            return Ok(departments);
         }
         #endregion
 

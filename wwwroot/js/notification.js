@@ -270,7 +270,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         .build();
 
     connection.on("ReceiveNotification", (data) => {
-        console.log("Realtime notify:", data);
+        //console.log("Realtime notify:", data);
 
         const mappedData = mapNotificationData(data);
 
@@ -312,7 +312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         method: 'POST',
                         credentials: 'include'
                     });
-                    console.log(`Đã đánh dấu ${notificationId} là đã đọc.`);
+                    //console.log(`Đã đánh dấu ${notificationId} là đã đọc.`);
                 } catch (err) {
                     console.error("Lỗi khi đánh dấu đã đọc (single):", err);
                 }
@@ -416,7 +416,7 @@ async function loadIdleUsers() {
             return;
         }
 
-        console.log("Idle users:", data);
+        //console.log("Idle users:", data);
         const ul = document.createElement("ul");
         ul.className = "divide-y divide-gray-700";
 
