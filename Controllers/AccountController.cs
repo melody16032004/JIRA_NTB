@@ -235,7 +235,7 @@ namespace JIRA_NTB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
+            //System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
 
             //string clientMacAddress = "Không xác định";
 
@@ -356,7 +356,8 @@ namespace JIRA_NTB.Controllers
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine("Gửi email thất bại: " + ex.Message);
+                        //System.Diagnostics.Debug.WriteLine("Gửi email thất bại: " + ex.Message);
+                        return RedirectToAction("HttpStatusCodeHandler", "Error", new { statusCode = 500 });
                     }
 
                     return RedirectToAction("RegisterConfirmation");
