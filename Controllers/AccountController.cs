@@ -363,12 +363,14 @@ namespace JIRA_NTB.Controllers
                     return RedirectToAction("RegisterConfirmation");
                 }
 
+                // Nếu tạo user thất bại
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
             }
 
+            // Reload lại danh sách phòng ban trước khi trả về View nếu có lỗi
             model.DepartmentList = _context.Departments
                 .Select(d => new SelectListItem
                 {
@@ -670,6 +672,98 @@ namespace JIRA_NTB.Controllers
 			model.DepartmentName = dept?.DepartmentName ?? "Chưa có";
 			return View(model);
 		}
-		#endregion
-	}
+        #endregion
+        #region API CHO WPF APP (Thêm mới)
+
+        // Model nhận dữ liệu từ WPF gửi lên
+        public class AppLoginRequest
+        {
+            public string Email { get; set; }
+            public string Password { get; set; }
+        }
+
+        public class BindMacRequest
+        {
+            public string UserId { get; set; }
+            public string MacAddress { get; set; }
+        }
+
+        // API 1: Đăng nhập từ App để lấy thông tin User và DeviceAddress hiện tại
+        [HttpPost("api/app/login")]
+        [AllowAnonymous] // Cho phép gọi mà không cần cookie
+        [IgnoreAntiforgeryToken] // Tắt check CSRF vì gọi từ App Client
+        public async Task<IActionResult> LoginFromApp([FromBody] AppLoginRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            {
+                return BadRequest(new { message = "Vui lòng nhập Email và Mật khẩu" });
+            }
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return Unauthorized(new { message = "Email không tồn tại" });
+            }
+
+            // Kiểm tra mật khẩu (Không tạo Cookie, chỉ check đúng sai)
+            var isPassValid = await _userManager.CheckPasswordAsync(user, request.Password);
+            if (!isPassValid)
+            {
+                return Unauthorized(new { message = "Mật khẩu không đúng" });
+            }
+
+            if (!user.IsActive)
+            {
+                return StatusCode(403, new { message = "Tài khoản đã bị khóa" });
+            }
+
+            // Trả về thông tin cần thiết cho WPF App xử lý logic
+            return Ok(new
+            {
+                userId = user.Id,
+                fullName = user.FullName,
+                email = user.Email,
+                deviceAddress = user.DeviceAddress // WPF sẽ kiểm tra cái này: null, khác MAC, hay trùng MAC
+            });
+        }
+
+        // API 2: Gán MAC Address cho User (Chỉ gọi khi DeviceAddress đang null)
+        [HttpPost("api/app/bind-mac")]
+        [AllowAnonymous]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> BindDeviceAddress([FromBody] BindMacRequest request)
+        {
+            if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.MacAddress))
+            {
+                return BadRequest(new { message = "Thiếu thông tin UserID hoặc MAC" });
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User không tồn tại" });
+            }
+
+            // Check an toàn: Chỉ cho phép gán nếu chưa có, hoặc update lại chính máy đó
+            // Nếu muốn chặt chẽ hơn: Chỉ cho phép gán khi DeviceAddress == null
+            if (!string.IsNullOrEmpty(user.DeviceAddress) && user.DeviceAddress != request.MacAddress)
+            {
+                return StatusCode(409, new { message = "Tài khoản này đã được gắn với thiết bị khác rồi!" });
+            }
+
+            user.DeviceAddress = request.MacAddress;
+
+            // Cập nhật vào DB
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Gắn kết thiết bị thành công" });
+            }
+
+            return StatusCode(500, new { message = "Lỗi khi cập nhật Database" });
+        }
+
+        #endregion
+    }
 }
