@@ -268,7 +268,7 @@ namespace JIRA_NTB.Controllers
 
         #region GET: api/projects -> Lấy danh sách project theo role với phân trang
         [HttpGet("api/projects")]
-        public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5)
+        public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5, [FromQuery] string? departmentId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             var now = DateTime.Now;
@@ -291,6 +291,14 @@ namespace JIRA_NTB.Controllers
                 query = query.Where(p => projectIds.Contains(p.IdProject));
             }
 
+            if (User.IsInRole("ADMIN") && !string.IsNullOrEmpty(departmentId) && departmentId != "all")
+            {
+                // Giả sử Project có Manager, và Manager thuộc Department
+                // Hoặc Project có trực tiếp DepartmentId. Tùy DB của bạn.
+                // Ví dụ: Lọc các dự án do Manager thuộc phòng ban đó quản lý
+                query = query.Where(p => p.Manager.IdDepartment == departmentId);
+            }
+
             // THÊM: Đếm tổng
             var totalCount = await query.CountAsync();
 
@@ -300,7 +308,8 @@ namespace JIRA_NTB.Controllers
 
             // 🔹 Truy vấn dữ liệu chung
             var projects = await query
-                .OrderByDescending(p => p.EndDay)
+                .OrderByDescending(p => p.CreateAt)
+                //.OrderByDescending(p => p.EndDay)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new
@@ -507,7 +516,7 @@ namespace JIRA_NTB.Controllers
 
         // [GET] api/tasks/all?pageIndex=1&pageSize=50
         [HttpGet("api/tasks/all")]
-        public async Task<IActionResult> GetAllTasks([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50)
+        public async Task<IActionResult> GetAllTasks([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 50, [FromQuery] string? departmentId = null)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
@@ -530,6 +539,11 @@ namespace JIRA_NTB.Controllers
             {
                 // Employee chỉ thấy task được gán cho mình
                 query = query.Where(t => t.Assignee_Id == user.Id);
+            }
+
+            if (!string.IsNullOrEmpty(departmentId) && departmentId != "all")
+            {
+                query = query.Where(t => t.Assignee.IdDepartment == departmentId);
             }
 
             // 3. Đếm tổng số (cho phân trang)
@@ -677,6 +691,21 @@ namespace JIRA_NTB.Controllers
                 .ToListAsync();
 
             return Ok(projectList);
+        }
+        #endregion
+
+        #region GET: api/departments/list -> Lấy danh sách phòng ban cho dropdown
+        [HttpGet("api/departments/list")]
+        public async Task<IActionResult> GetDepartmentList()
+        {
+            var departments = await _context.Departments
+                .Select(d => new
+                {
+                    d.IdDepartment,
+                    d.DepartmentName
+                })
+                .ToListAsync();
+            return Ok(departments);
         }
         #endregion
 

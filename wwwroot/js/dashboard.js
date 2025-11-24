@@ -10,6 +10,7 @@ let projectTaskCache = {};
 let allProjectsList = [];
 let allTasksStat = {};
 let allProjectsStat = {};
+let allDepartments = [];
 let currentUser = {};
 let currentUserRole = '';
 let isProjectToggleAllOpen = false;
@@ -17,6 +18,8 @@ const PAGE_SIZE = 5;
 const TASK_PAGE_SIZE = 3;
 let currentViewMode = 'list';
 let ganttChartInstance = null;
+let currentProjectDepartmentFilter = 'all';
+let cachedDepartments = [];
 const viewTaskNull = `
   <div class="flex flex-col items-center justify-center py-8 bg-gray-900/80 rounded-xl border border-gray-700/50">
     <div class="p-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-md">
@@ -66,7 +69,7 @@ function renderTaskCard(t) {
                 <div class="relative group">
                     <button id="openUpdateTaskBtn#${t.projectId}#${t.idTask}"
                         onclick="this.blur()"
-                        class="p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
+                        class="hidden p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
                         data-task='${JSON.stringify(t)}'>
                         <i data-lucide="bolt" class="w-4 h-4 text-gray-300"></i>
                     </button>
@@ -195,7 +198,7 @@ async function loadTasksForProject(projectId, page) {
         ]);
 
         if (data && data.items) {
-            console.log("Task: ", data);
+            //console.log("Task: ", data);
             // 4. Render HTML mới
             let newTasksHtml = '';
             data.items.forEach(t => {
@@ -241,6 +244,14 @@ function renderDashboard(projects) {
     if (!container) {
         console.error("FATAL: Không tìm thấy #projectContainer!");
         return;
+    }
+
+    let deptOptions = `<option value="all">Tất cả phòng ban</option>`;
+    if (window.allDepartments) {
+        window.allDepartments.forEach(d => {
+            const selected = d.idDepartment == currentProjectDepartmentFilter ? "selected" : "";
+            deptOptions += `<option value="${d.idDepartment}" ${selected}>${d.departmentName}</option>`;
+        });
     }
 
     // --- Lấy dữ liệu từ state toàn cục ---
@@ -372,7 +383,7 @@ function renderDashboard(projects) {
                     Thu gọn tất cả
                 </button>
 
-                <div class="hidden md:flex items-center bg-gray-800 rounded-lg p-1 gap-1">
+                <div class="hidden flex items-center bg-gray-800 rounded-lg p-1 gap-1">
                     <button data-view="list" title="Xem dạng danh sách"
                         class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
                         <i data-lucide="layout-list" class="w-4 h-4"></i>
@@ -533,7 +544,8 @@ function renderDashboard(projects) {
                 ${viewProjectContainer}
             </div>
         `;
-    } else {
+    }
+    else {
         // Nếu là view "gantt", hiển thị placeholder
         mainViewContent = `
             <div id="project-gantt-view" class="space-y-4 max-h-[630px] overflow-y-auto overflow-x-hidden custom-scroll">
@@ -546,11 +558,24 @@ function renderDashboard(projects) {
         `;
     }
 
+    let deptOptionsHtml = `<option value="all">Tất cả phòng ban</option>`;
+    if (cachedDepartments && cachedDepartments.length > 0) {
+        deptOptionsHtml += cachedDepartments.map(d => {
+            // Kiểm tra xem có phải đang chọn phòng này không
+            const isSelected = d.idDepartment == currentProjectDepartmentFilter ? "selected" : "";
+            return `<option value="${d.idDepartment}" ${isSelected}>${d.departmentName}</option>`;
+        }).join("");
+    }
+
     const leftColumn = `
         <div class="lg:col-span-2 bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl shadow-lg p-4">
             <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4 md:gap-0">
                 <h2 class="text-md font-semibold text-white">Dự án & Nhiệm vụ</h2>
                 <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <select id="project-department-filter"
+                        class="${role == "ADMIN" ? "" : "hidden"} bg-gray-700 text-gray-300 text-xs rounded-lg px-3 py-1.5 border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition mr-2">
+                        ${deptOptionsHtml}
+                    </select>
                     <div class="relative flex items-center">
                         <input type="text" id="searchInput"
                                 placeholder="Tìm kiếm..."
@@ -562,7 +587,7 @@ function renderDashboard(projects) {
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
                     
-                    <button id="openUpdateTaskBtn#${x}#${x}" class="${role != "EMPLOYEE" ? "" : "hidden"} bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                    <button id="openUpdateTaskBtn#${x}#${x}" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
                     </button>
                 </div>
@@ -775,19 +800,26 @@ function renderDashboard(projects) {
             <div id="assignee-gantt-container" class="w-full bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-4 relative min-h-[400px] overflow-hidden">
                 
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
-                        Tiến độ theo nhân sự
-                    </h3>
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
+                            Tiến độ theo nhân sự
+                        </h3>
+                        <select id="gantt-department-filter"
+                            class="${role == "ADMIN" ? "" : "hidden"} hidden bg-gray-700 text-gray-300 text-xs rounded-lg px-3 py-1.5 border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition mr-2">
+                            <option value="all">Tất cả phòng ban</option>
+                        </select>
+                    </div>
                     <div>
+                        <!-- Lọc theo phòng ban-->
                         <button id="gantt-check" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
-                            <i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>
+                            <i data-lucide="eye" class="w-4 h-4 text-white"></i>
                         </button>
                         <button id="gantt-reload" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Làm mới">
-                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            <i data-lucide="refresh-cw" class="w-4 h-4 text-white"></i>
                         </button>
                         <button id="gantt-expand" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Mở rộng">
-                            <i data-lucide="maximize-2" class="w-4 h-4"></i>
+                            <i data-lucide="maximize-2" class="w-4 h-4 text-white"></i>
                         </button>
                     </div>
                 </div>
@@ -833,7 +865,7 @@ function renderDashboard(projects) {
     renderAfterDOMUpdate(() => {
         // Gọi hàm vẽ chart
         // projects.items là danh sách dự án của trang hiện tại
-        renderAssigneeGantt(projects.items);
+        renderAssigneeGantt(projects.items, deptOptionsHtml);
     });
 }
 
@@ -860,6 +892,23 @@ function attachAllEventListeners(projects, role) {
             }
         });
     });
+    const deptFilter = document.getElementById("project-department-filter");
+    if (deptFilter) {
+        // Clone nút để xóa event cũ
+        const newSelect = deptFilter.cloneNode(true);
+        deptFilter.parentNode.replaceChild(newSelect, deptFilter);
+
+        newSelect.addEventListener("change", async (e) => {
+            // 1. Cập nhật biến toàn cục
+            currentProjectDepartmentFilter = e.target.value;
+            //console.log("🔍 Đang lọc theo phòng ban:", currentProjectDepartmentFilter);
+
+            // 2. Gọi hàm loadPageData (nó sẽ gọi API mới và vẽ lại giao diện)
+            // Quay về trang 1 khi filter thay đổi
+            await loadPageData(1);
+        });
+    }
+
     // EVENT SEARCH
     const searchInput = document.getElementById("searchInput");
     if (searchInput) {
@@ -899,7 +948,7 @@ function attachAllEventListeners(projects, role) {
 
             // 1. Cập nhật state toàn cục
             currentViewMode = newView;
-            console.log(`Chuyển sang view: ${currentViewMode}`);
+            //console.log(`Chuyển sang view: ${currentViewMode}`);
 
             // 2. Lấy các element
             const listView = document.getElementById('project-list-view');
@@ -979,7 +1028,7 @@ function handleTaskScroll(event) {
     if (container.scrollTop + container.clientHeight >= container.scrollHeight - GẦN_ĐÁY) {
 
         // Tải trang tiếp theo
-        console.log(`🌀 Tải task trang ${state.page + 1} cho project ${projectId}...`);
+        //console.log(`🌀 Tải task trang ${state.page + 1} cho project ${projectId}...`);
         loadTasksForProject(projectId, state.page + 1);
     }
 }
@@ -988,15 +1037,16 @@ function handleTaskScroll(event) {
 /* =========================================== */
 let assigneeGanttChart = null;
 let ganttExpandedUsers = new Set();
-
+let currentDepartmentFilter = 'all';
 /**
  * Vẽ biểu đồ Gantt theo nhân sự (Full chức năng: Accordion, Scroll, Toolbar, Colors, Tooltip)
  * @param {Array} projects - Danh sách dự án đang hiển thị ở trang hiện tại
  */
-async function renderAssigneeGantt(projects) {
+async function renderAssigneeGantt(projects, deptOptionsHtml) {
     const chartEl = document.querySelector("#assignee-gantt-chart");
     const loaderEl = document.querySelector("#gantt-loader");
-    let isLabelShown = true;
+    const deptSelect = document.getElementById("gantt-department-filter");
+    let isLabelShown = false;
 
     if (!chartEl || !projects || projects.length === 0) {
         if (loaderEl) loaderEl.innerHTML = '<span class="text-gray-500">Không có dữ liệu dự án.</span>';
@@ -1007,10 +1057,33 @@ async function renderAssigneeGantt(projects) {
     if (!assigneeGanttChart && loaderEl) loaderEl.classList.remove("hidden");
 
     try {
+        if (deptSelect && deptSelect.options.length <= 1) {
+            // Chỉ fetch nếu là ADMIN (hoặc logic tùy bạn)
+            // Ở đây ta check nếu element không có class 'hidden' thì mới fetch
+            if (!deptSelect.classList.contains("hidden")) {
+                const depts = await safeFetchJson(`/api/departments/list`, []);
+                depts.forEach(d => {
+                    const option = document.createElement("option");
+                    option.value = d.idDepartment;
+                    option.textContent = d.departmentName;
+                    deptSelect.appendChild(option);
+                });
+
+                // Gắn sự kiện Change
+                deptSelect.addEventListener("change", async (e) => {
+                    currentDepartmentFilter = e.target.value;
+                    // Gọi lại hàm render để fetch lại task theo department mới
+                    await renderAssigneeGantt(projects);
+                });
+            }
+        }
+
         // 2. Fetch dữ liệu
-        const response = await safeFetchJson(`/api/tasks/all?pageIndex=1&pageSize=100`, { items: [] });
+        const url = `/api/tasks/all?pageIndex=1&pageSize=100&departmentId=${currentProjectDepartmentFilter}`;
+        const response = await safeFetchJson(url, { items: [] });
         const safeResponse = (response && typeof response === "object") ? response : { items: [] };
         const allTasks = Array.isArray(safeResponse.items) ? safeResponse.items : [];
+
         if (allTasks.length === 0) {
             if (loaderEl) loaderEl.classList.add("hidden");
 
@@ -1030,6 +1103,10 @@ async function renderAssigneeGantt(projects) {
                 </div>`;
             lucide.createIcons();
             return; // Dừng hàm tại đây, không vẽ chart nữa
+        } else {
+            // Nếu có data thì clear nội dung cũ (thông báo rỗng) để vẽ chart
+            // NHƯNG ĐỪNG XÓA NẾU ĐANG CÓ CHART (để tránh nháy)
+            if (!assigneeGanttChart) chartEl.innerHTML = "";
         }
 
         // 3. Xử lý dữ liệu & Tính toán Min/Max Date
@@ -1339,13 +1416,14 @@ async function renderAssigneeGantt(projects) {
         const expandBtn = document.getElementById('gantt-expand');
         const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
         const checkBtn = document.getElementById('gantt-check');
+        const ganttDepartmentFilter = document.getElementById('gantt-department-filter');
 
         if (checkBtn) {
             const newBtn = checkBtn.cloneNode(true);
             checkBtn.parentNode.replaceChild(newBtn, checkBtn);
 
             // Set icon ban đầu (nếu mặc định là tắt)
-            newBtn.innerHTML = '<i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>';
+            newBtn.innerHTML = '<i data-lucide="eye-closed" class="w-4 h-4 text-white"></i>';
 
             newBtn.addEventListener('click', () => {
                 // 1. Đổi trạng thái
@@ -1353,11 +1431,11 @@ async function renderAssigneeGantt(projects) {
 
                 // 2. Cập nhật Icon (Check hoặc Square)
                 if (isLabelShown) {
-                    newBtn.innerHTML = '<i data-lucide="check-square" class="w-4 h-4 text-indigo-400"></i>';
-                    newBtn.classList.add("text-indigo-400"); // Thêm màu cho nút sáng lên
+                    newBtn.innerHTML = '<i data-lucide="eye" class="w-4 h-4 text-white"></i>';
+                    //newBtn.classList.add("text-white-400"); // Thêm màu cho nút sáng lên
                 } else {
-                    newBtn.innerHTML = '<i data-lucide="square" class="w-4 h-4"></i>';
-                    newBtn.classList.remove("text-indigo-400");
+                    newBtn.innerHTML = '<i data-lucide="eye-closed" class="w-4 h-4 text-white"></i>';
+                    //newBtn.classList.remove("text-white-400");
                 }
                 lucide.createIcons();
 
@@ -1400,10 +1478,10 @@ async function renderAssigneeGantt(projects) {
                 const icon = newBtn.querySelector("svg");
                 if (isGanttExpanded) {
                     scrollWrapper.classList.remove("max-h-[280px]"); scrollWrapper.classList.add("max-h-[85vh]"); newBtn.setAttribute("title", "Thu gọn");
-                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="minimize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
+                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="minimize-2" class="w-4 h-4 text-white"></i>'; lucide.createIcons(); }
                 } else {
                     scrollWrapper.classList.remove("max-h-[85vh]"); scrollWrapper.classList.add("max-h-[280px]"); newBtn.setAttribute("title", "Mở rộng");
-                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="maximize-2" class="w-4 h-4"></i>'; lucide.createIcons(); }
+                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="maximize-2" class="w-4 h-4 text-white"></i>'; lucide.createIcons(); }
                 }
             });
         }
@@ -1723,7 +1801,7 @@ console.log();
  * Nó chỉ fetch project mới và GỌI LẠI RENDER
  */
 async function loadPageData(page, pageSize = PAGE_SIZE) {
-    console.log(`🔄 Load dữ liệu trang: ${page}`);
+    //console.log(`🔄 Load dữ liệu trang: ${page}`);
     let loading = document.getElementById("loadingOverlay");
 
     if (ganttChartInstance) {
@@ -1735,7 +1813,7 @@ async function loadPageData(page, pageSize = PAGE_SIZE) {
         // (Có thể thêm hiệu ứng loading ở đây)
         loading.classList.remove("hidden");
         // Chỉ fetch projects cho trang mới
-        const newProjects = await safeFetchJson(`/api/projects?pageIndex=${page}&pageSize=${pageSize}`);
+        const newProjects = await safeFetchJson(`/api/projects?pageIndex=${page}&pageSize=${pageSize}&departmentId=${currentProjectDepartmentFilter}`);
 
         if (newProjects && (newProjects.items || newProjects.items.length === 0)) {
             // Render lại toàn bộ UI với project mới
@@ -1813,6 +1891,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentUserRole = container.dataset.role;
     //console.log("User Role:", currentUserRole);
 
+    if (currentUserRole === "ADMIN") {
+        try {
+            cachedDepartments = await safeFetchJson("/api/departments/list", []);
+        } catch (e) { console.error(e); }
+
+        try {
+            const depts = await safeFetchJson("/api/departments/list", []);
+            // Lưu depts vào biến toàn cục hoặc render ngay nếu select box nằm tĩnh trong _Layout
+            // Nhưng vì select box nằm trong renderDashboard (sinh động), ta cần lưu lại data để dùng sau.
+            window.allDepartments = depts;
+        } catch (e) { console.error(e); }
+    }
+
     // --- Bước 1: Chỉ fetch thông tin user ---
     const me = await safeFetchJson("/api/user/me", null);
     currentUser = me; // Lưu vào state toàn cục
@@ -1877,7 +1968,7 @@ async function fetchMemberByProject(idProject) {
         }
 
         const members = await res.json();
-        console.log("Members:", members);
+        //console.log("Members:", members);
         return members;
     } catch (err) {
         console.error("❌ Fetch members error:", err);
@@ -2280,11 +2371,11 @@ async function openTaskModal(task = null, role) {
     uploadOverlay.classList.remove("hidden");
 
     if (allProjectsList.length === 0) {
-        console.log("Cache project list rỗng, đang fetch lần đầu...");
+        //console.log("Cache project list rỗng, đang fetch lần đầu...");
         try {
             // Chờ fetch và lưu vào cache toàn cục
             allProjectsList = await safeFetchJson("/api/projects/list", []);
-            console.log("✅ Đã fetch và cache project list:", allProjectsList);
+            //console.log("✅ Đã fetch và cache project list:", allProjectsList);
         } catch (err) {
             console.error("LỖI NGHIÊM TRỌNG: Không thể fetch project list cho modal.", err);
             // Báo lỗi và đóng modal
@@ -2337,9 +2428,9 @@ async function openTaskModal(task = null, role) {
     };
 
     if (allProjectsList) {
-        console.log("Projects: NOT NULL");
+        //console.log("Projects: NOT NULL");
     } else {
-        console.log("Projects: NULL");
+        //console.log("Projects: NULL");
     }
     if (task) {
         members = await fetchMemberByProject(task.projectId);
@@ -2383,7 +2474,7 @@ async function openTaskModal(task = null, role) {
             // 🔹 Lấy ngày bắt đầu và kết thúc của project
             const project = allProjectsList.find(p => p.idProject == projectId);
             if (project) {
-                console.log("YES: ", project);
+                //console.log("YES: ", project);
                 const startProj = formatDateToLocalInput(project.startDay);
                 const endProj = formatDateToLocalInput(project.endDay);
 
@@ -2577,7 +2668,7 @@ function handleConfirm(task) { // 'task' ở đây là object task GỐC (trư�
                     } catch (e) {
                         console.warn("Không thể lấy tên project.", e);
                     }
-                    console.log("Tên project để gửi notify:", projectName);
+                    //console.log("Tên project để gửi notify:", projectName);
                     // --- Hết phần sửa lấy tên project ---
 
                     const truncatedProjectName = truncateString(projectName, 50);
@@ -2624,7 +2715,7 @@ function handleDelete(taskId) {
     const deleteBtn = document.getElementById("deleteBtn");
     deleteBtn.addEventListener("click", async () => {
         const loadingOverlay = document.getElementById(`loadingOverlay`);
-        console.log(taskId);
+        //console.log(taskId);
         if (!taskId) {
             alert("⚠️ Không tìm thấy ID task để xóa!");
             return;
@@ -2641,12 +2732,12 @@ function handleDelete(taskId) {
                 closeFormModal();
                 location.reload();
             } else {
-                console.log("❌ " + data.message);
+                //console.log("❌ " + data.message);
             }
         } catch (e) {
             loadingOverlay.classList.add("hidden");
             console.error("🔥 Lỗi khi xóa task:", e);
-            console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
+            //console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
         }
     });
 }

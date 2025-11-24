@@ -6,7 +6,7 @@ namespace JIRA_NTB.Services
 {
     public class RankingService
     {
-        private const string ConnectionString = "Server=MARS;Database=JIRA_NTB;Integrated Security=True;";
+        private const string ConnectionString = "Server=NTBIT-PC\\SQL2019;Database=JIRA_NTB;User Id=sa;Password=@dmin@338;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
         public List<RankUserAppModel> GetTopAppsPerUser(int topN = 3)
         {
