@@ -737,7 +737,16 @@ namespace JIRA_NTB.Controllers
 
             // ✅ Gán đúng khóa Status
             project.StatusId = statusId;
-            project.CompletedDate = DateTime.Now;
+            // Cập nhật CompletedDate nếu chuyển sang trạng thái "Done"
+            if (statusId == "status-done") 
+            {
+                project.CompletedDate = DateTime.Now;
+            }
+            else
+            {
+                project.CompletedDate = null; // Xóa ngày hoàn thành nếu không phải "Done"
+            }
+                
 
             try
             {

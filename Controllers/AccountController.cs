@@ -235,82 +235,71 @@ namespace JIRA_NTB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
+            //System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
 
-            string clientMacAddress = "Không xác định";
+            //string clientMacAddress = "Không xác định";
 
-            // --- [LOGIC LẤY MAC ADDRESS (SERVER SIDE)] ---
-            try
-            {
-                // 1. Lấy IP của người dùng
-                string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            //// --- [LOGIC LẤY MAC ADDRESS (SERVER SIDE)] ---
+            //try
+            //{
+            //    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-                if (!string.IsNullOrEmpty(clientIp) && (clientIp == "127.0.0.1" || clientIp == "::1"))
-                {
-                    // Xử lý trường hợp chạy trên localhost (Lấy MAC của server)
-                    clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
-                        .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-                                      nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                        .Select(nic => nic.GetPhysicalAddress().ToString())
-                        .FirstOrDefault() ?? "Localhost MAC";
-                }
-                else if (!string.IsNullOrEmpty(clientIp))
-                {
-                    // IIS AppPool không có biến môi trường PATH đầy đủ, phải chỉ rõ đường dẫn file exe
-                    string sysPath = Environment.SystemDirectory; // Thường là C:\Windows\System32
-                    string arpPath = System.IO.Path.Combine(sysPath, "arp.exe");
+            //    if (!string.IsNullOrEmpty(clientIp) && (clientIp == "127.0.0.1" || clientIp == "::1"))
+            //    {
+            //        clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
+            //            .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+            //                          nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            //            .Select(nic => nic.GetPhysicalAddress().ToString())
+            //            .FirstOrDefault() ?? "Localhost MAC";
+            //    }
+            //    else if (!string.IsNullOrEmpty(clientIp))
+            //    {
+            //        string sysPath = Environment.SystemDirectory;
+            //        string arpPath = System.IO.Path.Combine(sysPath, "arp.exe");
 
-                    // Kiểm tra file có tồn tại không trước khi chạy
-                    if (System.IO.File.Exists(arpPath))
-                    {
-                        var process = new Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = arpPath, // Dùng đường dẫn tuyệt đối: C:\Windows\System32\arp.exe
-                                Arguments = "-a " + clientIp,
-                                RedirectStandardOutput = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            }
-                        };
-                        process.Start();
-                        string output = await process.StandardOutput.ReadToEndAsync(); // Dùng Async cho mượt
-                        await process.WaitForExitAsync();
+            //        if (System.IO.File.Exists(arpPath))
+            //        {
+            //            var process = new Process
+            //            {
+            //                StartInfo = new ProcessStartInfo
+            //                {
+            //                    FileName = arpPath,
+            //                    Arguments = "-a " + clientIp,
+            //                    RedirectStandardOutput = true,
+            //                    UseShellExecute = false,
+            //                    CreateNoWindow = true
+            //                }
+            //            };
+            //            process.Start();
+            //            string output = await process.StandardOutput.ReadToEndAsync();
+            //            await process.WaitForExitAsync();
 
-                        // 3. Parse kết quả (Regex này dành cho output của Windows ARP)
-                        var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-                        if (match.Success)
-                        {
-                            clientMacAddress = match.Value.Replace('-', ':');
-                        }
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine("Không tìm thấy file arp.exe trên server.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Ghi log lỗi nhưng không dừng luồng đăng ký
-                System.Diagnostics.Debug.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
-                clientMacAddress = "Lỗi khi lấy MAC";
-            }
-            // Ưu tiên dùng MAC lấy được từ Server nếu JS không lấy được (hoặc tùy logic của bạn)
-            // Nếu muốn server luôn ghi đè MAC từ client gửi lên, hãy bỏ comment dòng dưới:
-            // if (clientMacAddress != "Không xác định") model.DeviceAddress = clientMacAddress;
+            //            var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
+            //            if (match.Success)
+            //            {
+            //                clientMacAddress = match.Value.Replace('-', ':');
+            //            }
+            //        }
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    System.Diagnostics.Debug.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
+            //    clientMacAddress = "Lỗi khi lấy MAC";
+            //}
+
+            //// Không ghi đè DeviceAddress nữa
+            //// if (clientMacAddress != "Không xác định") model.DeviceAddress = clientMacAddress;
+
 
             // --- [LOGIC ĐĂNG KÝ USER] ---
             if (ModelState.IsValid)
             {
-                // Kiểm tra xem Email đã tồn tại chưa
                 var existingEmail = await _userManager.FindByEmailAsync(model.Email);
                 if (existingEmail != null)
                 {
                     ModelState.AddModelError("Email", "Email này đã được sử dụng.");
 
-                    // Load lại danh sách phòng ban khi có lỗi
                     model.DepartmentList = _context.Departments
                         .Select(d => new SelectListItem { Value = d.IdDepartment, Text = d.DepartmentName })
                         .ToList();
@@ -323,21 +312,16 @@ namespace JIRA_NTB.Controllers
                     FullName = model.FullName,
                     UserName = model.Email,
                     Email = model.Email,
-                    DeviceAddress = model.DeviceAddress // Lấy từ Hidden Input (JS) hoặc kết quả ARP trên
+                    DeviceAddress = model.DeviceAddress // vẫn lấy từ form (hidden input) nếu có
                 };
 
                 var result = await _userManager.CreateAsync(user, model.Password);
 
                 if (result.Succeeded)
                 {
-                    // Thêm tài khoản vào danh sách chờ xác nhận
                     UnconfirmedAccountCleanupService.AddPendingAccount(user.Id);
-
-                    // Gán role "Employee"
                     await _userManager.AddToRoleAsync(user, "EMPLOYEE");
 
-                    // --- [FIX 3: BỌC GỬI EMAIL TRONG TRY-CATCH] ---
-                    // Tránh lỗi 500 nếu Mail Server bị chặn hoặc lỗi mạng
                     try
                     {
                         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
@@ -359,24 +343,21 @@ namespace JIRA_NTB.Controllers
                         <p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
                         <p style='margin: 30px 0;'>
                             <a href='{callbackUrl}' 
-                               style='background: linear-gradient(to right, #9333ea, #ec4899); 
-color: white; padding: 12px 30px; text-decoration: none; 
-                                      border-radius: 8px; display: inline-block; font-weight: bold;'>
+                               style='background: linear-gradient(to right, #9333ea, #ec4899);
+                               color: white; padding: 12px 30px; text-decoration: none; 
+                               border-radius: 8px; display: inline-block; font-weight: bold;'>
                                 Xác nhận Email
                             </a>
                         </p>
-                        <p style='color: #dc2626; font-weight: bold;'>⚠️ LƯU Ý: Link xác nhận chỉ có hiệu lực trong vòng 60 giây!</p>
-                        <p style='color: #6b7280; font-size: 14px;'>Link dự phòng:</p>
+                        <p style='color: #dc2626; font-weight: bold;'>⚠️ Link xác nhận chỉ có hiệu lực trong 60 giây!</p>
                         <p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
-                        <hr style='border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;'>
                     </div>"
                         );
                     }
                     catch (Exception ex)
                     {
-                        // Nếu gửi mail lỗi, ghi log lại nhưng vẫn cho user đăng ký thành công (hoặc xử lý tùy ý)
-                        System.Diagnostics.Debug.WriteLine("Gửi email thất bại: " + ex.Message);
-                        // Tùy chọn: ModelState.AddModelError(string.Empty, "Đăng ký thành công nhưng không gửi được email.");
+                        //System.Diagnostics.Debug.WriteLine("Gửi email thất bại: " + ex.Message);
+                        return RedirectToAction("HttpStatusCodeHandler", "Error", new { statusCode = 500 });
                     }
 
                     return RedirectToAction("RegisterConfirmation");

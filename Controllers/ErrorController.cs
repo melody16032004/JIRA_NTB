@@ -20,6 +20,9 @@ namespace JIRA_NTB.Controllers
                 case 504:
                     ViewData["Title"] = "504 - Hết thời gian chờ";
                     return View("Timeout504");
+                case 500:
+                    ViewData["Title"] = "500 - Lỗi máy chủ nội bộ";
+                    return View("ServerError500");
             }
 
             // Xử lý các lỗi khác nếu muốn
