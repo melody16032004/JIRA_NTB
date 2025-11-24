@@ -197,6 +197,7 @@
                                 <span class="text-gray-200 text-xs whitespace-nowrap">@(user.FullName ?? "Chưa cập nhật")</span>
                             </td>
                             <td class="py-2 px-3">
+                                <button onclick="openAssignDeptModal('@user.Id', '@user.FullName', '@(user.Department?.IdDepartment ?? "")')" class="group/btn relative focus:outline-none text-left w-full">
                                 @if (user.Department != null)
                                 {
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-500/30 whitespace-nowrap">
@@ -206,8 +207,11 @@
                                 }
                                 else
                                 {
-                                    <span class="text-gray-500 text-xs italic whitespace-nowrap">Chưa phân bổ</span>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-500/30 whitespace-nowrap">
+                                        <span class="text-white text-xs italic whitespace-nowrap">Chưa phân bổ</span>
+                                    </span>
                                 }
+                                </button>
                             </td>
                             <td class="py-2 px-3 text-center">
                                 <form asp-area="Admin" asp-controller="Admin" asp-action="ToggleUserStatus" method="post" class="inline-block toggle-status-form">
@@ -429,7 +433,75 @@
     </div>
 </div>
 
-<script>
+@section GlobalModals {
+    <!-- Modal Popup Gán Phòng Ban -->
+    <div id="assignDeptModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800/95 border border-gray-700 rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0" id="assignModalContent">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 rounded-t-2xl flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                    <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    Phân bổ nhân sự
+                </h2>
+                <button type="button" onclick="closeAssignDeptModal()" class="text-white/80 hover:text-white transition-colors focus:outline-none">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <form asp-area="Admin" asp-controller="Admin" asp-action="AssignDepartment" method="post" class="p-6 space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" id="assignUserId" />
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-200 mb-2">
+                        <i data-lucide="user" class="w-4 h-4 inline mr-1"></i>
+                        Nhân viên
+                    </label>
+                    <input type="text"
+                           id="assignUserName"
+                           readonly
+                           class="w-full px-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-400 text-sm cursor-not-allowed font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-200 mb-2">
+                        <i data-lucide="building-2" class="w-4 h-4 inline mr-1"></i>
+                        Phòng ban mới <span class="text-red-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <select name="departmentId"
+                                id="assignDeptSelect"
+                                class="w-full px-4 py-2.5 bg-gray-900/50 border border-gray-600 rounded-lg text-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none">
+                            <option value="">Đang tải dữ liệu...</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3 h-3"></i>
+                        Chọn "Chưa phân bổ" để xóa phòng ban hiện tại.
+                    </p>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex justify-end gap-2 pt-4 border-t border-gray-700 mt-6">
+                    <button type="button" onclick="closeAssignDeptModal()" class="inline-flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-gray-300 font-semibold py-2.5 px-4 rounded-lg transition-all duration-200">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        Hủy
+                    </button>
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg transform hover:scale-105">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+@section Scripts {
+    <script>
     // Khởi tạo icons khi trang load xong
     document.addEventListener('DOMContentLoaded', function() {
         lucide.createIcons();
@@ -488,4 +560,75 @@
             }
         });
     });
+
+    // ===== XỬ LÝ MODAL PHÂN BỔ PHÒNG BAN =====
+    // ===== MODAL LOGIC =====
+    const assignModal = document.getElementById('assignDeptModal');
+    const assignContent = document.getElementById('assignModalContent');
+
+    // Mở modal Assign
+    async function openAssignDeptModal(userId, userName, currentDeptId) {
+        // 1. Điền dữ liệu cơ bản
+        document.getElementById('assignUserId').value = userId;
+        document.getElementById('assignUserName').value = userName;
+
+        // 2. Hiển thị modal (Remove hidden trước)
+        assignModal.classList.remove('hidden');
+
+        // 3. Animation delay
+        setTimeout(() => {
+            assignContent.classList.remove('scale-95', 'opacity-0');
+            assignContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        // 4. Prevent body scroll (Giống hệt mẫu Edit)
+        document.body.style.overflow = 'hidden';
+
+        // 5. Load dữ liệu phòng ban (Logic riêng của Assign)
+        const select = document.getElementById('assignDeptSelect');
+        select.disabled = true;
+        select.innerHTML = '<option>Đang tải...</option>';
+
+        try {
+            const response = await fetch('/Admin/Admin/GetDepartments');
+            if (response.ok) {
+                const departments = await response.json();
+                let html = '<option value="">-- Chưa phân bổ --</option>';
+                departments.forEach(dept => {
+                    const selected = dept.id === currentDeptId ? 'selected' : '';
+                    html += `<option value="${dept.id}" ${selected}>${dept.name}</option>`;
+                });
+                select.innerHTML = html;
+            }
+        } catch(e) {
+            console.error(e);
+            select.innerHTML = '<option>Lỗi kết nối</option>';
+        } finally {
+            select.disabled = false;
+        }
+
+        // Re-initialize icons
+        setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    // Đóng modal Assign
+    function closeAssignDeptModal() {
+        // Animation out
+        assignContent.classList.remove('scale-100', 'opacity-100');
+        assignContent.classList.add('scale-95', 'opacity-0');
+
+        // Ẩn sau 300ms
+        setTimeout(() => {
+            assignModal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    // Đóng khi click bên ngoài
+    assignModal?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAssignDeptModal();
+        }
+    });
 </script>
+}
