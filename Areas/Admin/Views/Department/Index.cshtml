@@ -295,9 +295,7 @@
         <!-- Modal Body -->
         <form asp-area="Admin" asp-controller="Department" asp-action="Edit" method="post" class="p-6 space-y-4">
             @Html.AntiForgeryToken()
-            
             <input type="hidden" name="id" id="editDepartmentId" />
-            
             <div>
                 <label class="block text-sm font-medium text-gray-200 mb-2">
                     <i data-lucide="tag" class="w-4 h-4 inline mr-1"></i>

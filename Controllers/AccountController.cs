@@ -744,16 +744,22 @@ namespace JIRA_NTB.Controllers
                 return NotFound(new { message = "User không tồn tại" });
             }
 
-            // Check an toàn: Chỉ cho phép gán nếu chưa có, hoặc update lại chính máy đó
-            // Nếu muốn chặt chẽ hơn: Chỉ cho phép gán khi DeviceAddress == null
-            if (!string.IsNullOrEmpty(user.DeviceAddress) && user.DeviceAddress != request.MacAddress)
+            // 🟢 SỬA ĐOẠN NÀY:
+            // Kiểm tra xem thiết bị có đang "trống" không (bao gồm cả NULL text và Không xác định)
+            bool isDeviceFree = string.IsNullOrEmpty(user.DeviceAddress)
+                                || user.DeviceAddress.Trim().ToUpper() == "NULL"
+                                || user.DeviceAddress.Trim().Equals("Không xác định", StringComparison.OrdinalIgnoreCase);
+
+            // Logic chặn: Nếu thiết bị KHÔNG TRỐNG và MAC mới KHÁC MAC cũ -> Thì mới báo lỗi
+            if (!isDeviceFree && !string.Equals(user.DeviceAddress, request.MacAddress, StringComparison.OrdinalIgnoreCase))
             {
+                // Debug log (nếu cần): Console.WriteLine($"Conflict: DB={user.DeviceAddress} vs Request={request.MacAddress}");
                 return StatusCode(409, new { message = "Tài khoản này đã được gắn với thiết bị khác rồi!" });
             }
 
+            // Nếu vượt qua được đoạn check trên, tiến hành Ghi/Ghi đè
             user.DeviceAddress = request.MacAddress;
 
-            // Cập nhật vào DB
             var result = await _userManager.UpdateAsync(user);
 
             if (result.Succeeded)

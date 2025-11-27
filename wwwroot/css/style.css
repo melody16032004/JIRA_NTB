@@ -2,6 +2,11 @@
     scroll-behavior: smooth;
     scrollbar-width: thin;
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
 #assignee-gantt-chart .apexcharts-canvas,
 #assignee-gantt-chart .apexcharts-inner {
     cursor: grab !important;
