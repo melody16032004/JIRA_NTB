@@ -14,7 +14,7 @@ namespace JIRA_NTB.Repository
         {
             _context = context;
         }
-        public async Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+        public async Task<PagedResult<LogStatusDTO>> GetLogsAsync(string userId, IList<string> roles,
             int page, int pageSize)
         {
             IQueryable<LogStatusUpdate> query = _context.LogStatusUpdates;
@@ -29,13 +29,13 @@ namespace JIRA_NTB.Repository
                 {
                     case "EMPLOYEE":
                         taskIdsQuery = _context.Tasks
-                            .Where(t => t.Assignee_Id == user.Id)
+                            .Where(t => t.Assignee_Id == userId)
                             .Select(t => t.IdTask);
                         break;
 
                     case "LEADER":
                         var projectIds = _context.Projects
-                            .Where(p => p.UserId == user.Id)
+                            .Where(p => p.UserId == userId)
                             .Select(p => p.IdProject);
 
                         taskIdsQuery = _context.Tasks

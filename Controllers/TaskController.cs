@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using JIRA_NTB.Data;
+using JIRA_NTB.Extensions;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.Repository;
@@ -18,23 +19,21 @@ namespace JIRA_NTB.Controllers
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;
-        private readonly UserManager<UserModel> _userManager;
         private readonly IStatusRepository statusRepository;
         private readonly ITaskSearchService _taskSearchService;
         private readonly AppDbContext _dbContext;
-        public TaskController(ITaskService taskService, UserManager<UserModel> userManager, IStatusRepository statusRepository, ITaskSearchService taskSearchService, AppDbContext dbContext)
+        public TaskController(ITaskService taskService, IStatusRepository statusRepository, ITaskSearchService taskSearchService, AppDbContext dbContext)
         {
             this.taskService = taskService;
-            _userManager = userManager;
             this.statusRepository = statusRepository;
             _taskSearchService = taskSearchService;
             _dbContext = dbContext;
         }
         public async Task<IActionResult> Index(string? projectId = null, string? taskId = null, string? keyword = null)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
-            var viewModel = await taskService.GetTaskBoardAsync(user, roles, projectId, taskId);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
+            var viewModel = await taskService.GetTaskBoardAsync(userId, roles, projectId, taskId);
             ViewBag.SelectedProjectId = projectId; // để giữ lại lựa chọn
             ViewBag.SearchKeyword = keyword;
             return View(viewModel);
@@ -59,10 +58,9 @@ namespace JIRA_NTB.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMoreTasks(string statusId, int page = 1, int pageSize = 10, string? projectId = null)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
-
-            var tasks = await taskService.GetTasksByStatusAsync(user, roles, statusId, page, pageSize, projectId);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
+            var tasks = await taskService.GetTasksByStatusAsync(userId, roles, statusId, page, pageSize, projectId);
 
             return PartialView("_TaskCardList", tasks);
         }
@@ -86,14 +84,13 @@ namespace JIRA_NTB.Controllers
                     message = "Không thể cập nhật trạng thái trễ hạn"
                 });
             }
-
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
             var result = await taskService.UpdateTaskStatusAsync(
                 request.TaskId,
                 request.NewStatusId,
-                user,
+                userId,
                 roles
             );
 
@@ -136,15 +133,14 @@ namespace JIRA_NTB.Controllers
                     message = "Dữ liệu không hợp lệ"
                 });
             }
-
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
             var result = await taskService.UndoTaskStatusAsync(
                 request.TaskId,
                 request.PreviousStatusId,
                 request.previousCompletedDate,
-                user,
+                userId,
                 roles
             );
 
@@ -186,10 +182,10 @@ namespace JIRA_NTB.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTaskById(string taskId)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
-            var task = await taskService.GetTaskByIdAsync(taskId, user, roles);
+            var task = await taskService.GetTaskByIdAsync(taskId, userId, roles);
 
             if (task == null)
                 return NotFound(new { success = false, message = "Không tìm thấy nhiệm vụ" });
@@ -239,10 +235,10 @@ namespace JIRA_NTB.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteTask(string taskId)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
-            var result = await taskService.DeleteTaskAsync(taskId, user, roles);
+            var result = await taskService.DeleteTaskAsync(taskId, userId, roles);
 
             if (result.Success)
             {
@@ -280,14 +276,14 @@ namespace JIRA_NTB.Controllers
                 });
             }
 
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
             var result = await taskService.RestoreTaskAsync(
                 request.TaskId,
                 request.PreviousStatusId,
                 request.PreviousCompletedDate,
-                user,
+                userId,
                 roles
             );
 
@@ -325,12 +321,12 @@ namespace JIRA_NTB.Controllers
         [HttpGet]
         public async Task<IActionResult> GetTaskCardsByProjectId(string projectId)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
             if (string.IsNullOrEmpty(projectId))
                 return BadRequest("ProjectId không hợp lệ.");
 
-            var tasks = await taskService.GetTasksByProjectIdAsync(projectId, user, roles);
+            var tasks = await taskService.GetTasksByProjectIdAsync(projectId, userId, roles);
 
             // Hàm tính logic hiển thị
             var mapTasks = (IEnumerable<TaskItemModel> taskList) => taskList.Select(t =>
@@ -397,11 +393,9 @@ namespace JIRA_NTB.Controllers
             if (!ModelState.IsValid)
                 return BadRequest("Dữ liệu không hợp lệ.");
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-                return Unauthorized();
+            string userId = User.GetUserId();
 
-            string reassignedById = user.Id;
+            string reassignedById = userId;
 
             var result = await taskService.ReassignTaskAsync(dto, reassignedById);
 
@@ -418,11 +412,11 @@ namespace JIRA_NTB.Controllers
         }
         public async Task<IActionResult> GetLog(int page = 1, int pageSize = 30)
         {
-            var user = await _userManager.GetUserAsync(User);
-            var roles = await _userManager.GetRolesAsync(user);
+            string userId = User.GetUserId();
+            List<string> roles = User.GetUserRoles();
 
             PagedResult<LogStatusDTO> logs =
-                await taskService.GetLogsAsync(user, roles, page, pageSize);
+                await taskService.GetLogsAsync(userId, roles, page, pageSize);
 
             return Ok(logs);
         }
