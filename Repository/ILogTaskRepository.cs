@@ -5,7 +5,7 @@ namespace JIRA_NTB.Repository
 {
     public interface ILogTaskRepository
     {
-        Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+        Task<PagedResult<LogStatusDTO>> GetLogsAsync(string userId, IList<string> roles,
             int page, int pageSize);
     }
 }

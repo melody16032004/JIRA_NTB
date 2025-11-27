@@ -30,71 +30,65 @@ namespace JIRA_NTB.Services
             _taskSearchService = taskSearchService;
         }
 
-        public async Task<TaskBoardViewModel> GetTaskBoardAsync(UserModel user, IList<string> roles, 
+        public async Task<TaskBoardViewModel> GetTaskBoardAsync(string userId, IList<string> roles, 
             string? projectId = null, string? taskId = null)
         {
             // ✅ Tách riêng logic cập nhật
-            await _taskRepository.RefreshOverdueStatusAsync();
+            //await _taskRepository.RefreshOverdueStatusAsync();
 
-            var tasks = await _taskRepository.GetAllFilteredAsync(user, roles);
-            if (!string.IsNullOrEmpty(projectId))
-            {
-                tasks = tasks.Where(t => t.ProjectId == projectId).ToList();
-            }
-            if (!string.IsNullOrEmpty(taskId))
-            {
-                tasks = tasks.Where(t => t.IdTask == taskId).ToList();
-            }
-            var projects = await _projectRepository.GetAllFilteredAsync(user, roles);
+            var tasks = await _taskRepository.GetTaskViewModelsAsync(userId, roles, projectId, taskId);
+
+            var projects = await _projectRepository.GetAllFilteredAsync(userId, roles);
             var statuses = await _statusRepository.GetAllAsync();
             var viewModel = new TaskBoardViewModel
             {
                 TodoTasks = tasks
-                    .Where(t => t.Status?.StatusName == TaskStatusModel.Todo && !t.Overdue)
-                    .ToViewModelList(),
+            .Where(t => t.StatusName == TaskStatusModel.Todo && !t.Overdue)
+            .ToList(),
 
                 InProgressTasks = tasks
-                    .Where(t => t.Status?.StatusName == TaskStatusModel.InProgress && !t.Overdue)
-                    .ToViewModelList(),
+            .Where(t => t.StatusName == TaskStatusModel.InProgress && !t.Overdue)
+            .ToList(),
 
                 DoneTasks = tasks
-                    .Where(t => t.Status?.StatusName == TaskStatusModel.Done)
-                    .ToViewModelList(),
+            .Where(t => t.StatusName == TaskStatusModel.Done)
+            .ToList(),
 
                 OverdueTasks = tasks
-                    .Where(t => t.Overdue && t.Status?.StatusName != TaskStatusModel.Done && t.Status?.StatusName != TaskStatusModel.Deleted)
-                    .ToViewModelList(),
+            .Where(t => t.Overdue &&
+                       t.StatusName != TaskStatusModel.Done &&
+                       t.StatusName != TaskStatusModel.Deleted)
+            .ToList(),
+
                 Projects = projects,
                 Statuses = statuses
-
             };
 
             return viewModel;
         }
         public async Task<List<TaskViewModel>> GetTasksByStatusAsync(
-      UserModel user,
+      string userId,
       IList<string> roles,
       string statusId,
       int page,
       int pageSize, string? projectId = null)
         {
-            var tasks = await _taskRepository.GetTasksByStatusPagedAsync(
-                user,
-                roles,
-                statusId,
-                page,
-                pageSize, projectId);
-
-            return tasks.ToViewModelList();
+            return await _taskRepository.GetTasksByStatusPagedViewModelAsync(
+            userId,
+            roles,
+            statusId,
+            page,
+            pageSize,
+            projectId);
         }
-        public async Task<TaskItemModel?> GetTaskByIdAsync(string taskId, UserModel user, IList<string> roles)
+        public async Task<TaskItemModel?> GetTaskByIdAsync(string taskId, string userId, IList<string> roles)
         {
-            return await _taskRepository.GetByIdFilteredAsync(taskId, user, roles);
+            return await _taskRepository.GetByIdFilteredAsync(taskId, userId, roles);
         }
         public async Task<TaskStatusChangeResult> UpdateTaskStatusAsync(
     string taskId,
     string newStatusId,
-    UserModel user,
+    string userId,
     IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
@@ -162,7 +156,7 @@ namespace JIRA_NTB.Services
             var log = new LogStatusUpdate
             {
                 IdTask = task.IdTask,
-                IdUserUpdate = user.Id,
+                IdUserUpdate = userId,
                 PreviousStatusId = previousStatusId,
                 NewStatusId = task.StatusId,
             };
@@ -170,14 +164,14 @@ namespace JIRA_NTB.Services
             await _taskRepository.AddStatusLog(log);
                 
             var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                 user,
+                 userId,
                 roles,
                 previousStatusId,
                 null // projectId - lấy từ session nếu cần filter theo project
             );
 
             var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 newStatusId,
                 null
@@ -203,7 +197,7 @@ namespace JIRA_NTB.Services
     string taskId,
     string previousStatusId,
     DateTime? previousCompletedDate,
-    UserModel user,
+    string userId,
     IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
@@ -236,14 +230,14 @@ namespace JIRA_NTB.Services
 
             // ✅ Lấy total count sau khi undo
             var sourceTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 currentStatusId,
                 null
             );
 
             var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 previousStatusId,
                 null
@@ -430,7 +424,7 @@ namespace JIRA_NTB.Services
         }
         public async Task<TaskStatusChangeResult> DeleteTaskAsync(
             string taskId,
-            UserModel user,
+            string userId,
             IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
@@ -455,7 +449,7 @@ namespace JIRA_NTB.Services
 
             // ✅ LẤY COUNT TRƯỚC KHI UPDATE
             var sourceTotalCountBeforeDelete = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 previousStatusId,
                 null
@@ -481,7 +475,7 @@ namespace JIRA_NTB.Services
             var log = new LogStatusUpdate
             {
                 IdTask = task.IdTask,
-                IdUserUpdate = user.Id,
+                IdUserUpdate = userId,
                 PreviousStatusId = previousStatusId,
                 NewStatusId = task.StatusId,
             };
@@ -511,7 +505,7 @@ namespace JIRA_NTB.Services
             string taskId,
             string previousStatusId,
             DateTime? previousCompletedDate,
-            UserModel user,
+            string userId,
             IList<string> roles)
         {
             var task = await _taskRepository.GetByIdAsync(taskId);
@@ -542,7 +536,7 @@ namespace JIRA_NTB.Services
 
             // ✅ Lấy count của column được restore
             var targetTotalCount = await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 previousStatusId,
                 null
@@ -562,21 +556,21 @@ namespace JIRA_NTB.Services
             };
         }
 
-        public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, UserModel user, IList<string> roles)
+        public async Task<List<TaskItemModel>> GetTasksByProjectIdAsync(string projectId, string userId, IList<string> roles)
         {
             if (string.IsNullOrEmpty(projectId))
                 return new List<TaskItemModel>();
 
-            return await _taskRepository.GetByProjectIdAsync(projectId, user, roles);
+            return await _taskRepository.GetByProjectIdAsync(projectId, userId, roles);
         }
         public async Task<int> GetTotalTaskCountByStatusAsync(
-        UserModel user,
+        string userId,
         IList<string> roles,
         string statusId,
         string? projectId = null)
         {
             return await _taskRepository.GetTaskCountByStatusAsync(
-                user,
+                userId,
                 roles,
                 statusId,
                 projectId);
@@ -711,10 +705,10 @@ namespace JIRA_NTB.Services
                     $"Nhân viên không có công việc nào trước thời điểm {newStart:dd/MM}."
             };
         }
-        public async Task<PagedResult<LogStatusDTO>> GetLogsAsync(UserModel user, IList<string> roles,
+        public async Task<PagedResult<LogStatusDTO>> GetLogsAsync(string userId, IList<string> roles,
       int page, int pageSize)
         {
-            return await _logTaskRepository.GetLogsAsync(user, roles, page, pageSize);
+            return await _logTaskRepository.GetLogsAsync(userId, roles, page, pageSize);
         }
     }
 }

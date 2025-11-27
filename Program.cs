@@ -1,5 +1,6 @@
 ﻿using JIRA_NTB.Controllers.Hubs;
 using JIRA_NTB.Data;
+using JIRA_NTB.Extensions;
 using JIRA_NTB.Middleware;
 using JIRA_NTB.Models;
 using JIRA_NTB.Repository;
@@ -26,7 +27,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddIdentity<UserModel, ApplicationRole>()
 .AddEntityFrameworkStores<AppDbContext>()
 .AddDefaultTokenProviders()
-.AddTokenProvider<EmailConfirmationTokenProvider<UserModel>>("EmailConfirmationTokenProvider");
+.AddTokenProvider<EmailConfirmationTokenProvider<UserModel>>("EmailConfirmationTokenProvider")
+.AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>();
 builder.Services.AddScoped<IStatusRepository, StatusRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();

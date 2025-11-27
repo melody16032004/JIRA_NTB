@@ -150,14 +150,14 @@
         {
             <div class="flex items-center gap-2 text-sm text-gray-300 group-hover:text-gray-100 transition-colors">
                 <!-- Avatar nhỏ hơn -->
-                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.Assignee.FullName)&background=6366f1&color=fff&size=28"
-                     alt="@Model.Assignee.FullName"
-                     title="@Model.Assignee.FullName"
+                <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(Model.AssigneeDisplayName)&background=6366f1&color=fff&size=28"
+                     alt="@Model.AssigneeDisplayName"
+                     title="@Model.AssigneeDisplayName"
                      class="w-6 h-6 rounded-full border border-gray-600 shadow-sm ring-1 ring-gray-700 group-hover:ring-indigo-500 transition-all duration-200" />
 
                 <!-- Tên người -->
-                <span class="truncate max-w-[120px]" title="@Model.Assignee.FullName">
-                    @Model.Assignee.FullName
+                <span class="truncate max-w-[120px]" title="@Model.AssigneeDisplayName">
+                    @Model.AssigneeDisplayName
                 </span>
             </div>
         }

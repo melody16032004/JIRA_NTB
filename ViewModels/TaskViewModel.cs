@@ -1,4 +1,5 @@
 ﻿using JIRA_NTB.Models;
+using JIRA_NTB.Models.Enums;
 
 namespace JIRA_NTB.ViewModels
 {
@@ -12,13 +13,18 @@ namespace JIRA_NTB.ViewModels
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public DateTime? CompletedDate { get; set; }
-        public Status Status { get; set; }
+        public bool Overdue { get; set; }
         public string ProjectId { get; set; }
         public string? AssigneeId { get; set; }
 
-        public ProjectInfoViewModel Project { get; set; }
-        public AssigneeInfoViewModel? Assignee { get; set; }
-
+        // Thông tin tối thiểu từ bảng liên quan
+        public string ProjectName { get; set; }
+        public TaskStatusModel StatusName { get; set; }
+        public string? AssigneeFullName { get; set; }
+        public string AssigneeDisplayName =>
+        !string.IsNullOrEmpty(AssigneeFullName)
+            ? AssigneeFullName
+            : (!string.IsNullOrEmpty(AssigneeId) ? AssigneeId : "Chưa giao");
         public bool IsCompleted { get; set; }
 
         //Task chưa hoàn thành mà quá hạn
@@ -52,6 +58,19 @@ namespace JIRA_NTB.ViewModels
                 return (CompletedDate!.Value - EndDate!.Value).Days;
             }
         }
+        public ProjectInfoViewModel Project => new ProjectInfoViewModel
+        {
+            IdProject = ProjectId,
+            ProjectName = ProjectName
+        };
+
+        public AssigneeInfoViewModel? Assignee => !string.IsNullOrEmpty(AssigneeId)
+            ? new AssigneeInfoViewModel
+            {
+                Id = AssigneeId,
+                FullName = AssigneeFullName
+            }
+            : null;
     }
 
     /// <summary>
