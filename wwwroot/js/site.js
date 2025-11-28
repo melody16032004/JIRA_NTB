@@ -1,38 +1,32 @@
 ﻿function toggleTheme() {
     document.documentElement.classList.toggle('dark');
 }
-let me = null; // Khai báo 'me' ở ngoài
+let me = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
+    // --- 1. FETCH USER INFO (Giữ nguyên) ---
     if (!me) {
         try {
             const meRes = await fetch("/api/user/me");
-
             if (meRes.ok) {
                 me = await meRes.json();
             }
-
         } catch (e) {
             console.error("Fetch failed:", e);
         }
     }
 
     if (!me || me == null) {
-        window.location.href = "/Error/403";
+        // window.location.href = "/Error/403"; // Tùy chọn redirect
         return;
     }
 
-    //console.log(me);
-
     const meCur = document.getElementById("me");
-    meCur.innerHTML += `${me.fullName}`;
+    if (meCur) meCur.innerHTML += `${me.fullName}`;
 
-    // ⚙️ Sau khi thêm icon mới, phải render lại Lucide icons
     lucide.createIcons();
 
-    // const cur = User
-
-
-    /* ===== SIDEBAR TOGGLE ===== */
+    /* ===== SIDEBAR TOGGLE (Giữ nguyên) ===== */
     const sidebar = document.getElementById("sidebar");
     const sidebarToggle = document.getElementById("sidebarToggle");
     const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -51,10 +45,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    /* ===== DROPDOWN HANDLER (user + notify) ===== */
+    /* ===== DROPDOWN HANDLER (CHỈ DÀNH CHO USER MENU) ===== */
+    // SỬA: Bỏ notifyButton ra khỏi mảng này
     const dropdowns = [
-        { button: "userMenuButton", menu: "userDropdown" },
-        { button: "notifyButton", menu: "notifyDropdown" }
+        { button: "userMenuButton", menu: "userDropdown" }
+        // { button: "notifyButton", menu: "notifyDropdown" } <-- XÓA DÒNG NÀY
     ];
 
     dropdowns.forEach(({ button, menu }) => {
@@ -73,23 +68,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
-
-            // SỬA: Kiểm tra xem nó đang mở hay không
             const isOpen = !menuEl.classList.contains("opacity-0");
 
-            // 1. Đóng TẤT CẢ các menu trước
+            // Đóng các menu khác (nếu có nhiều menu user)
             dropdowns.forEach(({ menu: otherMenu }) => {
                 const m = document.getElementById(otherMenu);
-                if (m) {
+                if (m && m !== menuEl) { // Chỉ đóng cái khác
                     m.classList.add("opacity-0", "scale-95", "pointer-events-none");
                     m.classList.remove("opacity-100", "scale-100");
                 }
             });
 
-            // 2. Nếu nó CHƯA MỞ (tức là ta muốn mở nó)
-            // (Nếu nó đã mở, thì bước 1 đã đóng nó và ta không làm gì thêm)
             if (!isOpen) {
                 open();
+            } else {
+                close();
             }
         });
 
@@ -97,60 +90,4 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!menuEl.contains(e.target) && !btn.contains(e.target)) close();
         });
     });
-
-    ///* ===== NOTIFICATION HANDLING ===== */
-    //const notifyButton = document.getElementById("notifyButton");
-    //const notifyBadge = document.getElementById("notifyBadge");
-    //const clearBtn = document.getElementById("clearNotify");
-    //const notifyList = document.querySelector("#notifyDropdown ul");
-
-    //if (notifyButton && notifyBadge && notifyList && clearBtn) {
-    //    // Cập nhật số lượng chưa đọc
-    //    function updateNotifyCount() {
-    //        const unread = notifyList.querySelectorAll(".unread").length;
-    //        notifyBadge.style.display = unread > 0 ? "flex" : "none";
-    //        notifyBadge.textContent = unread > 0 ? unread : "";
-    //    }
-
-    //    // Đánh dấu 1 thông báo là đã đọc
-    //    notifyList.addEventListener("click", (e) => {
-    //        const li = e.target.closest("li.unread");
-    //        if (!li) return;
-    //        li.classList.remove("unread");
-    //        const redDot = li.querySelector("span.bg-red-500");
-    //        if (redDot) redDot.remove();
-    //        updateNotifyCount();
-    //    });
-
-    //    // Đánh dấu tất cả là đã đọc
-    //    clearBtn.addEventListener("click", () => {
-    //        notifyList.querySelectorAll(".unread").forEach((li) => {
-    //            li.classList.remove("unread");
-    //            const dot = li.querySelector("span.bg-red-500");
-    //            if (dot) dot.remove();
-    //        });
-    //        updateNotifyCount();
-    //    });
-
-    //    // Hiệu ứng shake khi có thông báo
-    //    function triggerShake() {
-    //        if (parseInt(notifyBadge.textContent) > 0) {
-    //            notifyButton.classList.add("shake");
-    //            setTimeout(() => notifyButton.classList.remove("shake"), 700);
-    //        }
-    //    }
-
-    //    // Lặp lại shake nếu có thông báo chưa đọc
-    //    setInterval(() => {
-    //        if (notifyBadge.style.display !== "none") triggerShake();
-    //    }, 2000);
-
-    //    // Giả lập có thông báo mới sau 1s
-    //    setTimeout(() => {
-    //        notifyBadge.style.display = "flex";
-    //        notifyBadge.textContent = "2";
-    //    }, 1000);
-
-    //    updateNotifyCount();
-    //}
 });
