@@ -11,12 +11,14 @@ let allProjectsList = [];
 let allTasksStat = {};
 let allProjectsStat = {};
 let allDepartments = [];
-let currentUser = {};
+//let currentUser = {};
 let currentUserRole = '';
 let isProjectToggleAllOpen = false;
 const PAGE_SIZE = 5;
 const TASK_PAGE_SIZE = 3;
-let currentViewMode = 'list';
+let currentUserPageIndex = 1;
+const USER_PAGE_SIZE = 5;
+let totalAssigneeUsers = 0;
 let ganttChartInstance = null;
 let currentProjectDepartmentFilter = 'all';
 let cachedDepartments = [];
@@ -80,14 +82,6 @@ function renderTaskCard(t) {
                 <h2 class="font-semibold text-white text-sm">
                     ${t.nameTask}
                 </h2>
-                <div class="relative group">
-                    <button id="openUpdateTaskBtn#${t.projectId}#${t.idTask}"
-                        onclick="this.blur()"
-                        class="hidden p-2 rounded-full bg-gray-800 hover:bg-indigo-600 transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-0"
-                        data-task='${JSON.stringify(t)}'>
-                        <i data-lucide="bolt" class="w-4 h-4 text-gray-300"></i>
-                    </button>
-                </div>
             </div>
             <div class="flex items-center justify-between mb-6 mt-3 bg-gray-700/40 px-2 py-1 rounded-lg border border-gray-600">
                 <div class="flex items-start gap-2 max-w-[70%]">
@@ -163,20 +157,6 @@ function renderTaskCard(t) {
     `;
 }
 function attachTaskButtonListeners(container) {
-    // Chỉ tìm trong container vừa thêm
-    container.querySelectorAll("[id^='openUpdateTaskBtn#']").forEach(btn => {
-        if (btn.dataset.listenerAttached) return; // Tránh gán lặp
-        btn.dataset.listenerAttached = true;
-
-        btn.addEventListener("click", () => {
-            const taskData = btn.getAttribute("data-task");
-            if (taskData) {
-                const task = JSON.parse(taskData);
-                openTaskModal(task, currentUserRole); // `projects` không cần thiết nữa
-            }
-        });
-    });
-    lucide.createIcons(); // Gọi lại lucide để vẽ icon
 }
 async function loadTasksForProject(projectId, page) {
     const state = projectTaskCache[projectId] || { tasks: [], page: 0, totalPages: 1, isLoading: false };
@@ -228,7 +208,7 @@ async function loadTasksForProject(projectId, page) {
             state.totalPages = data.totalPages;
 
             // 6. Gắn event cho các nút task MỚI
-            attachTaskButtonListeners(container);
+            //attachTaskButtonListeners(container);
 
             // 7. Xử lý view rỗng
             if (state.tasks.length === 0) {
@@ -282,17 +262,17 @@ function renderDashboard(projects) {
      */
     // ---| Lấy dữ liệu cho card (từ state toàn cục) |---
     let countProject = projects.totalCount || 0;
-    let countProjectDone = projectsStat.completed || 0;
-    let countTask = tasksStat.totalTasks || 0;
-    let countTaskDone = tasksStat.completedTasks || 0;
-    let countTaskInProgress = tasksStat.inProgressTasks || 0;
-    let countTaskTodo = tasksStat.todoTasks || 0;
-    let countTaskOverDue = tasksStat.overdueTasks || 0;
+    let countProjectDone = projectsStat.Completed || 0;
+    let countTask = tasksStat.TotalTasks || 0;
+    let countTaskDone = tasksStat.CompletedTasks || 0;
+    let countTaskInProgress = tasksStat.InProgressTasks || 0;
+    let countTaskTodo = tasksStat.TodoTasks || 0;
+    let countTaskOverDue = tasksStat.OverdueTasks || 0;
 
-    let countToDo = projectsStat.todo || 0;
-    let countInProgress = projectsStat.inProgress || 0;
-    let countDone = projectsStat.completed || 0;
-    let countOverdue = projectsStat.overdue || 0;
+    let countToDo = projectsStat.Todo || 0;
+    let countInProgress = projectsStat.InProgress || 0;
+    let countDone = projectsStat.Completed || 0;
+    let countOverdue = projectsStat.Overdue || 0;
 
     // --- UI CARDS ---
     const card1 = `
@@ -396,17 +376,6 @@ function renderDashboard(projects) {
                     <i data-lucide="chevron-up" class="w-4 h-4"></i>
                     Thu gọn tất cả
                 </button>
-
-                <div class="hidden flex items-center bg-gray-800 rounded-lg p-1 gap-1">
-                    <button data-view="list" title="Xem dạng danh sách"
-                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
-                        <i data-lucide="layout-list" class="w-4 h-4"></i>
-                    </button>
-                    <button data-view="gantt" title="Xem dạng Gantt"
-                        class="view-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${currentViewMode === 'gantt' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'}">
-                        <i data-lucide="gantt-chart-square" class="w-4 h-4"></i>
-                    </button>
-                </div>
             </div>
          </div>
         `;
@@ -487,30 +456,6 @@ function renderDashboard(projects) {
                                         <i data-lucide="file-text" class="w-4 h-4 text-indigo-400"></i>
                                         Mô tả dự án
                                     </h4>
-                                    <!--
-                                    <div class="flex items-center gap-2 relative">
-                                        ${p.fileNote && p.fileNote.trim() !== ""
-                                            ? `
-                                                <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-                                                        onclick="downloadFile('${p.fileNote}')">
-                                                    <i data-lucide='download' class='w-3 h-3'></i>
-                                                    Tải xuống
-                                                </button>
-
-                                                <button class="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-400/40 rounded-lg px-3 py-1.5 transition-all"
-                                                        onclick="viewFile('${p.fileNote}')">
-                                                    <i data-lucide='eye' class='w-3 h-3'></i>
-                                                    Xem
-                                                </button>
-                                            `
-                                            : ""}
-                            
-                                        <button id="addFileBtn#${p.idProject}" disabled data-project="${p.idProject}" class="flex items-center gap-2 text-xs text-green-300 bg-green-600/20 hover:bg-green-600/40 border border-green-400/40 rounded-lg px-3 py-1.5 transition-all">
-                                            <i data-lucide='plus' class='w-3 h-3'></i>
-                                            Thêm file
-                                        </button>
-                                    </div>
-                                    -->
                                 </div>
 
                                 <p class="text-gray-300 text-sm leading-relaxed">
@@ -551,26 +496,11 @@ function renderDashboard(projects) {
     }
 
     let mainViewContent = '';
-    if (currentViewMode === 'list') {
-        // Nếu là view "list", dùng code cũ của bạn
         mainViewContent = `
             <div class="space-y-4 max-h-[630px] overflow-y-auto custom-scroll">
                 ${viewProjectContainer}
             </div>
         `;
-    }
-    else {
-        // Nếu là view "gantt", hiển thị placeholder
-        mainViewContent = `
-            <div id="project-gantt-view" class="space-y-4 max-h-[630px] overflow-y-auto overflow-x-hidden custom-scroll">
-                <div class="text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
-                    <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
-                    Chức năng Gantt Chart đang được phát triển.
-                    <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
-                </div>
-            </div>
-        `;
-    }
 
     let deptOptionsHtml = `<option value="all">Tất cả phòng ban</option>`;
     if (cachedDepartments && cachedDepartments.length > 0) {
@@ -600,10 +530,6 @@ function renderDashboard(projects) {
                     <button id="openUpdateProjectBtnAdd#${y}#${y}" disabled class="${role == "ADMIN" ? "" : "hidden"} hidden bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i> Thêm dự án
                     </button>
-                    
-                    <button id="openUpdateTaskBtn#${x}#${x}" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition flex items-center gap-1">
-                        <i data-lucide="list-plus" class="w-4 h-4"></i> Thêm nhiệm vụ
-                    </button>
                 </div>
             </div>
 
@@ -612,24 +538,8 @@ function renderDashboard(projects) {
             <div class="space-y-4">
                 ${controllButton}
             </div>
-            <div id="project-list-view" class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll ${currentViewMode === 'list' ? '' : 'hidden'}">
+            <div id="project-list-view" class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll">
                 ${viewProjectContainer}
-            </div>
-
-            <div id="project-gantt-view" class="space-y-4 mt-[20px] max-h-[630px] overflow-y-auto custom-scroll ${currentViewMode === 'gantt' ? '' : 'hidden'}">
-                <div id="gantt-chart-container" class="gantt-target"></div>
-                <div id="gantt-placeholder" class="flex flex-col items-center justify-center text-center py-10 text-white">
-                    <i data-lucide="gantt-chart-square" class="w-16 h-16"></i>
-                    <span>Bấm nút Gantt để xây dựng biểu đồ...</span>
-                </div>
-
-                <!--
-                <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400 text-lg bg-gray-900/50 rounded-lg">
-                    <i data-lucide="gantt-chart-square" class="w-16 h-16 text-gray-500 mx-auto mb-3"></i>
-                    <span>Chức năng Gantt Chart đang được phát triển.</span>
-                    <p class="text-xs mt-2">Dạng xem này sẽ hiển thị các dự án và task trên một dòng thời gian.</p>
-                </div>
-                -->
             </div>
         </div>
     `;
@@ -811,21 +721,24 @@ function renderDashboard(projects) {
         </div>
 
         <div class="flex flex-col items-center gap-4 h-[fit-content]">
+
+            <!-------------------- GANTT CHART THEO NHÂN SỰ ------------------>
+<!--
             <div id="assignee-gantt-container" class="w-full bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-4 relative min-h-[400px] overflow-hidden">
-                
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-3">
                         <h3 class="text-lg font-semibold text-white flex items-center gap-2">
                             <i data-lucide="users" class="w-5 h-5 text-indigo-400"></i>
                             Tiến độ theo nhân sự
                         </h3>
-                        <select id="gantt-department-filter"
-                            class="${role == "ADMIN" ? "" : "hidden"} hidden bg-gray-700 text-gray-300 text-xs rounded-lg px-3 py-1.5 border border-gray-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 outline-none transition mr-2">
-                            <option value="all">Tất cả phòng ban</option>
-                        </select>
                     </div>
                     <div>
-                        <!-- Lọc theo phòng ban-->
+                        <button id="gantt-prev" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
+                            <i data-lucide="chevron-left" class="w-4 h-4 text-white"></i>
+                        </button>
+                        <button id="gantt-next" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-white"></i>
+                        </button>
                         <button id="gantt-check" class="p-1.5 rounded hover:bg-gray-600 text-gray-400 hover:text-white transition" title="Hiển thị chi tiết">
                             <i data-lucide="eye" class="w-4 h-4 text-white"></i>
                         </button>
@@ -850,6 +763,8 @@ function renderDashboard(projects) {
                     <span class="text-gray-400 text-sm">Đang tải dữ liệu...</span>
                 </div>
             </div>
+-->
+            <!------------------------------------------------------------------>
 
             <div class="w-full font-mono tracking-wide grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-screen text-gray-200">
                 ${leftColumn}
@@ -876,11 +791,6 @@ function renderDashboard(projects) {
 
     // --- THÊM DÒNG NÀY: Vẽ biểu đồ Gantt ---
     // Chờ 1 chút để DOM ổn định hoặc gọi trực tiếp
-    renderAfterDOMUpdate(() => {
-        // Gọi hàm vẽ chart
-        // projects.items là danh sách dự án của trang hiện tại
-        renderAssigneeGantt(projects.items, deptOptionsHtml);
-    });
 }
 
 /**
@@ -888,24 +798,6 @@ function renderDashboard(projects) {
  * Nó sẽ được gọi lại MỖI KHI renderDashboard
  */
 function attachAllEventListeners(projects, role) {
-    // EVENT CLICK MODAL (cho các nút openUpdateTaskBtn)
-    document.querySelectorAll("[id^='openUpdateTaskBtn#']").forEach(btn => {
-        // (Kiểm tra xem đã gán chưa để tránh gán lặp - nếu cần)
-         //if (btn.dataset.listenerAttached) return; 
-         //btn.dataset.listenerAttached = true;
-
-        btn.addEventListener("click", () => {
-            const taskData = btn.getAttribute("data-task");
-            if (taskData) {
-                const task = JSON.parse(taskData);
-                // Pass projects (trang hiện tại) và role (toàn cục)
-                openTaskModal(task, role);
-            } else {
-                // Đây là nút "Thêm nhiệm vụ" (id="openUpdateTaskBtn#-1#-1")
-                openTaskModal(null, role); // Pass null để modal biết là "thêm mới"
-            }
-        });
-    });
     const deptFilter = document.getElementById("project-department-filter");
     if (deptFilter) {
         // Clone nút để xóa event cũ
@@ -946,64 +838,6 @@ function attachAllEventListeners(projects, role) {
 
     initInfiniteScroll();
 
-    document.querySelectorAll(".view-toggle-btn").forEach(btn => {
-        // Clone để ngăn gán lặp
-        const toggleAllBtn = document.getElementById("toggleAllBtn");
-        const prevPage = document.getElementById("prevPage");
-        const nextPage = document.getElementById("nextPage");
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-
-        newBtn.addEventListener("click", () => {
-            const newView = newBtn.dataset.view;
-            if (newView === currentViewMode) {
-                return; // Đã ở view này, không làm gì
-            }
-
-            // 1. Cập nhật state toàn cục
-            currentViewMode = newView;
-            //console.log(`Chuyển sang view: ${currentViewMode}`);
-
-            // 2. Lấy các element
-            const listView = document.getElementById('project-list-view');
-            const ganttView = document.getElementById('project-gantt-view');
-            const listBtn = document.querySelector('.view-toggle-btn[data-view="list"]');
-            const ganttBtn = document.querySelector('.view-toggle-btn[data-view="gantt"]');
-
-            // 3. Tắt/Mở các View (toggle class 'hidden')
-            if (currentViewMode === 'list') {
-                listView?.classList.remove('hidden');
-                ganttView?.classList.add('hidden');
-                toggleAllBtn.classList.remove("hidden");
-                //prevPage.setAttribute("disabled");
-                //nextPage.setAttribute("disabled");
-                prevPage.disabled = false;
-                nextPage.disabled = false;
-            } else {
-                listView?.classList.add('hidden');
-                ganttView?.classList.remove('hidden');
-                toggleAllBtn.classList.add("hidden");
-                //prevPage.removeAttribute("disabled");
-                //nextPage.removeAttribute("disabled");
-                prevPage.disabled = true;
-                nextPage.disabled = true;
-                buildAndRenderGanttChart(projects.items);
-            }
-
-            // 4. Cập nhật style nút (toggle class active)
-            listBtn?.classList.toggle('bg-indigo-600', currentViewMode === 'list');
-            listBtn?.classList.toggle('text-white', currentViewMode === 'list');
-            listBtn?.classList.toggle('shadow-sm', currentViewMode === 'list');
-            listBtn?.classList.toggle('text-gray-400', currentViewMode !== 'list');
-
-            ganttBtn?.classList.toggle('bg-indigo-600', currentViewMode === 'gantt');
-            ganttBtn?.classList.toggle('text-white', currentViewMode === 'gantt');
-            ganttBtn?.classList.toggle('shadow-sm', currentViewMode === 'gantt');
-            ganttBtn?.classList.toggle('text-gray-400', currentViewMode !== 'gantt');
-
-            // 5. KHÔNG GỌI renderDashboard() NỮA
-        });
-    });
 }
 /**
  * Khởi tạo listener 'scroll'
@@ -1051,636 +885,8 @@ function handleTaskScroll(event) {
 /* =========================================== */
 let assigneeGanttChart = null;
 let ganttExpandedUsers = new Set();
-let currentDepartmentFilter = 'all';
-/**
- * Vẽ biểu đồ Gantt theo nhân sự (Full chức năng: Accordion, Scroll, Toolbar, Colors, Tooltip)
- * @param {Array} projects - Danh sách dự án đang hiển thị ở trang hiện tại
- */
-async function renderAssigneeGantt(projects, deptOptionsHtml) {
-    const chartEl = document.querySelector("#assignee-gantt-chart");
-    const loaderEl = document.querySelector("#gantt-loader");
-    const deptSelect = document.getElementById("gantt-department-filter");
-    let isLabelShown = false;
-
-    if (!chartEl || !projects || projects.length === 0) {
-        if (loaderEl) loaderEl.innerHTML = '<span class="text-gray-500">Không có dữ liệu dự án.</span>';
-        return;
-    }
-
-    // 1. Hiển thị loader (chỉ khi init lần đầu hoặc reload)
-    if (!assigneeGanttChart && loaderEl) loaderEl.classList.remove("hidden");
-
-    try {
-        if (deptSelect && deptSelect.options.length <= 1) {
-            // Chỉ fetch nếu là ADMIN (hoặc logic tùy bạn)
-            // Ở đây ta check nếu element không có class 'hidden' thì mới fetch
-            if (!deptSelect.classList.contains("hidden")) {
-                const depts = await safeFetchJson(`/api/departments/list`, []);
-                depts.forEach(d => {
-                    const option = document.createElement("option");
-                    option.value = d.idDepartment;
-                    option.textContent = d.departmentName;
-                    deptSelect.appendChild(option);
-                });
-
-                // Gắn sự kiện Change
-                deptSelect.addEventListener("change", async (e) => {
-                    currentDepartmentFilter = e.target.value;
-                    // Gọi lại hàm render để fetch lại task theo department mới
-                    await renderAssigneeGantt(projects);
-                });
-            }
-        }
-
-        // 2. Fetch dữ liệu
-        const url = `/api/tasks/all?pageIndex=1&pageSize=100&departmentId=${currentProjectDepartmentFilter}`;
-        const response = await safeFetchJson(url, { items: [] });
-        const safeResponse = (response && typeof response === "object") ? response : { items: [] };
-        const allTasks = Array.isArray(safeResponse.items) ? safeResponse.items : [];
-
-        if (allTasks.length === 0) {
-            if (loaderEl) loaderEl.classList.add("hidden");
-
-            // Xóa chart cũ nếu có
-            if (assigneeGanttChart) {
-                assigneeGanttChart.destroy();
-                assigneeGanttChart = null;
-            }
-            chartEl.innerHTML = "";
-            chartEl.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-[280px] text-gray-500 border-2 border-dashed border-gray-700 rounded-xl bg-gray-800/30">
-                    <div class="p-4 rounded-full bg-gray-800 mb-3 shadow-sm">
-                        <i data-lucide="clipboard-list" class="w-10 h-10 text-indigo-400 opacity-80"></i>
-                    </div>
-                    <span class="font-medium">Chưa có nhiệm vụ nào</span>
-                    <span class="text-xs text-gray-500 mt-1">Các dự án hiện tại chưa có task nào được tạo.</span>
-                </div>`;
-            lucide.createIcons();
-            return; // Dừng hàm tại đây, không vẽ chart nữa
-        } else {
-            // Nếu có data thì clear nội dung cũ (thông báo rỗng) để vẽ chart
-            // NHƯNG ĐỪNG XÓA NẾU ĐANG CÓ CHART (để tránh nháy)
-            if (!assigneeGanttChart) chartEl.innerHTML = "";
-        }
-
-        // 3. Xử lý dữ liệu & Tính toán Min/Max Date
-        const tasksByUser = {};
-        let minDate = new Date().getTime();
-        let maxDate = new Date().getTime();
-        let hasData = false;
-
-        allTasks.forEach(t => {
-            hasData = true;
-            const assignee = t.nameAssignee || "Chưa phân công";
-            if (!tasksByUser[assignee]) tasksByUser[assignee] = [];
-
-            let color = '#3B82F6'; // Default Blue
-            if (assignee === "Chưa phân công") {
-                color = '#6366F1'; // Indigo
-            } else {
-                if (t.statusName === 1) color = '#6B7280'; // Gray (Todo)
-                if (t.statusName === 3) color = '#10B981'; // Green (Done)
-                if (t.overdue) color = '#EF4444'; // Red (Overdue)
-            }
-
-            const startDateObj = new Date(t.startDate);
-            const endDateObj = new Date(t.endDate);
-            startDateObj.setHours(0, 0, 0, 0);
-            endDateObj.setHours(23, 59, 59, 999); // Cuối ngày
-
-            if (startDateObj.getTime() > endDateObj.getTime()) {
-                endDateObj.setTime(startDateObj.getTime());
-            }
-
-            const start = startDateObj.getTime();
-            const end = endDateObj.getTime();
-
-            // Cập nhật Min/Max thực tế
-            if (!hasData || start < minDate) minDate = start;
-            if (!hasData || end > maxDate) maxDate = end;
-
-            tasksByUser[assignee].push({
-                userKey: assignee, // Key gốc cho logic expand
-                x: assignee,
-                y: [start, end],
-                fillColor: color,
-                meta: {
-                    taskName: t.nameTask,
-                    projectName: t.projectName,
-                    status: t.statusName,
-                    s: new Date(t.startDate),
-                    e: new Date(t.endDate)
-                }
-            });
-        });
-
-        // Nếu không có task nào
-        if (!hasData) {
-            minDate = new Date().getTime();
-            maxDate = new Date().getTime() + 86400000;
-        }
-
-        const bufferTime = 2 * 24 * 60 * 60 * 1000;
-        const realMinDate = minDate - bufferTime;
-        const realMaxDate = maxDate + bufferTime;
-
-        // --- [VIEWPORT: Hiển thị tối đa 45 ngày, còn lại scroll] ---
-        const VIEW_RANGE_DAYS = 16;
-        const DAYS_BEFORE_TODAY = 2;
-        const msInDay = 24 * 60 * 60 * 1000;
-        const currentViewDuration = VIEW_RANGE_DAYS * msInDay;
-
-        // Timestamp hôm nay reset về 00:00
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const todayTS = today.getTime();
-        const todayTime = today.getTime();
-
-        // Tỉ lệ lệch trái (0.0 = trái hoàn toàn, 0.5 = giữa, 1.0 = phải)
-        const LEFT_RATIO = 0.375; // <-- chỉnh ở đây nếu muốn lệch nhiều/ít hơn
-
-        // Tính khoảng xem
-        let viewMinDate = todayTime - (DAYS_BEFORE_TODAY * msInDay);
-        let viewMaxDate = viewMinDate + (VIEW_RANGE_DAYS * msInDay);
-
-        // Không cho vượt giới hạn thực tế
-        //if (viewMinDate < realMinDate) {
-        //    viewMinDate = realMinDate;
-        //    viewMaxDate = realMinDate + currentViewDuration;
-        //}
-
-        //if (viewMaxDate > realMaxDate) {
-        //    viewMaxDate = realMaxDate;
-        //    viewMinDate = realMaxDate - currentViewDuration;
-        //}
-
-        //const viewMaxDate = Math.min(realMaxDate, realMinDate + currentViewDuration);
-
-        // --- TÍNH SỐ NGÀY ĐỂ CHIA VẠCH (Dựa trên Viewport) ---
-        const tickCount = VIEW_RANGE_DAYS; // Cố định số vạch hiển thị
-        // -------------------------------------------------
-
-        // Logic Sắp xếp
-        let userKeys = Object.keys(tasksByUser);
-        userKeys.sort((a, b) => {
-            if (a === "Chưa phân công") return -1;
-            if (b === "Chưa phân công") return 1;
-            return a.localeCompare(b, 'vi', { sensitivity: 'base' });
-        });
-
-        // Logic Expand/Collapse
-        const seriesData = [];
-        const labelColors = [];
-        let rowCount = 0;
-
-        userKeys.forEach(user => {
-            const tasks = tasksByUser[user];
-            const isExpanded = ganttExpandedUsers.has(user);
-            const mainColor = (user === "Chưa phân công") ? '#F43F5E' : '#E5E7EB';
-
-            if (isExpanded) {
-                tasks.forEach((task, index) => {
-                    const t = { ...task };
-                    t.x = `${user}__${index}`; // Key unique
-                    seriesData.push(t);
-
-                    if (index === 0) labelColors.push(mainColor);
-                    else labelColors.push('#6B7280');
-                    rowCount++;
-                });
-            } else {
-                tasks.forEach(task => {
-                    const t = { ...task };
-                    t.x = user;
-                    seriesData.push(t);
-                });
-                labelColors.push(mainColor);
-                rowCount++;
-            }
-        });
-
-        const dynamicHeight = Math.max(350, rowCount * 50);
-
-        const options = {
-            series: [{ name: 'Tasks', data: seriesData }],
-            chart: {
-                height: dynamicHeight,
-                type: 'rangeBar',
-                background: 'transparent',
-                animations: { enabled: false },
-                zoom: { enabled: true, type: 'x', autoScaleYaxis: false },
-                toolbar: {
-                    show: true,
-                    autoSelected: 'pan',
-                    tools: {
-                        selection: false, zoom: false, zoomin: false, zoomout: false,
-                        download: true,
-                        pan: true,
-                        reset: true
-                    }
-                },
-                // EVENT CLICK EXPAND
-                events: {
-                    // 1. Logic Click Expand (Giữ nguyên)
-                    dataPointSelection: function (event, chartContext, config) {
-                        const dataPoint = config.w.config.series[config.seriesIndex].data[config.dataPointIndex];
-                        const userKey = dataPoint.userKey;
-                        if (userKey) {
-                            if (ganttExpandedUsers.has(userKey)) ganttExpandedUsers.delete(userKey);
-                            else ganttExpandedUsers.add(userKey);
-                            renderAssigneeGantt(projects);
-                        }
-                    },
-
-                    // 2. Logic Snap to Day (Đã thêm Debounce và Làm tròn)
-                    scrolled: function (chartContext, { xaxis }) {
-                        if (!xaxis) return;
-
-                        // Xóa timeout cũ nếu người dùng vẫn đang kéo
-                        if (chartContext.snapTimeout) {
-                            clearTimeout(chartContext.snapTimeout);
-                        }
-
-                        // Đợi 100ms sau khi dừng kéo mới thực hiện Snap
-                        chartContext.snapTimeout = setTimeout(() => {
-                            const currentMin = xaxis.min;
-                            const date = new Date(currentMin);
-
-                            // SỬA: Logic làm tròn đến ngày GẦN NHẤT
-                            // Nếu đã kéo qua 12h trưa -> tính sang ngày hôm sau
-                            if (date.getHours() >= 12) {
-                                date.setDate(date.getDate() + 1);
-                            }
-                            // Reset về 00:00:00
-                            date.setHours(0, 0, 0, 0);
-                            const snappedMin = date.getTime();
-
-                            // Chỉ zoom nếu vị trí lệch đáng kể (> 1 phút)
-                            if (Math.abs(currentMin - snappedMin) > 60000) {
-                                const snappedMax = snappedMin + currentViewDuration;
-                                chartContext.zoomX(snappedMin, snappedMax);
-                            }
-                        }, 100); // Độ trễ 100ms
-                    }
-                }
-            },
-            plotOptions: {
-                bar: { horizontal: true, barHeight: '60%', rangeBarGroupRows: true, borderRadius: 4, borderRadiusApplication: 'around' }
-            },
-            dataLabels: {
-                enabled: isLabelShown, textAnchor: 'middle',
-                style: { colors: ['#fff'], fontSize: '11px', fontWeight: '600' },
-                formatter: function (val, opt) {
-                    return opt.w.config.series[opt.seriesIndex].data[opt.dataPointIndex].meta.taskName;
-                }
-            },
-            stroke: { width: 1, colors: ['#fff'] },
-            fill: { type: 'solid', opacity: 0.8 },
-            annotations: {
-                xaxis: [{
-                    x: new Date().getTime(), strokeDashArray: 4, borderColor: '#F43F5E', borderWidth: 2,
-                    label: { borderColor: '#F43F5E', style: { color: '#fff', background: '#F43F5E', fontSize: '12px', fontWeight: 'bold', padding: { left: 5, right: 5, top: 2, bottom: 2 } }, text: 'Hôm nay', position: 'top', offsetY: 5 }
-                }]
-            },
-            xaxis: {
-                type: 'datetime',
-                min: viewMinDate,
-                max: viewMaxDate,
-                tickAmount: tickCount, // Cố định số vạch
-                labels: {
-                    rotate: -10,
-                    rotateAlways: true,
-                    offsetX: -33,
-                    style: { colors: '#9CA3AF' },
-                    datetimeUTC: false,
-                    formatter: function (value) {
-                        const date = new Date(value);
-                        if (isNaN(date.getTime())) return value;
-                        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                    }
-                },
-                axisBorder: { show: false },
-                axisTicks: { show: true, color: '#374151' },
-                tooltip: { enabled: false }
-            },
-            yaxis: {
-                labels: {
-                    align: 'left',
-                    style: { colors: labelColors, fontSize: '13px', fontWeight: 600 },
-                    offsetX: -40, minWidth: 180, maxWidth: 180,
-                    formatter: function (value) {
-                        const valStr = String(value);
-                        if (valStr.includes('__')) {
-                            const parts = valStr.split('__');
-                            const user = parts[0];
-                            const idx = parseInt(parts[1]);
-                            if (idx === 0) return `[-] ${user}`;
-                            return ``;
-                        }
-                        return `[+] ${valStr}`;
-                    }
-                }
-            },
-            grid: { borderColor: '#374151', xaxis: { lines: { show: true } }, yaxis: { lines: { show: true } }, strokeDashArray: 0 },
-            theme: { mode: 'dark' },
-            tooltip: {
-                custom: function ({ series, seriesIndex, dataPointIndex, w }) {
-                    const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                    const startStr = data.meta.s.toLocaleDateString('vi-VN');
-                    const endStr = data.meta.e.toLocaleDateString('vi-VN');
-                    return `
-                        <div class="px-3 py-2 bg-gray-900 border border-gray-600 rounded shadow-lg z-50 text-left">
-                            <div class="text-xs text-gray-400 mb-1 truncate max-w-[200px]">${data.meta.projectName}</div>
-                            <div class="text-sm font-bold text-white mb-1">${data.meta.taskName}</div>
-                            <div class="text-xs text-indigo-300 font-mono mt-1">📅 ${startStr} - ${endStr}</div>
-                        </div>
-                    `;
-                }
-            }
-        };
-
-        if (assigneeGanttChart) assigneeGanttChart.destroy();
-
-        //chartEl.innerHTML = '';
-
-        assigneeGanttChart = new ApexCharts(chartEl, options);
-
-        assigneeGanttChart.render().then(() => {
-            const chartContainer = document.querySelector("#assignee-gantt-chart");
-            if (chartContainer) {
-                chartContainer.addEventListener('wheel', function (e) { e.stopPropagation(); }, { capture: true });
-                const canvas = chartContainer.querySelector('.apexcharts-canvas');
-                if (canvas) {
-                    canvas.style.cursor = 'grab';
-                    const cssId = 'force-grabbing-cursor';
-                    const style = document.createElement('style');
-                    style.id = cssId;
-                    style.innerHTML = `* { cursor: grabbing !important; user-select: none !important; }`;
-                    canvas.addEventListener('mousedown', (e) => { canvas.style.cursor = 'grabbing'; if (!document.getElementById(cssId)) document.head.appendChild(style); e.preventDefault(); });
-                    window.addEventListener('mouseup', () => { canvas.style.cursor = 'grab'; const existingStyle = document.getElementById(cssId); if (existingStyle) existingStyle.remove(); });
-                }
-            }
-        });
-
-        if (loaderEl) loaderEl.classList.add("hidden");
-        setTimeout(() => lucide.createIcons(), 500);
-
-        // --- EVENT LISTENERS (TOOLBAR) ---
-        const reloadBtn = document.getElementById('gantt-reload');
-        const expandBtn = document.getElementById('gantt-expand');
-        const scrollWrapper = document.getElementById('assignee-gantt-scroll-wrapper');
-        const checkBtn = document.getElementById('gantt-check');
-        const ganttDepartmentFilter = document.getElementById('gantt-department-filter');
-
-        if (checkBtn) {
-            const newBtn = checkBtn.cloneNode(true);
-            checkBtn.parentNode.replaceChild(newBtn, checkBtn);
-
-            // Set icon ban đầu (nếu mặc định là tắt)
-            newBtn.innerHTML = '<i data-lucide="eye-closed" class="w-4 h-4 text-white"></i>';
-
-            newBtn.addEventListener('click', () => {
-                // 1. Đổi trạng thái
-                isLabelShown = !isLabelShown;
-
-                // 2. Cập nhật Icon (Check hoặc Square)
-                if (isLabelShown) {
-                    newBtn.innerHTML = '<i data-lucide="eye" class="w-4 h-4 text-white"></i>';
-                    //newBtn.classList.add("text-white-400"); // Thêm màu cho nút sáng lên
-                } else {
-                    newBtn.innerHTML = '<i data-lucide="eye-closed" class="w-4 h-4 text-white"></i>';
-                    //newBtn.classList.remove("text-white-400");
-                }
-                lucide.createIcons();
-
-                // 3. Cập nhật Chart (Không cần render lại toàn bộ)
-                if (assigneeGanttChart) {
-                    assigneeGanttChart.updateOptions({
-                        dataLabels: {
-                            enabled: isLabelShown
-                        }
-                    });
-                }
-            });
-        }
-
-        if (reloadBtn) {
-            const newBtn = reloadBtn.cloneNode(true);
-            reloadBtn.parentNode.replaceChild(newBtn, reloadBtn);
-            const icon = newBtn.querySelector("svg");
-            if (icon) icon.classList.remove("animate-spin");
-            newBtn.addEventListener('click', async () => {
-                if (icon) icon.classList.add("animate-spin");
-                // Xoá placeholder (nếu đang có)
-                chartEl.innerHTML = "";
-
-                // Xoá biểu đồ cũ (nếu có)
-                //if (assigneeGanttChart) {
-                //    assigneeGanttChart.destroy();
-                //    assigneeGanttChart = null;
-                //}
-                await renderAssigneeGantt(projects);
-            });
-        }
-
-        if (expandBtn && scrollWrapper) {
-            const newBtn = expandBtn.cloneNode(true);
-            expandBtn.parentNode.replaceChild(newBtn, expandBtn);
-            let isGanttExpanded = scrollWrapper.classList.contains("max-h-[85vh]");
-            newBtn.addEventListener('click', () => {
-                isGanttExpanded = !isGanttExpanded;
-                const icon = newBtn.querySelector("svg");
-                if (isGanttExpanded) {
-                    scrollWrapper.classList.remove("max-h-[280px]"); scrollWrapper.classList.add("max-h-[85vh]"); newBtn.setAttribute("title", "Thu gọn");
-                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="minimize-2" class="w-4 h-4 text-white"></i>'; lucide.createIcons(); }
-                } else {
-                    scrollWrapper.classList.remove("max-h-[85vh]"); scrollWrapper.classList.add("max-h-[280px]"); newBtn.setAttribute("title", "Mở rộng");
-                    if (icon) { icon.remove(); newBtn.innerHTML = '<i data-lucide="maximize-2" class="w-4 h-4 text-white"></i>'; lucide.createIcons(); }
-                }
-            });
-        }
-
-    } catch (e) {
-        console.error("Lỗi vẽ Gantt Chart:", e);
-        if (loaderEl) loaderEl.innerHTML = '<span class="text-red-500 text-sm">Lỗi tải dữ liệu biểu đồ.</span>';
-    }
-}
-/**
- * Lấy dữ liệu và xây dựng biểu đồ Gantt (PHIÊN BẢN JIRA TIMELINE)
- */
-async function buildAndRenderGanttChart(projects) {
-    // 1. Nếu đã render rồi thì thôi
-    if (ganttChartInstance) {
-        ganttChartInstance.destroy();
-        ganttChartInstance = null;
-    }
-
-    const ganttContainer = document.getElementById("gantt-chart-container");
-    const ganttPlaceholder = document.getElementById("gantt-placeholder");
-
-    if (!ganttContainer) return;
-
-    // 2. Hiển thị loader
-    ganttPlaceholder.style.display = 'block';
-    ganttContainer.innerHTML = ''; // Xóa chart cũ
-    ganttPlaceholder.innerHTML = `
-        <div class="flex flex-col items-center justify-center text-center py-10 text-gray-400">
-            <svg class="animate-spin w-8 h-8 text-indigo-400 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-            <span>Đang xây dựng biểu đồ Gantt...</span>
-        </div>`;
-
-    try {
-        // 3. Gọi API (giữ nguyên)
-        const apiCalls = projects.map(p =>
-            safeFetchJson(`/api/projects/${p.idProject}/all-tasks`)
-        );
-        const allTaskLists = await Promise.all(apiCalls);
-
-        // 4. "Dịch" dữ liệu sang định dạng Timeline của ApexCharts
-        // series = [ { name: 'Tên Project', data: [ { x: 'Tên Task', y: [start, end] } ] } ]
-
-        let ganttSeries = [];
-
-        projects.forEach((project, index) => {
-            const tasks = allTaskLists[index];
-            let projectData = [];
-
-            // 4.1. Thêm Project (Epic)
-            // (Thanh này sẽ có màu riêng)
-            projectData.push({
-                x: project.projectName, // Tên trên trục Y
-                y: [
-                    new Date(project.startDay).getTime(),
-                    new Date(project.endDay).getTime()
-                ],
-                // Chúng ta sẽ dùng mảng 'colors' bên dưới
-                // fillColor: '#4338CA' 
-            });
-
-            // 4.2. Thêm các task con
-            if (tasks.length > 0) {
-                tasks.forEach(task => {
-                    projectData.push({
-                        x: `\u00A0\u00A0↳ ${task.nameTask}`, // Tên trên trục Y
-                        y: [
-                            new Date(task.startDate).getTime(),
-                            new Date(task.endDate).getTime()
-                        ],
-                        // 'fillColor' sẽ được ghi đè bởi mảng 'colors'
-                    });
-                });
-            }
-
-            // 4.3. Thêm nhóm này vào series chính
-            ganttSeries.push({
-                name: project.projectName, // Tên này sẽ hiện ở Legend/Tooltip
-                data: projectData
-            });
-        });
-
-        // 5. Khởi tạo biểu đồ ApexCharts (với options kiểu Jira)
-        ganttPlaceholder.style.display = 'none'; // Ẩn placeholder
-
-        const options = {
-            series: ganttSeries,
-            chart: {
-                type: 'rangeBar',
-                height: 600,
-                background: 'transparent',
-                toolbar: {
-                    show: true,
-                    tools: {
-                        download: '<i data-lucide="download" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
-                        selection: true,
-                        zoom: true,
-                        zoomin: '<i data-lucide="zoom-in" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
-                        zoomout: '<i data-lucide="zoom-out" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
-                        pan: '<i data-lucide="move" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
-                        reset: '<i data-lucide="home" class="w-4 h-4 text-gray-400 hover:text-white"></i>',
-                    }
-                }
-            },
-            plotOptions: {
-                bar: {
-                    horizontal: true,
-                    borderRadius: 4,
-                    // TẮT: Để tất cả task con có cùng màu với project
-                    distributed: false,
-                }
-            },
-            // TẮT: Ẩn chữ *trên* thanh bar
-            dataLabels: {
-                enabled: false,
-            },
-            // THÊM: Đường kẻ "Hôm nay"
-            annotations: {
-                xaxis: [
-                    {
-                        x: new Date().getTime(), // Mốc "Hôm nay"
-                        strokeDashArray: 2,     // Nét đứt
-                        borderColor: '#FF4560', // Màu đỏ
-                        label: {
-                            borderColor: '#FF4560',
-                            style: { color: '#fff', background: '#FF4560' },
-                            text: 'Hôm nay'
-                        }
-                    }
-                ]
-            },
-            xaxis: {
-                type: 'datetime', // Trục X là thời gian
-                labels: {
-                    style: { colors: '#9CA3AF' }
-                },
-                axisBorder: { show: false },
-                axisTicks: { color: '#374151' }
-            },
-            // BẬT: Hiển thị danh sách project/task bên trái
-            yaxis: {
-                show: true,
-                labels: {
-                    align: 'left',  // Bắt buộc căn trái
-                    offsetX: 0,
-                    style: {
-                        colors: '#E5E7EB', // Màu chữ
-                        fontSize: '13px',
-                        fontFamily: 'inherit'
-                    },
-                    // Cắt bớt tên nếu quá dài
-                    maxWidth: 200,
-                }
-            },
-            grid: {
-                borderColor: '#374151',
-                row: {
-                    colors: ['transparent', 'rgba(128, 128, 128, 0.05)'],
-                }
-            },
-            tooltip: {
-                theme: 'dark',
-                x: {
-                    format: 'dd/MM/yyyy'
-                }
-            },
-            // THÊM: Mảng màu cho từng Project (series)
-            // ApexCharts sẽ tự động xoay vòng các màu này
-            colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560', '#775DD0', '#3F51B5', '#F9C80E']
-        };
-
-        ganttChartInstance = new ApexCharts(ganttContainer, options);
-        ganttChartInstance.render();
-
-        lucide.createIcons();
-
-    } catch (err) {
-        console.error("Lỗi xây dựng Gantt Chart:", err);
-        ganttPlaceholder.style.display = 'block';
-        ganttPlaceholder.innerHTML = `<span class="text-red-400">Lỗi khi tải dữ liệu Gantt.</span>`;
-    }
-}
+let currentDepartmentFilter = '';
+let currentLoadedTasks = [];
 
 /**
  * Xử lý bật/tắt accordion project (Code của BẠN - đã sửa lỗi)
@@ -1910,24 +1116,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             cachedDepartments = await safeFetchJson("/api/departments/list", []);
         } catch (e) { console.error(e); }
 
-        try {
-            const depts = await safeFetchJson("/api/departments/list", []);
-            // Lưu depts vào biến toàn cục hoặc render ngay nếu select box nằm tĩnh trong _Layout
-            // Nhưng vì select box nằm trong renderDashboard (sinh động), ta cần lưu lại data để dùng sau.
-            window.allDepartments = depts;
-        } catch (e) { console.error(e); }
+        //try {
+        //    const depts = await safeFetchJson("/api/departments/list", []);
+        //    // Lưu depts vào biến toàn cục hoặc render ngay nếu select box nằm tĩnh trong _Layout
+        //    // Nhưng vì select box nằm trong renderDashboard (sinh động), ta cần lưu lại data để dùng sau.
+        //    window.allDepartments = depts;
+        //} catch (e) { console.error(e); }
     }
 
     // --- Bước 1: Chỉ fetch thông tin user ---
-    const me = await safeFetchJson("/api/user/me", null);
-    currentUser = me; // Lưu vào state toàn cục
+    //const me = await safeFetchJson("/api/user/me", null);
+    //currentUser = me; // Lưu vào state toàn cục
 
     // --- Bước 2: Kiểm tra User TRƯỚC KHI fetch phần còn lại ---
-    if (!currentUser || currentUser == null) {
-        console.warn("User không hợp lệ hoặc chưa đăng nhập. Đang chuyển hướng...");
-        window.location.href = "/Error/403";
-        return; // Dừng thực thi ngay lập tức
-    }
+    //if (!currentUser || currentUser == null) {
+    //    console.warn("User không hợp lệ hoặc chưa đăng nhập. Đang chuyển hướng...");
+    //    window.location.href = "/Error/403";
+    //    return; // Dừng thực thi ngay lập tức
+    //}
 
     // Nếu user OK, log và tiếp tục
     //console.log("User:", me);
@@ -1956,7 +1162,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (fullPageLoader) {
         setTimeout(() => {
             fullPageLoader.classList.add('hidden');
-        }, 500);
+        }, 300);
     }
 });
 
@@ -1967,240 +1173,6 @@ console.log();
 // ===================|________|========================
 // =====================================================
 
-// Helper
-async function fetchMemberByProject(idProject) {
-    if (!idProject) {
-        console.error("❌ Không có idProject để fetch members");
-        return [];
-    }
-
-    try {
-        const res = await fetch(`/api/projects/${idProject}/members`);
-        if (!res.ok) {
-            console.error("❌ Lỗi fetch members:", res.status);
-            return [];
-        }
-
-        const members = await res.json();
-        //console.log("Members:", members);
-        return members;
-    } catch (err) {
-        console.error("❌ Fetch members error:", err);
-        return [];
-    }
-}
-
-function formTask(task = null, projects = [], members = [], role) {
-    let renderOptionProject = ``;
-    let startDate = "";
-    let endDate = "";
-
-    if (task) {
-        startDate = task.startDate
-            ? new Date(task.startDate).toLocaleDateString("en-CA")
-            : "";
-        endDate = task.endDate
-            ? new Date(task.endDate).toLocaleDateString("en-CA")
-            : "";
-    }
-
-    if (Array.isArray(projects)) {
-        projects.forEach(p => {
-            renderOptionProject += `
-                <option value="${p.idProject}" ${task && p.idProject == task.projectId ? "selected" : ""}>
-                    ${p.projectName}
-                </option>
-            `;
-        });
-    }
-
-    const assigneeDisabled = (task === null || role === "EMPLOYEE") ? "disabled" : "";
-
-    return (`
-        <div id="updateTaskModal" class="fixed inset-0 flex items-center justify-center hidden z-50 overflow-hidden">
-            <div class="bg-gray-900 w-[700px] rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] border border-gray-700 relative animate-fadeIn max-h-[83vh] flex flex-col">
-                <!-- Header cố định -->
-                <div class="sticky top-0 bg-gray-900 z-10 px-8 pt-6 pb-4 border-b border-gray-800 flex justify-between items-center rounded-tl-2xl rounded-tr-2xl">
-                    <h3 class="text-xl font-semibold text-white flex items-center gap-2">
-                        <i data-lucide="edit-3" class="w-6 h-6 text-indigo-400"></i>
-                        Nhiệm vụ
-                    </h3>
-                    <button id="closeUpdateTaskBtn"
-                            class="text-gray-400 hover:text-white transition">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-
-                <!-- Nội dung cuộn -->
-                <div class="px-8 pb-8 overflow-y-auto custom-scroll">
-                    <form id="updateTaskForm" class="flex flex-col gap-6 mt-4">
-                        <!-- Tên nhiệm vụ -->
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-300 mb-2">Tên nhiệm vụ</label>
-                                <input id="taskName"
-                                       value="${task?.nameTask ?? ""}"
-                                       type="text"
-                                       ${role == "EMPLOYEE"? "disabled":""}
-                                       required
-                                       class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                       placeholder="Nhập tên task..." />
-                            </div>
-
-                            <!-- Dự án -->
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-300 mb-2 font-medium">Dự án</label>
-                                <div id="projectOptions" class="relative group ">
-                                    <select id="project"
-                                        required
-                                        ${!task ? "" : "disabled"}
-                                        class="appearance-none w-full px-4 text-xs py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
-                                        <option value="">---Chọn dự án---</option>
-                                        ${renderOptionProject}
-                                    </select>
-                                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
-                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Người nhận -->
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-300 mb-2">Người nhận nhiệm vụ</label>
-                                <input id="taskAssignee"
-                                       type="text"
-                                       ${assigneeDisabled}
-                                       value="${task?.nameAssignee ?? ""}"
-                                       class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                                       placeholder="Gõ @ và chọn tên người tiếp nhận..." />
-                                <input type="hidden" id="taskAssigneeId" name="taskAssigneeId" value="${task?.assignee_Id ?? ""}">
-                                <!-- Danh sách gợi ý user -->
-                                <ul id="userSuggestions"
-                                    class="absolute z-50 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg text-white text-sm hidden
-                                               max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-600 scrollbar-track-gray-700">
-                                </ul>
-                            </div>
-                        </div>
-
-                        <!-- Mô tả -->
-                        <div>
-                            <label class="block text-xs text-gray-300 mb-2">Mô tả</label>
-                            <textarea id="taskDesc"
-                                  rows="4"
-                                  ${role == "EMPLOYEE" ? "disabled" : ""}
-                                  class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
-                                  placeholder="Nhập mô tả...">${task?.note ?? ""}</textarea>
-                        </div>
-
-                        <!-- Ngày bắt đầu / Ngày kết thúc -->
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <div class="flex-1 relative">
-                                <label class="block text-xs text-gray-300 mb-1">Ngày bắt đầu</label>
-                                <input id="taskStart"
-                                       type="date"
-                                       required
-                                       ${role == "EMPLOYEE" ? "disabled" : ""}
-                                       value="${startDate}"
-                                       class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
-                                <i data-lucide="calendar"
-                                   class="absolute cursor-pointer right-10 top-7 text-gray-400 pointer-events-none w-4 h-4"></i>
-                            </div>
-
-                            <div class="flex-1 relative">
-                                <label class="block text-xs text-gray-300 mb-1">Ngày kết thúc</label>
-                                <input id="taskEnd"
-                                       type="date"
-                                       required
-                                       ${role == "EMPLOYEE" ? "disabled" : ""}
-                                       value="${endDate}"
-                                       class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none appearance-none pr-10" />
-                                <i data-lucide="calendar"
-                                   class="absolute cursor-pointer right-10 top-7 text-gray-400 pointer-events-none w-4 h-4"></i>
-                            </div>
-                        </div>
-
-                        <!-- Trạng thái & Ưu tiên -->
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-300 mb-2 font-medium">Trạng thái</label>
-                                <div class="relative group">
-                                    <select id="taskStatus" class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
-                                        <option value="status-todo" ${task !== null ? (task?.statusName == 1 ? "selected" : "") : ""}>Chưa bắt đầu</option>
-                                        <option value="status-inprogress" ${task !== null ? (task?.statusName == 2 ? "selected" : "") : ""}>Đang thực hiện</option>
-                                        <option value="status-done" ${task !== null ? (task?.statusName == 3 ? "selected" : "") : ""}>Hoàn thành</option>
-                                    </select>
-                                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
-                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-300 mb-2 font-medium">Độ ưu tiên</label>
-                                <div class="relative group">
-                                    <select id="taskPriority" ${role == "EMPLOYEE" ? "disabled" : ""} class="appearance-none w-full px-4 text-xs py-2.5 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all hover:bg-gray-800/90 cursor-pointer">
-                                        <option value="low" ${task === null ? "" : (task?.priority == "low" ? "selected" : "")}>Thấp</option>
-                                        <option value="medium" ${task === null ? "" : (task?.priority == "medium" ? "selected" : "")}>Trung bình</option>
-                                        <option value="high" ${task === null ? "" : (task?.priority == "high" ? "selected" : "")}>Cao</option>
-                                    </select>
-                                    <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
-                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Upload + Preview -->
-                        <div class="flex flex-col gap-3">
-                            <label class="text-xs text-gray-300 font-medium">Tệp đính kèm</label>
-                            <div class="flex flex-col sm:flex-row gap-4 items-stretch">
-                                <div class="flex flex-col w-full sm:w-1/3">
-                                    <label id="dropZone"
-                                           for="fileInputEdit"
-                                           class="cursor-pointer flex flex-col items-center justify-center gap-3 flex-1 p-6 border-2 border-dashed border-indigo-500 rounded-lg hover:bg-indigo-600/10 transition-all text-center text-indigo-300">
-                                        <i data-lucide="upload" class="w-7 h-7 text-indigo-400"></i>
-                                        <span class="font-medium text-white text-xs">Chọn để thêm tệp</span>
-                                        <span class="text-xs text-indigo-300">PDF, DOCX, XLSX, PNG...</span>
-                                    </label>
-                                    <input type="file"
-                                           id="fileInputEdit"
-                                           value="${task?.fileNote}"
-                                           ${role == "EMPLOYEE" ? "disabled" : ""}
-                                           class="hidden"
-                                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.xls,.xlsx" />
-                                    <!-- Hidden input để giữ file cũ -->
-                                    <input type="hidden" id="existingFileUrl" name="existingFileUrl" value="${task?.fileNote ?? ""}"/>
-                                    <p id="fileNameEdit"
-                                       class="text-sm text-indigo-300 mt-1 truncate overflow-hidden text-ellipsis whitespace-nowrap flex items-center justify-start w-full"></p>
-                                </div>
-
-                                <div id="previewContainerEdit"
-                                     class="w-full sm:w-2/3 rounded-[10px] border border-indigo-700 overflow-hidden p-6 bg-gray-800 max-h-[200px] overflow-auto text-white flex items-center justify-center">
-                                    <p class="text-gray-400 text-sm text-center">Preview File</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Nút submit -->
-                        <div class="flex justify-end mt-4 gap-2">
-                            <button id="deleteBtn" type="button" ${task ? "" : "disabled"}
-                                class="${role == "EMPLOYEE" ? "hidden" : ""} px-8 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
-                                Xóa
-                            </button>
-                            <button type="button" id="confirmUploadBtn"
-                                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium shadow-md transition-all">
-                                Xác nhận
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-    `);
-}
 function handleFilePreviewEdit() {
     const fileInput = document.getElementById("fileInputEdit");
     const previewContainer = document.getElementById("previewContainerEdit");
@@ -2286,85 +1258,6 @@ function handleFilePreviewEdit() {
     }
 }
 
-function addAssigneee(members) {
-    const input = document.getElementById("taskAssignee");
-    const suggestionBox = document.getElementById("userSuggestions");
-    const hiddenId = document.getElementById("taskAssigneeId");
-    let hasSelected = false;
-
-    // Khi người dùng nhập vào ô input
-    input.addEventListener("input", () => {
-        const value = input.value.trim();
-        hasSelected = false; // reset mỗi khi gõ lại
-
-        // Nếu có @ => lọc danh sách
-        if (value.startsWith("@")) {
-            const keyword = value.substring(1).toLowerCase();
-
-            const filtered = members.filter(m =>
-                m.fullname.toLowerCase().includes(keyword)
-            );
-
-            if (filtered.length > 0) {
-                suggestionBox.innerHTML = filtered
-                    .map(m => `<li data-id="${m.id}" 
-                        class="px-3 py-1.5 hover:bg-indigo-600 cursor-pointer rounded-md transition">
-                    ${m.fullname}
-                  </li>`)
-                    .join("");
-                suggestionBox.classList.remove("hidden");
-            } else {
-                suggestionBox.classList.add("hidden");
-            }
-        } else {
-            suggestionBox.classList.add("hidden");
-        }
-    });
-
-    // Khi click chọn 1 người
-    suggestionBox.addEventListener("click", (e) => {
-        const li = e.target.closest("li");
-        if (!li) return;
-        const name = li.textContent.trim();
-        const id = li.dataset.id;
-
-        input.value = name;
-        hiddenId.value = id;
-        hasSelected = true;
-
-        suggestionBox.classList.add("hidden");
-    });
-
-    // Nếu người dùng blur ra ngoài mà chưa chọn ai thì xoá input
-    input.addEventListener("blur", () => {
-        setTimeout(() => {
-            if (!hasSelected) {
-                input.value = "";
-                hiddenId.value = "";
-            }
-            suggestionBox.classList.add("hidden");
-        }, 200); // delay để tránh conflict với click chọn
-    });
-}
-function closeFormModal(projects) {
-    // Task Modal
-    const closeBtn = document.getElementById("closeUpdateTaskBtn");
-    const modal = document.getElementById("updateTaskModal");
-    const uploadOverlay = document.getElementById(`uploadOverlay`);
-    closeBtn.addEventListener("click", () => {
-        modal.classList.add("hidden");
-        uploadOverlay.classList.add("hidden");
-        setTimeout(() => modal.remove(), 300); // Xóa hẳn sau 0.3s
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            modal.classList.add("hidden");
-            uploadOverlay.classList.add("hidden");
-            setTimeout(() => modal.remove(), 300); // Xóa hẳn sau 0.
-        }
-    });
-}
-
 // Hàm chuyển đổi ngày về dạng YYYY-MM-DD theo giờ địa phương
 function formatDateToLocalInput(dateString) {
     if (!dateString) return "";
@@ -2378,178 +1271,6 @@ function formatDateToLocalInput(dateString) {
 
     return `${year}-${month}-${day}`;
 }
-
-async function openTaskModal(task = null, role) {
-    // Overlay
-    const uploadOverlay = document.getElementById(`uploadOverlay`);
-    uploadOverlay.classList.remove("hidden");
-
-    if (allProjectsList.length === 0) {
-        //console.log("Cache project list rỗng, đang fetch lần đầu...");
-        try {
-            // Chờ fetch và lưu vào cache toàn cục
-            allProjectsList = await safeFetchJson("/api/projects/list", []);
-            //console.log("✅ Đã fetch và cache project list:", allProjectsList);
-        } catch (err) {
-            console.error("LỖI NGHIÊM TRỌNG: Không thể fetch project list cho modal.", err);
-            // Báo lỗi và đóng modal
-            uploadOverlay.classList.add("hidden");
-            alert("Lỗi: Không thể tải danh sách dự án. Vui lòng thử lại.");
-            return; // Dừng hàm
-        }
-    }
-
-    // Tạo modal HTML từ formTask
-    const modalHTML = formTask(task, allProjectsList, members, role);
-
-    // Thêm vào DOM (nếu chưa có)
-    let existingModal = document.getElementById("updateTaskModal");
-    if (existingModal) existingModal.remove();
-    document.body.insertAdjacentHTML("beforeend", modalHTML);
-
-    // Hiện modal
-    const modal = document.getElementById("updateTaskModal");
-    modal.classList.remove("hidden");
-
-    handleFilePreviewEdit();
-    handleConfirm(task);
-    if (task) {
-        handleDelete(task.idTask);
-    }
-
-    // Kích hoạt icon lucide
-    lucide.createIcons();
-
-    closeFormModal();
-
-    var members;
-
-
-    // 🟣 Hàm kiểm tra ràng buộc ngày
-    const validateDates = () => {
-        const taskStart = document.getElementById("taskStart");
-        const taskEnd = document.getElementById("taskEnd");
-
-        if (!taskStart || !taskEnd) return;
-
-        const startVal = taskStart.value;
-        const endVal = taskEnd.value;
-
-        if (startVal && endVal && endVal < startVal) {
-            alert("❌ Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!");
-            taskEnd.value = startVal; // tự động sửa lại cho hợp lệ
-        }
-    };
-
-    if (allProjectsList) {
-        //console.log("Projects: NOT NULL");
-    } else {
-        //console.log("Projects: NULL");
-    }
-    if (task) {
-        members = await fetchMemberByProject(task.projectId);
-        addAssigneee(members);
-
-        const project = allProjectsList.find(p => p.idProject == task.projectId);
-        if (project) {
-            const startProj = new Date(project.startDay).toISOString().split("T")[0];
-            const endProj = new Date(project.endDay).toISOString().split("T")[0];
-            const taskStart = document.getElementById("taskStart");
-            const taskEnd = document.getElementById("taskEnd");
-
-            taskStart.min = startProj;
-            taskStart.max = endProj;
-            taskEnd.min = startProj;
-            taskEnd.max = endProj;
-        }
-    }
-    else {
-        const projectSelect = document.getElementById("project");
-
-        projectSelect.addEventListener("change", async (e) => {
-            const projectId = e.target.value;
-            const assigneeInput = document.getElementById("taskAssignee");
-            const taskStart = document.getElementById("taskStart");
-            const taskEnd = document.getElementById("taskEnd");
-            if (!projectId) {
-                assigneeInput.value = "";
-                assigneeInput.setAttribute("disabled", true);
-                taskStart.removeAttribute("min");
-                taskStart.removeAttribute("max");
-                taskEnd.removeAttribute("min");
-                taskEnd.removeAttribute("max");
-                return;
-            }
-
-            // Gọi API load member theo project
-            members = await fetchMemberByProject(projectId);
-            currentProject = e.target.value;
-
-            // 🔹 Lấy ngày bắt đầu và kết thúc của project
-            const project = allProjectsList.find(p => p.idProject == projectId);
-            if (project) {
-                //console.log("YES: ", project);
-                const startProj = formatDateToLocalInput(project.startDay);
-                const endProj = formatDateToLocalInput(project.endDay);
-
-                // Ràng buộc ngày trong form
-                taskStart.min = startProj;
-                taskStart.max = endProj;
-                taskEnd.min = startProj;
-                taskEnd.max = endProj;
-
-                // 🟢 Thêm sự kiện kiểm tra ràng buộc ngày
-                if (typeof validateDates === "function") {
-                    taskStart.removeEventListener("change", validateDates); // Xóa event cũ tránh trùng lặp
-                    taskEnd.removeEventListener("change", validateDates);
-
-                    taskStart.addEventListener("change", validateDates);
-                    taskEnd.addEventListener("change", validateDates);
-                }
-            }
-
-            if (members && members.length > 0) {
-                assigneeInput.removeAttribute("disabled");
-                addAssigneee(members); // hàm render danh sách gợi ý user
-            }
-        });
-
-    }
-}
-function getUpdatedTaskFromForm(oldTask = {}) {
-    const name = document.getElementById("taskName")?.value.trim();
-    const description = document.getElementById("taskDesc")?.value.trim() || "";
-    const startDate = document.getElementById("taskStart")?.value || "";
-    const endDate = document.getElementById("taskEnd")?.value || "";
-    const projectId = document.getElementById("project")?.value || "";
-    const memberId = document.getElementById("taskAssigneeId")?.value || null   ;
-    const status = document.getElementById("taskStatus")?.value || "";
-    const prior = document.getElementById("taskPriority")?.value || "";
-    const file = document.getElementById("existingFileUrl")?.value || "";
-
-    var isValid = (name != null && name != "");
-    if (!isValid) {
-        alert("Vui lòng nhập đầy đủ thông tin.");
-        return;
-    }
-
-    const t = {
-        ...oldTask, // giữ lại dữ liệu cũ
-        Id: (oldTask && oldTask.idTask != "") ? oldTask.idTask : crypto.randomUUID(),
-        Name: name,
-        Desc: description,
-        Start: startDate,
-        End: endDate,
-        IdPrj: projectId,
-        IdAss: memberId,
-        Status: status,
-        Prior: prior,
-        File: file,
-    }
-    // Gộp lại thành object mới
-    return t;
-}
-
 function renderLabel(status, isOverdue) {
     let statusText = "";
     let statusClass = "";
@@ -2590,29 +1311,6 @@ function renderLabel(status, isOverdue) {
     `;
 }
 
-
-function filterHighPrior() {
-    const checkbox = document.getElementById("priorityHigh");
-    const taskCards = document.querySelectorAll(".task-card");
-
-    checkbox.addEventListener("change", function () {
-        const showHighOnly = checkbox.checked;
-
-        taskCards.forEach(card => {
-            const priority = card.dataset.priority?.toLowerCase();
-            const isHigh = (priority === "cao" || priority === "high");
-
-            if (showHighOnly && !isHigh) {
-                card.classList.add("hidden-task");
-                setTimeout(() => (card.style.display = "none"), 300);
-            } else {
-                card.style.display = "block";
-                setTimeout(() => card.classList.remove("hidden-task"), 10);
-            }
-        });
-    });
-}
-
 /**
  * Cắt chuỗi và thêm dấu "..."
  * @param {string} str - Chuỗi cần cắt
@@ -2624,136 +1322,6 @@ function truncateString(str, maxLength = 50) {
         return str;
     }
     return str.slice(0, maxLength) + "...";
-}
-function handleConfirm(task) { // 'task' ở đây là object task GỐC (trước khi sửa)
-    document.getElementById("confirmUploadBtn").addEventListener("click", async () => {
-        const updatedTask = getUpdatedTaskFromForm(task); // Lấy data MỚI từ form
-        if (!updatedTask) return;
-
-        // ... (phần kiểm tra requiredFields giữ nguyên) ...
-        const requiredFields = ["Name", "IdPrj", "Start", "End"];
-        for (const field of requiredFields) {
-            if (!updatedTask[field] || updatedTask[field].trim() === "") {
-                alert(`❌ Trường "${field}" không được để trống.`);
-                return;
-            }
-        }
-
-        const loadingOverlay = document.getElementById(`loadingOverlay`);
-        try {
-            loadingOverlay.classList.remove("hidden");
-            const res = await fetch("/Home/SaveTask", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: 'include',
-                body: JSON.stringify(updatedTask)
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                closeFormModal();
-
-                // ======================================================
-                // SỬA: LOGIC GỬI NOTIFY THÔNG MINH HƠN
-                // ======================================================
-                const newAssigneeId = updatedTask["IdAss"];
-
-                // Lấy ID assignee CŨ (nếu là task CŨ và có 'idAss')
-                const oldAssigneeId = (task && task.idAss) ? task.idAss : null;
-
-                // Chỉ gửi notify nếu:
-                // 1. Có assignee mới (không rỗng)
-                // 2. Assignee mới KHÁC assignee cũ
-                if (newAssigneeId && newAssigneeId.trim() !== "" && newAssigneeId !== oldAssigneeId) {
-                    // --- SỬA: Lấy tên Project (3 bước) ---
-                    let projectName = "Không rõ"; // Giá trị mặc định
-                    try {
-                        // 1. Fetch (thêm credentials)
-                        const projectRes = await fetch(`/api/projects/${updatedTask["IdPrj"]}/name`, {
-                            credentials: 'include'
-                        });
-
-                        // 2. Kiểm tra OK và lấy JSON
-                        if (projectRes.ok) {
-                            const projectData = await projectRes.json();
-                            projectName = projectData.projectName; // 3. Lấy tên
-                        }
-                    } catch (e) {
-                        console.warn("Không thể lấy tên project.", e);
-                    }
-                    //console.log("Tên project để gửi notify:", projectName);
-                    // --- Hết phần sửa lấy tên project ---
-
-                    const truncatedProjectName = truncateString(projectName, 50);
-                    const truncatedTaskName = truncateString(updatedTask.Name, 50);
-
-                    try {
-                        await fetch("/api/notification/push", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            credentials: 'include',
-                            body: JSON.stringify({
-                                UserId: newAssigneeId,
-                                Title: `Giao công việc`,
-                                Message: `
-                                    Bạn được giao nhiệm vụ mới 🔔
-                                    <br/>
-                                    <span class="text-green-500"><strong>Dự án</strong></span>: ${truncatedProjectName}
-                                    <br/>
-                                    <span class="text-green-500"><strong>Nhiệm vụ</strong></span>: ${truncatedTaskName}
-                                `
-                            })
-                        });
-                    } catch (notifyErr) {
-                        console.error("🔥 Lỗi gửi notify:", notifyErr);
-                    }
-                }
-                // ======================================================
-
-                location.reload(); // Chỉ reload khi thành công
-
-            } else {
-                alert("❌ Lưu thất bại: " + (data.message || "Không rõ lỗi"));
-                loadingOverlay.classList.add("hidden");
-            }
-        } catch (e) {
-            loadingOverlay.classList.add("hidden");
-            console.error("🔥 Lỗi gửi dữ liệu:", e);
-            alert("❌ Đã xảy ra lỗi nghiêm trọng. Vui lòng thử lại.");
-        }
-    });
-}
-
-function handleDelete(taskId) {
-    const deleteBtn = document.getElementById("deleteBtn");
-    deleteBtn.addEventListener("click", async () => {
-        const loadingOverlay = document.getElementById(`loadingOverlay`);
-        //console.log(taskId);
-        if (!taskId) {
-            alert("⚠️ Không tìm thấy ID task để xóa!");
-            return;
-        }
-
-        if (!confirm("Bạn có chắc muốn xóa task này không?")) return;
-
-        try {
-            loadingOverlay.classList.remove("hidden");
-            const res = await fetch(`/Home/DeleteTask?id=${taskId}`, { method: "DELETE" });
-            const data = await res.json();
-
-            if (data.success) {
-                closeFormModal();
-                location.reload();
-            } else {
-                //console.log("❌ " + data.message);
-            }
-        } catch (e) {
-            loadingOverlay.classList.add("hidden");
-            console.error("🔥 Lỗi khi xóa task:", e);
-            //console.log("⚠️ Không thể xóa task. Kiểm tra lại kết nối hoặc server.");
-        }
-    });
 }
 
 function viewFile(fileUrl) {

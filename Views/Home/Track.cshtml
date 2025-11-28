@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Theo dõi tiến độ";
+    var role = ViewBag.Role ?? "UNKNOWN";
+    var deptId = ViewBag.DeptId ?? "";
+}
+
+<div id="track-gantt-placeholder"
+     data-role="@role"
+     data-dept-id="@deptId"
+     class="w-full mt-4 min-h-[500px]">
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/js/track.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const container = document.getElementById("track-gantt-placeholder");
+            // 1. Kiểm tra hàm safeFetchJson
+            if (typeof safeFetchJson === 'undefined') {
+                console.error("Lỗi: safeFetchJson chưa được định nghĩa.");
+                return;
+            }
+
+            if (container) {
+                // 2. Lấy HTML từ track.js và gán vào View
+                container.innerHTML = getGanttChartHTML();
+
+                // 3. Render lại icon
+                if (window.lucide) window.lucide.createIcons();
+
+                // 4. Gọi hàm vẽ biểu đồ
+                await renderAssigneeGantt();
+            }
+        });
+    </script>
+}

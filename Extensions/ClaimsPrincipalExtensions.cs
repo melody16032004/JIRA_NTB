@@ -26,5 +26,9 @@ namespace JIRA_NTB.Extensions
         {
             return user.FindFirstValue("FullName") ?? "";
         }
+        public static string GetIdDepartment(this ClaimsPrincipal user)
+        {
+            return user.FindFirstValue("IdDepartment") ?? "";
+        }
     }
 }
