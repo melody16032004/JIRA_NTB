@@ -142,7 +142,7 @@ namespace JIRA_NTB.Controllers
 		{
 			if (User.Identity.IsAuthenticated)
 			{
-				return RedirectToAction("Index", "Home");
+				return RedirectToAction("Index", "Welcome");
 			}
 			return View();
 		}
@@ -182,7 +182,7 @@ namespace JIRA_NTB.Controllers
 				{
 					// Debug log để kiểm tra RememberMe
 					Console.WriteLine($"✅ Login thành công - RememberMe: {model.RememberMe}");
-					return RedirectToAction("Index", "Home");
+					return RedirectToAction("Index", "Welcome");
 				}
 
 				if (result.IsNotAllowed)

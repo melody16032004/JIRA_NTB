@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using JIRA_NTB.Data;
+﻿using JIRA_NTB.Data;
 using JIRA_NTB.Extensions;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
@@ -15,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Controllers
 {
-    //[Authorize]
+    [Authorize]
     public class TaskController : Controller
     {
         private readonly ITaskService taskService;

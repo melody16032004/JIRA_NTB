@@ -20,7 +20,7 @@ class InfiniteScrollManager {
     }
 
     setupColumnObserver(column) {
-        console.log(`column data: ${column.dataset.statusId}`);
+        //console.log(`column data: ${column.dataset.statusId}`);
         const taskList = column.querySelector('.task-list');
         const statusId = column.dataset.statusId;
         const hasMore = column.dataset.hasMore;
@@ -32,7 +32,7 @@ class InfiniteScrollManager {
 
         // Chỉ setup observer nếu có thêm data để load
         if (hasMore !== 'true') {
-            console.log(`[InfiniteScroll] No more data for ${statusId}, skip observer`);
+            //console.log(`[InfiniteScroll] No more data for ${statusId}, skip observer`);
             return;
         }
 
@@ -378,7 +378,7 @@ class InfiniteScrollManager {
 
 // Initialize khi DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[InfiniteScroll] Initializing...');
+    //console.log('[InfiniteScroll] Initializing...');
     window.infiniteScrollManager = new InfiniteScrollManager();
 });
 

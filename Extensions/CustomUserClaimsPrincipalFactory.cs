@@ -23,6 +23,7 @@ namespace JIRA_NTB.Extensions
             identity.AddClaim(new Claim("UserId", user.Id));
             identity.AddClaim(new Claim("FullName", user.FullName ?? ""));
             identity.AddClaim(new Claim("IsActive", user.IsActive.ToString()));
+            identity.AddClaim(new Claim("IdDepartment", user.IdDepartment ?? ""));
 
             // Roles đã được tự động thêm bởi base.GenerateClaimsAsync()
 
