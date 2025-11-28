@@ -1,21 +1,35 @@
 ﻿using JIRA_NTB.Models;
+using JIRA_NTB.ViewModels;
 
 namespace JIRA_NTB.Repository
 {
     public interface ITaskRepository
     {
         Task<List<TaskItemModel>> GetAllAsync();
-        Task<List<TaskItemModel>> GetAllFilteredAsync(UserModel user, IList<string> roles);
-        Task<List<TaskItemModel>> GetTasksByStatusPagedAsync(UserModel user,IList<string> roles,
+        Task<List<TaskViewModel>> GetTaskViewModelsAsync(
+       string userId,
+       IList<string> roles,
+       string? projectId = null,
+       string? taskId = null);
+        Task<List<TaskItemModel>> GetTasksByStatusPagedAsync(string userId,IList<string> roles,
             string? statusId = null, int page = 1, int pageSize = 10, string? projectId = null);
+
+        Task<List<TaskViewModel>> GetTasksByStatusPagedViewModelAsync(
+        string userId,
+        IList<string> roles,
+        string? statusId = null,
+        int page = 1,
+        int pageSize = 10,
+        string? projectId = null);
+
         Task<int> GetTaskCountByStatusAsync(
-            UserModel user,
+            string userId,
             IList<string> roles,
             string? statusId = null,
             string? projectId = null);
-        Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, UserModel user, IList<string> roles);
+        Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, string userId, IList<string> roles);
         Task<TaskItemModel?> GetByIdAsync(string id);
-        Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, UserModel user, IList<string> roles);
+        Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, string userId, IList<string> roles);
         Task<List<TaskItemModel>> GetByAssigneeIdAsync(string userId);
         Task UpdateAsync(TaskItemModel task);
         Task RefreshOverdueStatusAsync();

@@ -1,8 +1,10 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
+using JIRA_NTB.ViewModels;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace JIRA_NTB.Repository
 {
@@ -23,28 +25,131 @@ namespace JIRA_NTB.Repository
                 .Include(t => t.Assignee)
                 .ToListAsync();
         }
-        public async Task<List<TaskItemModel>> GetAllFilteredAsync(UserModel user, IList<string> roles)
+        public async Task<List<TaskViewModel>> GetTaskViewModelsAsync(
+      string userId,
+      IList<string> roles,
+      string? projectId = null,
+      string? taskId = null)
         {
-            IQueryable<TaskItemModel> query = _context.Tasks
-                .Include(t => t.Project)
-                .Include(t => t.Status)
-                .Include(t => t.Assignee);
+            IQueryable<TaskItemModel> query = _context.Tasks;
 
-            // 🎯 Phân quyền lọc task
+            // 1. Phân quyền
             if (roles.Contains("LEADER"))
             {
-                // Leader -> task trong các project mà mình quản lý
-                query = query.Where(t => t.Project.UserId == user.Id);
+                query = query.Where(t => t.Project.UserId == userId);
             }
             else if (roles.Contains("EMPLOYEE"))
             {
-                // Employee -> chỉ task mình được assign
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == userId);
             }
-            return await query.ToListAsync();
+
+            // 2. Lọc
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                query = query.Where(t => t.ProjectId == projectId);
+            }
+
+            if (!string.IsNullOrEmpty(taskId))
+            {
+                query = query.Where(t => t.IdTask == taskId);
+            }
+
+            // 3. ✅ SELECT chỉ những field cần thiết
+            var result = await query
+                .Select(t => new TaskViewModel
+                {
+                    IdTask = t.IdTask,
+                    NameTask = t.NameTask,
+                    Priority = t.Priority,
+                    Note = t.Note,
+                    FileNote = t.FileNote,
+                    StartDate = t.StartDate,
+                    EndDate = t.EndDate,
+                    CompletedDate = t.CompletedDate,
+                    Overdue = t.Overdue,
+                    ProjectId = t.ProjectId,
+                    AssigneeId = t.Assignee_Id,
+                    IsCompleted = t.Status != null && t.Status.StatusName == TaskStatusModel.Done,
+
+                    // Chỉ lấy field cần thiết từ navigation
+                    ProjectName = t.Project != null ? t.Project.ProjectName : "",
+                    StatusName = t.Status != null ? t.Status.StatusName : default(TaskStatusModel),
+                    AssigneeFullName = t.Assignee != null ? t.Assignee.FullName : null
+                })
+                .ToListAsync();
+
+            return result;
         }
+        public async Task<List<TaskViewModel>> GetTasksByStatusPagedViewModelAsync(
+    string userId,
+    IList<string> roles,
+    string? statusId = null,
+    int page = 1,
+    int pageSize = 10,
+    string? projectId = null)
+        {
+            IQueryable<TaskItemModel> query = _context.Tasks;
+
+            // 🎯 Phân quyền
+            if (roles.Contains("LEADER"))
+            {
+                query = query.Where(t => t.Project.UserId == userId);
+            }
+            else if (roles.Contains("EMPLOYEE"))
+            {
+                query = query.Where(t => t.Assignee_Id == userId);
+            }
+
+            // Filter theo project
+            if (!string.IsNullOrEmpty(projectId))
+            {
+                query = query.Where(t => t.ProjectId == projectId);
+            }
+
+            // 🎯 Filter theo statusId
+            if (!string.IsNullOrEmpty(statusId))
+            {
+                if (statusId == "False") // cột OVERDUE
+                {
+                    query = query.Where(t => t.Overdue
+                                             && t.Status.StatusName != TaskStatusModel.Done
+                                             && t.Status.StatusName != TaskStatusModel.Deleted);
+                }
+                else
+                {
+                    query = query.Where(t => t.Status.StatusId == statusId && !t.Overdue);
+                }
+            }
+
+            // ✅ SELECT chỉ field cần thiết
+            return await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new TaskViewModel
+                {
+                    IdTask = t.IdTask,
+                    NameTask = t.NameTask,
+                    Priority = t.Priority,
+                    Note = t.Note,
+                    FileNote = t.FileNote,
+                    StartDate = t.StartDate,
+                    EndDate = t.EndDate,
+                    CompletedDate = t.CompletedDate,
+                    Overdue = t.Overdue,
+                    ProjectId = t.ProjectId,
+                    AssigneeId = t.Assignee_Id,
+                    IsCompleted = t.Status != null && t.Status.StatusName == TaskStatusModel.Done,
+
+                    // Chỉ lấy field cần thiết từ navigation
+                    ProjectName = t.Project != null ? t.Project.ProjectName : "",
+                    StatusName = t.Status != null ? t.Status.StatusName : default(TaskStatusModel),
+                    AssigneeFullName = t.Assignee != null ? t.Assignee.FullName : null
+                })
+                .ToListAsync();
+        }
+
         public async Task<List<TaskItemModel>> GetTasksByStatusPagedAsync(
-    UserModel user,
+    string userId,
     IList<string> roles,
     string? statusId = null,
     int page = 1,
@@ -58,11 +163,11 @@ namespace JIRA_NTB.Repository
             // 🎯 Phân quyền
             if (roles.Contains("LEADER"))
             {
-                query = query.Where(t => t.Project.UserId == user.Id);
+                query = query.Where(t => t.Project.UserId == userId);
             }
             else if (roles.Contains("EMPLOYEE"))
             {
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == userId);
             }
             // Filter theo project
             if (!string.IsNullOrEmpty(projectId))
@@ -93,7 +198,7 @@ namespace JIRA_NTB.Repository
         /// ✅ Đếm tổng số task theo status (có phân quyền)
         /// </summary>
         public async Task<int> GetTaskCountByStatusAsync(
-            UserModel user,
+            string userId,
             IList<string> roles,
             string? statusId = null,
             string? projectId = null)
@@ -106,11 +211,11 @@ namespace JIRA_NTB.Repository
             // 🎯 Phân quyền
             if (roles.Contains("LEADER"))
             {
-                query = query.Where(t => t.Project.UserId == user.Id);
+                query = query.Where(t => t.Project.UserId == userId);
             }
             else if (roles.Contains("EMPLOYEE"))
             {
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == userId);
             }
 
             // Filter theo project
@@ -145,7 +250,7 @@ namespace JIRA_NTB.Repository
                 .FirstOrDefaultAsync(t => t.IdTask == id);
         }
 
-        public async Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, UserModel user, IList<string> roles)
+        public async Task<TaskItemModel?> GetByIdFilteredAsync(string taskId, string userId, IList<string> roles)
         {
             var query = _context.Tasks
                 .Include(t => t.Project)
@@ -155,17 +260,17 @@ namespace JIRA_NTB.Repository
 
             if (roles.Contains("LEADER"))
             {
-                query = query.Where(t => t.Project.UserId == user.Id);
+                query = query.Where(t => t.Project.UserId == userId);
             }
             else if (roles.Contains("EMPLOYEE"))
             {
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == userId);
             }
 
             return await query.FirstOrDefaultAsync(t => t.IdTask == taskId);
         }
 
-        public async Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, UserModel user, IList<string> roles)
+        public async Task<List<TaskItemModel>> GetByProjectIdAsync(string projectId, string userId, IList<string> roles)
         {
             var query = _context.Tasks
                 .Include(t => t.Status)
@@ -174,11 +279,11 @@ namespace JIRA_NTB.Repository
                 .AsQueryable();
             if (roles.Contains("LEADER"))
             {
-                query = query.Where(t => t.Project.UserId == user.Id);
-            }
+                query = query.Where(t => t.Project.UserId == userId);
+            }   
             else if (roles.Contains("EMPLOYEE"))
             {
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == userId);
             }
             return await query.ToListAsync();
         }

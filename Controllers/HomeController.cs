@@ -1,4 +1,5 @@
 using JIRA_NTB.Data;
+using JIRA_NTB.Extensions;
 using JIRA_NTB.Models;
 using JIRA_NTB.Models.Enums;
 using JIRA_NTB.ViewModels;
@@ -23,13 +24,14 @@ namespace JIRA_NTB.Controllers
         private readonly ILogger<HomeController> _logger;
 
         private readonly AppDbContext _context;
-        private readonly UserManager<UserModel> _userManager;
+        private string UserId => User.GetUserId();
+        private List<string> CurrentUserRoles => User.GetUserRoles();
+        private string DepartmentId => User.GetIdDepartment();
 
-        public HomeController(ILogger<HomeController> logger, AppDbContext context, UserManager<UserModel> userManager)
+        public HomeController(ILogger<HomeController> logger, AppDbContext context)
         {
             _logger = logger;
             _context = context;
-            _userManager = userManager;
         }
 
         public IActionResult Index()
@@ -53,89 +55,75 @@ namespace JIRA_NTB.Controllers
 
         public async Task<IActionResult> Track()
         {
-            //var isRole = "";
-            //if (User.IsInRole("ADMIN"))
-            //{
-            //    isRole = "ADMIN";
-            //}
-            //else if (User.IsInRole("LEADER"))
-            //{
-            //    isRole = "LEADER";
-            //}
-            //else
-            //{
-            //    isRole = "EMPLOYEE";
-            //}
-            //ViewBag.Role = isRole;
-            var user = await _userManager.GetUserAsync(User);
-            var isRole = "";
-            var deptId = "";
-
-            if (user != null)
+            string isRole = "";
+            if (CurrentUserRoles.Contains("EMPLOYEE"))
             {
-                deptId = user.IdDepartment ?? ""; // Lấy ID phòng ban
-                if (await _userManager.IsInRoleAsync(user, "ADMIN")) isRole = "ADMIN";
-                else if (await _userManager.IsInRoleAsync(user, "LEADER")) isRole = "LEADER";
-                else isRole = "EMPLOYEE";
+                isRole = "EMPLOYEE";
+            }else if (CurrentUserRoles.Contains("LEADER"))
+            {
+                isRole = "LEADER";
+            }
+            else
+            {
+                isRole = "ADMIN";
             }
 
             ViewBag.Role = isRole;
-            ViewBag.DeptId = deptId;
+            ViewBag.DeptId = DepartmentId;
             return View();
         }
 
-        #region GET: api/user/me -> Lấy người dùng hiện tại
-        [HttpGet("api/user/me")]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
+        //#region GET: api/user/me -> Lấy người dùng hiện tại
+        //[HttpGet("api/user/me")]
+        //public async Task<IActionResult> GetCurrentUser()
+        //{
+        //    var user = await _userManager.GetUserAsync(User);
+        //    if (user == null)
+        //    {
+        //        return Unauthorized();
+        //    }
 
-            UserModel leader = null;
+        //    UserModel leader = null;
 
-            // Chỉ tìm Leader nếu người dùng hiện tại là EMPLOYEE và có phòng ban
-            if (User.IsInRole("EMPLOYEE") && !string.IsNullOrEmpty(user.IdDepartment))
-            {
-                // 1. Tìm ID của vai trò (Role) "LEADER"
-                // (Giả sử tên Role của bạn là "LEADER", 
-                // dựa theo code `User.IsInRole("LEADER")` bạn gửi trước đó)
-                var leaderRole = await _context.Roles
-              .FirstOrDefaultAsync(r => r.Name == "LEADER");
+        //    // Chỉ tìm Leader nếu người dùng hiện tại là EMPLOYEE và có phòng ban
+        //    if (User.IsInRole("EMPLOYEE") && !string.IsNullOrEmpty(user.IdDepartment))
+        //    {
+        //        // 1. Tìm ID của vai trò (Role) "LEADER"
+        //        // (Giả sử tên Role của bạn là "LEADER", 
+        //        // dựa theo code `User.IsInRole("LEADER")` bạn gửi trước đó)
+        //        var leaderRole = await _context.Roles
+        //      .FirstOrDefaultAsync(r => r.Name == "LEADER");
 
-                if (leaderRole != null)
-                {
-                    // 2. Tìm người dùng (User)
-                    //    - Cùng phòng ban VỚI BẠN (user.IdDepartment)
-                    //    - VÀ có RoleId là "LEADER"
-                    leader = await (from u in _context.Users
-                                    join ur in _context.UserRoles on u.Id equals ur.UserId
-                                    where u.IdDepartment == user.IdDepartment && ur.RoleId == leaderRole.Id
-                                    select u)
-                      .FirstOrDefaultAsync();
-                }
-            }
-            // Nếu bạn là LEADER hoặc ADMIN, 'leader' sẽ là null (vì bạn không có Leader)
-            // Nếu bạn là EMPLOYEE mà phòng ban chưa có ai là LEADER, 'leader' cũng là null
+        //        if (leaderRole != null)
+        //        {
+        //            // 2. Tìm người dùng (User)
+        //            //    - Cùng phòng ban VỚI BẠN (user.IdDepartment)
+        //            //    - VÀ có RoleId là "LEADER"
+        //            leader = await (from u in _context.Users
+        //                            join ur in _context.UserRoles on u.Id equals ur.UserId
+        //                            where u.IdDepartment == user.IdDepartment && ur.RoleId == leaderRole.Id
+        //                            select u)
+        //              .FirstOrDefaultAsync();
+        //        }
+        //    }
+        //    // Nếu bạn là LEADER hoặc ADMIN, 'leader' sẽ là null (vì bạn không có Leader)
+        //    // Nếu bạn là EMPLOYEE mà phòng ban chưa có ai là LEADER, 'leader' cũng là null
 
-            return Ok(new
-            {
-                user.FullName,
-                user.Id,
-                LeaderId = leader?.Id,
-                LeaderName = leader?.FullName
-            });
-        }
-        #endregion
+        //    return Ok(new
+        //    {
+        //        user.FullName,
+        //        user.Id,
+        //        LeaderId = leader?.Id,
+        //        LeaderName = leader?.FullName
+        //    });
+        //}
+        //#endregion
 
         #region GET: api/tasks/statistics (SQL VERSION)
         [HttpGet("api/tasks/statistics")]
         public async Task<IActionResult> GetTasksStatistics()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
+            if (UserId == null) return Unauthorized();
 
             // 1. Viết câu lệnh SQL dùng "Conditional Aggregation"
             // Câu lệnh này đếm tất cả các trạng thái chỉ trong 1 lần quét bảng
@@ -161,13 +149,13 @@ namespace JIRA_NTB.Controllers
             {
                 // Leader: Chỉ lấy task thuộc Project do mình tạo
                 sql += " AND p.UserId = @UserId";
-                parameters.Add(CreateParam("@UserId", user.Id));
+                parameters.Add(CreateParam("@UserId", UserId));
             }
             else if (User.IsInRole("EMPLOYEE"))
             {
                 // Employee: Chỉ lấy task được gán cho mình
                 sql += " AND t.Assignee_Id = @UserId";
-                parameters.Add(CreateParam("@UserId", user.Id));
+                parameters.Add(CreateParam("@UserId", UserId));
             }
 
             // 3. Thực thi SQL
@@ -180,8 +168,7 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/statistics")]
         public async Task<IActionResult> GetProjectsStatistics()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
+            if (UserId == null) return Unauthorized();
 
             // Employee không xem thống kê dự án
             if (User.IsInRole("EMPLOYEE"))
@@ -205,12 +192,12 @@ namespace JIRA_NTB.Controllers
 
             if (User.IsInRole("LEADER"))
             {
-                if (string.IsNullOrEmpty(user.IdDepartment))
+                if (string.IsNullOrEmpty(DepartmentId))
                     return Ok(new { Completed = 0, InProgress = 0, Todo = 0, Overdue = 0 });
 
                 // Lọc project mà người tạo (Manager) thuộc cùng phòng ban
                 sql += " AND u.IdDepartment = @DeptId";
-                parameters.Add(CreateParam("@DeptId", user.IdDepartment));
+                parameters.Add(CreateParam("@DeptId", DepartmentId));
             }
 
             var result = await RunRawSqlAsync(sql, parameters);
@@ -273,11 +260,10 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/deadline")]
         public async Task<IActionResult> GetProjectsDeadline()
         {
-            var user = await _userManager.GetUserAsync(User);
             if (User.IsInRole("LEADER"))
             {
                 var deadlines = await _context.Projects
-                    .Where(p => p.UserId == user.Id)
+                    .Where(p => p.UserId == UserId)
                     .Select(p => new
                     {
                         p.IdProject,
@@ -312,11 +298,10 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/tasks/deadline")]
         public async Task<IActionResult> GetTasksDeadline()
         {
-            var user = await _userManager.GetUserAsync(User);
             if (User.IsInRole("EMPLOYEE"))
             {
                 var deadlines = await _context.Tasks
-                    .Where(d => d.Assignee_Id == user.Id)
+                    .Where(d => d.Assignee_Id == UserId)
                     .Select(t => new
                     {
                         t.IdTask,
@@ -334,7 +319,7 @@ namespace JIRA_NTB.Controllers
             else if (User.IsInRole("LEADER"))
             {
                 var deadlines = await _context.Tasks
-                    .Where(t => t.Assignee.IdDepartment == user.IdDepartment)
+                    .Where(t => t.Assignee.IdDepartment == DepartmentId)
                     .Select(t => new
                     {
                         t.IdTask,
@@ -362,7 +347,6 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects")]
         public async Task<IActionResult> GetProjects([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 5, [FromQuery] string? departmentId = null)
         {
-            var user = await _userManager.GetUserAsync(User);
             var now = DateTime.Now;
 
             // 🔹 Bắt đầu từ tất cả project
@@ -371,12 +355,12 @@ namespace JIRA_NTB.Controllers
             // 🔹 Lọc theo role
             if (User.IsInRole("LEADER"))
             {
-                query = query.Where(p => p.UserId == user.Id);
+                query = query.Where(p => p.UserId == UserId);
             }
             else if (User.IsInRole("EMPLOYEE"))
             {
                 var projectIds = await _context.ProjectManagers
-                    .Where(pm => pm.UserId == user.Id)
+                    .Where(pm => pm.UserId == UserId)
                     .Select(pm => pm.ProjectId)
                     .ToListAsync();
 
@@ -467,7 +451,6 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/tasks")]
         public async Task<IActionResult> GetTasks()
         {
-            var user = await _userManager.GetUserAsync(User);
 
             IQueryable<TaskItemModel> query = _context.Tasks
                 .Include(t => t.Project)
@@ -483,7 +466,7 @@ namespace JIRA_NTB.Controllers
             {
                 // LEADER → chỉ thấy task thuộc dự án mình làm leader
                 var projectIds = await _context.Projects
-                    .Where(p => p.UserId == user.Id)
+                    .Where(p => p.UserId == UserId)
                     .Select(p => p.IdProject)
                     .ToListAsync();
 
@@ -493,11 +476,11 @@ namespace JIRA_NTB.Controllers
             {
                 // USER → chỉ thấy task thuộc dự án mình tham gia & được giao
                 var projectIds = await _context.ProjectManagers
-                    .Where(pm => pm.UserId == user.Id)
+                    .Where(pm => pm.UserId == UserId)
                     .Select(pm => pm.ProjectId)
                     .ToListAsync();
 
-                query = query.Where(t => projectIds.Contains(t.ProjectId) && t.Assignee_Id == user.Id);
+                query = query.Where(t => projectIds.Contains(t.ProjectId) && t.Assignee_Id == UserId);
             }
 
             var tasks = await query
@@ -527,7 +510,6 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/{projectId}/tasks")]
         public async Task<IActionResult> GetTasksForProject(string projectId, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
         {
-            var user = await _userManager.GetUserAsync(User);
 
             // --- 1. Kiểm tra bảo mật: User này có quyền xem project này không? ---
             bool canViewProject = false;
@@ -539,13 +521,13 @@ namespace JIRA_NTB.Controllers
             {
                 // Leader phải sở hữu project
                 canViewProject = await _context.Projects
-                    .AnyAsync(p => p.IdProject == projectId && p.UserId == user.Id);
+                    .AnyAsync(p => p.IdProject == projectId && p.UserId == UserId);
             }
             else // "EMPLOYEE"
             {
                 // Employee phải được gán vào project
                 canViewProject = await _context.ProjectManagers
-                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == user.Id);
+                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == UserId);
             }
 
             if (!canViewProject)
@@ -562,7 +544,7 @@ namespace JIRA_NTB.Controllers
             if (User.IsInRole("EMPLOYEE"))
             {
                 // Employee chỉ thấy task được gán cho mình
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == UserId);
             }
 
             // --- 4. Lấy tổng số (trước khi phân trang) ---
@@ -614,13 +596,12 @@ namespace JIRA_NTB.Controllers
         [FromQuery] string? departmentId = null)
         {
             // 1. Lấy ID và Department của User hiện tại
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+            if (string.IsNullOrEmpty(UserId)) return Unauthorized();
 
             // Query nhẹ để lấy DepartmentId của user hiện tại (cần thiết cho logic Leader)
             // Dùng Select để chỉ lấy 1 cột thay vì lôi cả object User nặng nề
             var userDepartmentId = await _context.Users
-                .Where(u => u.Id == userId)
+                .Where(u => u.Id == UserId)
                 .Select(u => u.IdDepartment)
                 .FirstOrDefaultAsync();
 
@@ -658,13 +639,13 @@ namespace JIRA_NTB.Controllers
                 else
                 {
                     // Trường hợp Leader nhưng chưa được gán phòng ban -> Chỉ thấy của chính mình (Fallback)
-                    query = query.Where(t => t.Assignee_Id == userId);
+                    query = query.Where(t => t.Assignee_Id == UserId);
                 }
             }
             else // EMPLOYEE
             {
                 // EMPLOYEE: Chỉ thấy task được gán cho chính mình
-                query = query.Where(t => t.Assignee_Id == userId);
+                query = query.Where(t => t.Assignee_Id == UserId);
             }
 
             // 4. Đếm tổng số (Tối ưu performance)
@@ -712,103 +693,10 @@ namespace JIRA_NTB.Controllers
             });
         }
 
-        [HttpGet("api/tasks/gantt-by-user")]
-        public async Task<IActionResult> GetGanttTasksByUser(
-    [FromQuery] int userPageIndex = 1,
-    [FromQuery] int userPageSize = 5,
-    [FromQuery] string? departmentId = null)
-        {
-            var currentUser = await _userManager.GetUserAsync(User);
-            if (currentUser == null) return Unauthorized();
-
-            // =========================================================
-            // BƯỚC 1: LỌC USER (Giữ nguyên logic cũ - rất tốt)
-            // =========================================================
-            IQueryable<UserModel> userQuery = _context.Users.AsQueryable();
-
-            if (User.IsInRole("LEADER"))
-            {
-                if (!string.IsNullOrEmpty(currentUser.IdDepartment))
-                    userQuery = userQuery.Where(u => u.IdDepartment == currentUser.IdDepartment);
-            }
-            else if (User.IsInRole("EMPLOYEE"))
-            {
-                userQuery = userQuery.Where(u => u.Id == currentUser.Id);
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(departmentId) && departmentId != "all")
-                    userQuery = userQuery.Where(u => u.IdDepartment == departmentId);
-            }
-
-            var totalUsers = await userQuery.CountAsync();
-
-            // Chỉ lấy ID và Tên để nhẹ dữ liệu
-            var pagedUsers = await userQuery
-                .OrderBy(u => u.FullName)
-                .Skip((userPageIndex - 1) * userPageSize)
-                .Take(userPageSize)
-                .Select(u => new { u.Id, u.FullName })
-                .ToListAsync();
-
-            if (!pagedUsers.Any())
-            {
-                return Ok(new { items = new List<object>(), totalUsers, pageIndex = userPageIndex });
-            }
-
-            // =========================================================
-            // BƯỚC 2: TỐI ƯU HÓA FETCH TASK (Database-side Limit)
-            // =========================================================
-
-            // List chứa kết quả cuối cùng
-            var finalTasks = new List<object>();
-
-            // Chạy vòng lặp cho 5 user (số lượng nhỏ nên không ảnh hưởng hiệu năng)
-            foreach (var user in pagedUsers)
-            {
-                // Query này sẽ được dịch sang SQL có LIMIT/TOP 10 ngay tại DB
-                // Indexing: Cần đánh Index cho cột [Assignee_Id] và [Status/StartDate] trong DB
-                var topTasks = await _context.Tasks
-                    .AsNoTracking() // Tăng tốc độ đọc (không cần theo dõi thay đổi)
-                    .Where(t => t.Assignee_Id == user.Id)
-                    // Sắp xếp ưu tiên ngay trong SQL
-                    .OrderBy(t => t.Status.StatusName == TaskStatusModel.InProgress ? 1 : (t.Status.StatusName == TaskStatusModel.Todo ? 2 : 3))
-                    .ThenBy(t => t.StartDate)
-                    .Take(10) // CHỈ LẤY ĐÚNG 10 TASK
-                    .Select(t => new
-                    {
-                        t.IdTask,
-                        t.NameTask,
-                        t.StartDate,
-                        t.EndDate,
-                        t.Assignee_Id,
-                        t.ProjectId,
-                        t.Priority,
-                        t.Overdue,
-                        ProjectName = t.Project.ProjectName,
-                        StatusName = t.Status.StatusName,
-                        NameAssignee = user.FullName, // Lấy tên từ vòng lặp, khỏi cần Join bảng User
-                        SortPriority = t.Status.StatusName == TaskStatusModel.InProgress ? 1 : (t.Status.StatusName == TaskStatusModel.Todo ? 2 : 3)
-                    })
-                    .ToListAsync();
-
-                finalTasks.AddRange(topTasks);
-            }
-
-            return Ok(new
-            {
-                items = finalTasks,
-                totalUsers = totalUsers,
-                pageIndex = userPageIndex,
-                pageSize = userPageSize
-            });
-        }
-
         #region GET: api/projects/{projectId}/all-tasks -> Lấy tất cả task theo project (không phân trang)
         [HttpGet("api/projects/{projectId}/all-tasks")]
         public async Task<IActionResult> GetAllTasksForProject(string projectId)
         {
-            var user = await _userManager.GetUserAsync(User);
 
             // --- 1. Kiểm tra bảo mật (Giữ nguyên) ---
             bool canViewProject = false;
@@ -819,12 +707,12 @@ namespace JIRA_NTB.Controllers
             else if (User.IsInRole("LEADER"))
             {
                 canViewProject = await _context.Projects
-                    .AnyAsync(p => p.IdProject == projectId && p.UserId == user.Id);
+                    .AnyAsync(p => p.IdProject == projectId && p.UserId == UserId);
             }
             else
             { // "EMPLOYEE"
                 canViewProject = await _context.ProjectManagers
-                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == user.Id);
+                    .AnyAsync(pm => pm.ProjectId == projectId && pm.UserId == UserId);
             }
 
             if (!canViewProject)
@@ -838,7 +726,7 @@ namespace JIRA_NTB.Controllers
 
             if (User.IsInRole("EMPLOYEE"))
             {
-                query = query.Where(t => t.Assignee_Id == user.Id);
+                query = query.Where(t => t.Assignee_Id == UserId);
             }
 
             // --- 3. Lấy TẤT CẢ task (Không phân trang) ---
@@ -874,7 +762,6 @@ namespace JIRA_NTB.Controllers
         [HttpGet("api/projects/list")]
         public async Task<IActionResult> GetProjectList()
         {
-            var user = await _userManager.GetUserAsync(User);
             IQueryable<ProjectModel> query = _context.Projects;
 
             // ⚙️ Lọc theo role
@@ -885,13 +772,13 @@ namespace JIRA_NTB.Controllers
             else if (User.IsInRole("LEADER"))
             {
                 // Leader thấy project mình tạo
-                query = query.Where(p => p.UserId == user.Id);
+                query = query.Where(p => p.UserId == UserId);
             }
             else // "EMPLOYEE"
             {
                 // Employee thấy project mình được gán
                 var projectIds = await _context.ProjectManagers
-                    .Where(pm => pm.UserId == user.Id)
+                    .Where(pm => pm.UserId == UserId)
                     .Select(pm => pm.ProjectId)
                     .ToListAsync();
 
@@ -924,137 +811,6 @@ namespace JIRA_NTB.Controllers
                 .ToListAsync();
             return Ok(departments);
         }
-        #endregion
-
-        #region GET: api/client/ip
-        //[HttpGet("api/server/address")]
-        //public IActionResult GetClientIp()
-        //{
-        //    var ipAddress = HttpContext.Connection.LocalIpAddress?.ToString();
-
-        //    var mac = NetworkInterface.GetAllNetworkInterfaces()
-        //        .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-        //                      nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-        //        .Select(nic => nic.GetPhysicalAddress().ToString())
-        //        .FirstOrDefault();
-
-        //    // Format MAC cho dễ đọc: "AA:BB:CC:DD:EE:FF"
-        //    if (!string.IsNullOrEmpty(mac))
-        //        mac = string.Join(":", Enumerable.Range(0, mac.Length / 2)
-        //            .Select(i => mac.Substring(i * 2, 2)));
-
-        //    var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        //    // --- Ghi log vào file ---
-        //    var logLine = $"{accessTime} - IP: {ipAddress ?? "Không xác định"} - MAC: {mac ?? "Không xác định"}";
-        //    var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
-
-        //    try
-        //    {
-        //        System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Nếu muốn, có thể log lỗi ghi file ra console
-        //        Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
-        //    }
-
-        //    return Ok(new
-        //    {
-        //        ip = ipAddress ?? "Không xác định",
-        //        mac = mac ?? "Không xác định",
-        //        accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-        //    });
-        //}
-        #endregion
-
-        #region GET: api/client/mac
-        //[HttpGet("api/client/address")]
-        //public IActionResult GetClientMac()
-        //{
-        //    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-        //    if (string.IsNullOrEmpty(clientIp))
-        //        return BadRequest("Không tìm thấy IP client");
-
-        //    try
-        //    {
-        //        var process = new Process
-        //        {
-        //            StartInfo = new ProcessStartInfo
-        //            {
-        //                FileName = "arp",
-        //                Arguments = "-a " + clientIp,
-        //                RedirectStandardOutput = true,
-        //                UseShellExecute = false,
-        //                CreateNoWindow = true
-        //            }
-        //        };
-        //        process.Start();
-        //        string output = process.StandardOutput.ReadToEnd();
-        //        process.WaitForExit();
-
-        //        // Parse MAC (Windows format)
-        //        var match = System.Text.RegularExpressions.Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-        //        string macAddress = match.Success ? match.Value.Replace('-', ':') : "Không xác định";
-
-        //        var accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        //        // --- Ghi log vào file ---
-        //        var logLine = $"{accessTime} - IP: {clientIp ?? "Không xác định"} - MAC: {macAddress ?? "Không xác định"}";
-        //        var logPath = Path.Combine(AppContext.BaseDirectory, "access_log.txt");
-
-        //        try
-        //        {
-        //            System.IO.File.AppendAllText(logPath, logLine + Environment.NewLine);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            // Nếu muốn, có thể log lỗi ghi file ra console
-        //            Console.WriteLine("❌ Lỗi ghi log: " + ex.Message);
-        //        }
-
-        //        return Ok(new { 
-        //            ip = clientIp,
-        //            mac = macAddress,
-        //            accessTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest($"Lỗi: {ex.Message}");
-        //    }
-        //}
-        #endregion
-
-        #region GET: api/server/processes
-        //[HttpGet("api/server/processes")]
-        //public IActionResult LogRunningProcesses()
-        //{
-        //    try
-        //    {
-        //        var processes = Process.GetProcesses()
-        //            .OrderBy(p => p.ProcessName)
-        //            .Select(p => $"{p.ProcessName} (PID: {p.Id})")
-        //            .ToList();
-
-        //        var logPath = Path.Combine(AppContext.BaseDirectory, "process_log.txt");
-        //        var logTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        //        var logContent = new StringBuilder();
-        //        logContent.AppendLine($"🕒 {logTime} - Danh sách tiến trình đang chạy:");
-        //        logContent.AppendLine(string.Join(Environment.NewLine, processes));
-        //        logContent.AppendLine(new string('-', 60));
-
-        //        System.IO.File.AppendAllText(logPath, logContent.ToString());
-
-        //        return Ok(new
-        //        {
-        //            message = "✅ Đã ghi log danh sách tiến trình đang chạy.",
-        //            processCount = processes.Count
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { error = ex.Message });
-        //    }
-        //}
         #endregion
 
         #region POST: Home/SaveTask -> Cập nhật hoặc Thêm mới Task

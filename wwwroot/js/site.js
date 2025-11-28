@@ -5,24 +5,24 @@ let me = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
     // --- 1. FETCH USER INFO (Giữ nguyên) ---
-    if (!me) {
-        try {
-            const meRes = await fetch("/api/user/me");
-            if (meRes.ok) {
-                me = await meRes.json();
-            }
-        } catch (e) {
-            console.error("Fetch failed:", e);
-        }
-    }
+    //if (!me) {
+    //    try {
+    //        const meRes = await fetch("/api/user/me");
+    //        if (meRes.ok) {
+    //            me = await meRes.json();
+    //        }
+    //    } catch (e) {
+    //        console.error("Fetch failed:", e);
+    //    }
+    //}
 
-    if (!me || me == null) {
-        // window.location.href = "/Error/403"; // Tùy chọn redirect
-        return;
-    }
+    //if (!me || me == null) {
+    //    // window.location.href = "/Error/403"; // Tùy chọn redirect
+    //    return;
+    //}
 
-    const meCur = document.getElementById("me");
-    if (meCur) meCur.innerHTML += `${me.fullName}`;
+    //const meCur = document.getElementById("me");
+    //if (meCur) meCur.innerHTML += `${me.fullName}`;
 
     lucide.createIcons();
 
