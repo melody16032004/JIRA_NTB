@@ -37,6 +37,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ILogTaskRepository, LogTaskRepository>();
 builder.Services.AddScoped<ITaskSearchService, LuceneTaskSearchService>();
+builder.Services.AddHostedService<TaskOverdueBackgroundService>();
 builder.Services.Configure<IdentityOptions>(options =>
 {
 	// User settings

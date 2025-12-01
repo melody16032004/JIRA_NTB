@@ -151,7 +151,7 @@ namespace JIRA_NTB.Services
                 task.StatusId = deleted.StatusId;
                 newStatus = deleted;
             }
-
+            
             await _taskRepository.UpdateAsync(task);
             var log = new LogStatusUpdate
             {
@@ -411,7 +411,14 @@ namespace JIRA_NTB.Services
 
                 task.FileNote = $"/uploads/tasks/{fileName}";
             }
-
+            if (task.EndDate.HasValue && task.EndDate.Value.Date < DateTime.Now.Date)
+            {
+                task.Overdue = true;
+            }
+            else
+            {
+                task.Overdue = false;
+            }
             await _taskRepository.UpdateAsync(task);
             //Update index cho Lucene
             await _taskSearchService.UpdateIndexAsync(new TaskEntity

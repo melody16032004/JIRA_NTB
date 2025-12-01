@@ -24,12 +24,13 @@ namespace JIRA_NTB.Controllers
         private readonly AppDbContext _context;
         private readonly IProjectService _projectService;
         private readonly UserManager<UserModel> _userManager;
-
-        public ProjectController(UserManager<UserModel> userManager,AppDbContext context, IProjectService projectService)
+        private readonly IStatusRepository _statusRepository;
+        public ProjectController(UserManager<UserModel> userManager,AppDbContext context, IProjectService projectService, IStatusRepository statusRepository)
         {
             _context = context; // Dùng cho Index và các action cũ
             _projectService = projectService; // Dùng cho Details
             _userManager = userManager;
+            _statusRepository = statusRepository;
         }
 
         // GET: Project
@@ -707,7 +708,8 @@ namespace JIRA_NTB.Controllers
 
             try
             {
-               project.StatusId = "Deleted"; // Giả sử "status-deleted" là ID của trạng thái Đã Xóa
+                var Status = await _statusRepository.GetByStatusNameAsync(TaskStatusModel.Deleted);
+                project.StatusId = Status.StatusId; // Giả sử "status-deleted" là ID của trạng thái Đã Xóa
                 _context.Projects.Update(project);
                 await _context.SaveChangesAsync();
 

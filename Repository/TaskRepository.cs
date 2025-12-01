@@ -289,23 +289,15 @@ namespace JIRA_NTB.Repository
         }
         public async Task RefreshOverdueStatusAsync()
         {
-            var tasks = await _context.Tasks.Where(t => t.Project.Status.StatusName != TaskStatusModel.Deleted)
-                .Include(t => t.Status)
-                .Where(t => t.EndDate.HasValue)
-                .ToListAsync();
+            var today = DateTime.Now.Date;
 
-            foreach (var t in tasks)
-            {
-                bool shouldBeOverdue =
-                    t.EndDate.Value.Date < DateTime.Now.Date &&
-                    t.Status?.StatusName != TaskStatusModel.Done;
-                if (t.Overdue != shouldBeOverdue)
-                {
-                    t.Overdue = shouldBeOverdue;
-                }
-            }
-
-            await _context.SaveChangesAsync();
+            // Lệnh này sẽ chạy thẳng xuống SQL -> Update ngay lập tức
+            await _context.Tasks
+                .Where(t => t.Project.Status.StatusName != TaskStatusModel.Deleted) // Project chưa xóa
+                .Where(t => t.EndDate.HasValue && t.EndDate.Value.Date < today)     // Đã quá hạn
+                .Where(t => t.Status.StatusName != TaskStatusModel.Done)            // Chưa làm xong
+                .Where(t => t.Overdue == false)                                     // Chỉ lấy cái nào chưa đánh dấu Overdue
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.Overdue, true));      // UPDATE Tasks SET Overdue = 1 ...
         }
         public async Task UpdateAsync(TaskItemModel task)
         {
