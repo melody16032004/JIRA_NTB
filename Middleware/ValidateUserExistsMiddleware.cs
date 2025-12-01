@@ -59,8 +59,8 @@ namespace JIRA_NTB.Middleware
 						// Đăng xuất user
 						await signInManager.SignOutAsync();
 
-						// Redirect về trang login
-						context.Response.Redirect("/Account/Login?error=email-not-confirmed");
+						// Redirect về trang login với email để gửi lại
+						context.Response.Redirect($"/Account/Login?error=email-not-confirmed&message={user.Email}");
 						return;
 					}
 				}
