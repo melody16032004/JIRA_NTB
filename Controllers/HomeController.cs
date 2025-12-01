@@ -388,6 +388,7 @@ namespace JIRA_NTB.Controllers
                 //.OrderByDescending(p => p.EndDay)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
+                .Where(p => p.Status.StatusName != TaskStatusModel.Deleted || p.StatusId != "Deleted")
                 .Select(p => new
                 {
                     p.IdProject,
