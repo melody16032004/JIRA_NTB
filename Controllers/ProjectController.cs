@@ -24,6 +24,7 @@ namespace JIRA_NTB.Controllers
         private readonly AppDbContext _context;
         private readonly IProjectService _projectService;
         private readonly UserManager<UserModel> _userManager;
+
         public ProjectController(UserManager<UserModel> userManager,AppDbContext context, IProjectService projectService)
         {
             _context = context; // Dùng cho Index và các action cũ
