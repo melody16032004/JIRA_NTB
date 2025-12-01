@@ -1,5 +1,6 @@
 ﻿using JIRA_NTB.Data;
 using JIRA_NTB.Models;
+using JIRA_NTB.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace JIRA_NTB.Repository
@@ -23,8 +24,8 @@ namespace JIRA_NTB.Repository
         public async Task<List<ProjectModel>> GetAllFilteredAsync(string userId, IList<string> roles)
         {
             IQueryable<ProjectModel> query = _context.Projects
-                .Include(p => p.Status)
-                .Include(p => p.Manager);
+                .Where(p => p.Status.StatusName != TaskStatusModel.Deleted);
+                
             if (roles.Contains("LEADER"))
             {
                 // Leader -> chỉ project mà mình quản lý
