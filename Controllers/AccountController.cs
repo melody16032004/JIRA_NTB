@@ -235,63 +235,6 @@ namespace JIRA_NTB.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            //System.Diagnostics.Debug.WriteLine("Device Address from View: " + model.DeviceAddress);
-
-            //string clientMacAddress = "Không xác định";
-
-            //// --- [LOGIC LẤY MAC ADDRESS (SERVER SIDE)] ---
-            //try
-            //{
-            //    string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-
-            //    if (!string.IsNullOrEmpty(clientIp) && (clientIp == "127.0.0.1" || clientIp == "::1"))
-            //    {
-            //        clientMacAddress = NetworkInterface.GetAllNetworkInterfaces()
-            //            .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-            //                          nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-            //            .Select(nic => nic.GetPhysicalAddress().ToString())
-            //            .FirstOrDefault() ?? "Localhost MAC";
-            //    }
-            //    else if (!string.IsNullOrEmpty(clientIp))
-            //    {
-            //        string sysPath = Environment.SystemDirectory;
-            //        string arpPath = System.IO.Path.Combine(sysPath, "arp.exe");
-
-            //        if (System.IO.File.Exists(arpPath))
-            //        {
-            //            var process = new Process
-            //            {
-            //                StartInfo = new ProcessStartInfo
-            //                {
-            //                    FileName = arpPath,
-            //                    Arguments = "-a " + clientIp,
-            //                    RedirectStandardOutput = true,
-            //                    UseShellExecute = false,
-            //                    CreateNoWindow = true
-            //                }
-            //            };
-            //            process.Start();
-            //            string output = await process.StandardOutput.ReadToEndAsync();
-            //            await process.WaitForExitAsync();
-
-            //            var match = Regex.Match(output, "([0-9A-Fa-f]{2}(-[0-9A-Fa-f]{2}){5})");
-            //            if (match.Success)
-            //            {
-            //                clientMacAddress = match.Value.Replace('-', ':');
-            //            }
-            //        }
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    System.Diagnostics.Debug.WriteLine($"Lỗi khi lấy MAC: {ex.Message}");
-            //    clientMacAddress = "Lỗi khi lấy MAC";
-            //}
-
-            //// Không ghi đè DeviceAddress nữa
-            //// if (clientMacAddress != "Không xác định") model.DeviceAddress = clientMacAddress;
-
-
             // --- [LOGIC ĐĂNG KÝ USER] ---
             if (ModelState.IsValid)
             {
@@ -338,20 +281,19 @@ namespace JIRA_NTB.Controllers
                             model.Email,
                             "Xác nhận tài khoản của bạn",
                             $@"<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                        <h2 style='color: #9333ea;'>Xác nhận tài khoản của bạn</h2>
-                        <p>Chào mừng bạn đến với <strong>JIRA NTB</strong>!</p>
-                        <p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
-                        <p style='margin: 30px 0;'>
-                            <a href='{callbackUrl}' 
-                               style='background: linear-gradient(to right, #9333ea, #ec4899);
-                               color: white; padding: 12px 30px; text-decoration: none; 
-                               border-radius: 8px; display: inline-block; font-weight: bold;'>
-                                Xác nhận Email
-                            </a>
-                        </p>
-                        <p style='color: #dc2626; font-weight: bold;'>⚠️ Link xác nhận chỉ có hiệu lực trong 60 giây!</p>
-                        <p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
-                    </div>"
+								<h2 style='color: #9333ea;'>Xác nhận tài khoản của bạn</h2>
+								<p>Chào mừng bạn đến với <strong>JIRA NTB</strong>!</p>
+								<p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
+								<p style='margin: 30px 0;'>
+									<a href='{callbackUrl}' 
+									   style='background: linear-gradient(to right, #9333ea, #ec4899);
+									   color: white; padding: 12px 30px; text-decoration: none; 
+									   border-radius: 8px; display: inline-block; font-weight: bold;'>
+										Xác nhận Email
+									</a>
+								</p>
+								<p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
+							</div>"
                         );
                     }
                     catch (Exception ex)
@@ -360,6 +302,7 @@ namespace JIRA_NTB.Controllers
                         return RedirectToAction("HttpStatusCodeHandler", "Error", new { statusCode = 500 });
                     }
 
+                    TempData["RegisteredEmail"] = model.Email;
                     return RedirectToAction("RegisterConfirmation");
                 }
 
@@ -428,6 +371,71 @@ namespace JIRA_NTB.Controllers
 				// Lỗi giải mã token
 				return View("ConfirmEmailError");
 			}
+		}
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ResendEmailConfirmation(string email)
+		{
+			if (string.IsNullOrEmpty(email))
+			{
+				TempData["ErrorMessage"] = "Email không hợp lệ.";
+				return RedirectToAction("Login");
+			}
+
+			var user = await _userManager.FindByEmailAsync(email);
+
+			if (user == null)
+			{
+				TempData["ErrorMessage"] = "Không tìm thấy tài khoản với email này.";
+				return RedirectToAction("Login");
+			}
+
+			if (await _userManager.IsEmailConfirmedAsync(user))
+			{
+				TempData["SuccessMessage"] = "Email đã được xác nhận rồi. Bạn có thể đăng nhập.";
+				return RedirectToAction("Login");
+			}
+
+			try
+			{
+				var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+				var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+				var callbackUrl = Url.Action(
+					"ConfirmEmail",
+					"Account",
+					new { userId = user.Id, token = encodedToken },
+					protocol: Request.Scheme
+				);
+
+				await _emailSender.SendEmailAsync(
+					email,
+					"Xác nhận tài khoản của bạn",
+					$@"<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+						<h2 style='color: #9333ea;'>Xác nhận tài khoản của bạn</h2>
+						<p>Chào mừng bạn đến với <strong>JIRA NTB</strong>!</p>
+						<p>Vui lòng xác nhận tài khoản bằng cách bấm vào nút bên dưới:</p>
+						<p style='margin: 30px 0;'>
+							<a href='{callbackUrl}' 
+							   style='background: linear-gradient(to right, #9333ea, #ec4899);
+							   color: white; padding: 12px 30px; text-decoration: none; 
+							   border-radius: 8px; display: inline-block; font-weight: bold;'>
+								Xác nhận Email
+							</a>
+						</p>
+						<p style='color: #6b7280; font-size: 12px; word-break: break-all;'>{callbackUrl}</p>
+					</div>"
+				);
+
+				TempData["SuccessMessage"] = "✅ Email xác nhận đã được gửi lại! Vui lòng kiểm tra hộp thư và xác nhận trong 60 giây.";
+			}
+			catch (Exception ex)
+			{
+				TempData["ErrorMessage"] = "❌ Không thể gửi email. Vui lòng thử lại sau.";
+			}
+
+			TempData["RegisteredEmail"] = email;
+			return RedirectToAction("RegisterConfirmation");
 		}
 		#endregion
 

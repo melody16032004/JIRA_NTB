@@ -19,18 +19,6 @@
 
             <!-- Content -->
             <div class="p-6 space-y-4">
-                <div class="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-4">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="clock" class="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5"></i>
-                        <div>
-                            <h3 class="text-yellow-400 font-bold text-sm mb-1">⚠️ LƯU Ý QUAN TRỌNG</h3>
-                            <p class="text-gray-300 text-xs leading-relaxed">
-                                Link xác nhận <span class="text-red-400 font-bold">chỉ có hiệu lực trong 10 phút!</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="space-y-3">
                     <div class="flex items-start gap-2">
                         <div class="w-6 h-6 bg-purple-600/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -63,14 +51,46 @@
                     </div>
                 </div>
 
-                <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-                    <div class="flex items-start gap-2">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
-                        <p class="text-red-400 text-xs">
-                            <strong>Chú ý:</strong> Tài khoản sẽ tự động bị xóa sau 60 giây nếu không xác nhận.
-                        </p>
+                @* Success/Error message from ResendEmailConfirmation *@
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="bg-green-500/10 border border-green-500/50 rounded-lg p-3">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5"></i>
+                            <p class="text-green-400 text-xs">@TempData["SuccessMessage"]</p>
+                        </div>
                     </div>
-                </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
+                        <div class="flex items-start gap-2">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
+                            <p class="text-red-400 text-xs">@TempData["ErrorMessage"]</p>
+                        </div>
+                    </div>
+                }
+
+                @* Resend Email Form *@
+                @if (TempData["RegisteredEmail"] != null)
+                {
+                    <div class="bg-blue-500/10 border border-blue-500/50 rounded-lg p-3">
+                        <div class="flex items-start gap-2 mb-3">
+                            <i data-lucide="info" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+                            <p class="text-blue-400 text-xs">
+                                <strong>Không nhận được email?</strong> Click nút bên dưới để gửi lại.
+                            </p>
+                        </div>
+                        <form asp-action="ResendEmailConfirmation" method="post">
+                            <input type="hidden" name="email" value="@TempData.Peek("RegisteredEmail")" />
+                            <button type="submit" 
+                                    class="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                                Gửi lại email xác nhận
+                            </button>
+                        </form>
+                    </div>
+                }
 
                 <div class="pt-2 text-center">
                     <a asp-action="Login" 
