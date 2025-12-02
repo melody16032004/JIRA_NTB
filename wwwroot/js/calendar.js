@@ -103,17 +103,17 @@ document.addEventListener("DOMContentLoaded", () => {
             // A. Kiểm tra và fetch User (me) nếu chưa có
             // Giả sử biến 'me' được định nghĩa ở global scope (window.me) hoặc file js khác.
             // Nếu chưa có, ta fetch tại đây.
-            if (typeof me === 'undefined' || !me) {
-                const meRes = await fetch("/api/user/me");
-                if (meRes.ok) {
-                    window.me = await meRes.json(); // Gán vào window để dùng chung
-                }
-            }
+            //if (typeof me === 'undefined' || !me) {
+            //    const meRes = await fetch("/api/user/me");
+            //    if (meRes.ok) {
+            //        window.me = await meRes.json(); // Gán vào window để dùng chung
+            //    }
+            //}
 
-            if (!window.me) {
-                window.location.href = "/Error/403";
-                return;
-            }
+            //if (!window.me) {
+            //    window.location.href = "/Error/403";
+            //    return;
+            //}
 
             // B. Fetch Tasks và Projects
             const [fetchedTasks, fetchedProjects] = await Promise.all([
@@ -182,19 +182,19 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) throw new Error(await res.text() || res.statusText);
 
             // Gửi thông báo nếu có Leader
-            if (window.me && window.me.leaderId) {
-                try {
-                    await fetch("/api/notification/push", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            UserId: window.me.leaderId,
-                            Title: `Cập nhật trạng thái công việc`,
-                            Message: `${window.me.fullName} vừa cập nhật trạng thái: ${item.nameTask || item.projectName}`
-                        })
-                    });
-                } catch (notifyErr) { console.error("Notify error:", notifyErr); }
-            }
+            //if (window.me && window.me.leaderId) {
+            //    try {
+            //        await fetch("/api/notification/push", {
+            //            method: "POST",
+            //            headers: { "Content-Type": "application/json" },
+            //            body: JSON.stringify({
+            //                UserId: window.me.leaderId,
+            //                Title: `Cập nhật trạng thái công việc`,
+            //                Message: `${window.me.fullName} vừa cập nhật trạng thái: ${item.nameTask || item.projectName}`
+            //            })
+            //        });
+            //    } catch (notifyErr) { console.error("Notify error:", notifyErr); }
+            //}
 
             buttons.forEach(b => b.disabled = false);
             return true;
