@@ -5,7 +5,6 @@ namespace JIRA_NTB.Repository
 {
     public interface ITaskRepository
     {
-        Task<List<TaskItemModel>> GetAllAsync();
         Task<List<TaskViewModel>> GetTaskViewModelsAsync(
        string userId,
        IList<string> roles,
