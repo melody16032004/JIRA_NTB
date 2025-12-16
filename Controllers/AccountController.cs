@@ -427,7 +427,7 @@ namespace JIRA_NTB.Controllers
 					</div>"
 				);
 
-				TempData["SuccessMessage"] = "✅ Email xác nhận đã được gửi lại! Vui lòng kiểm tra hộp thư và xác nhận trong 60 giây.";
+				TempData["SuccessMessage"] = "✅ Email xác nhận đã được gửi lại! Vui lòng kiểm tra hộp thư và xác nhận.";
 			}
 			catch (Exception ex)
 			{
